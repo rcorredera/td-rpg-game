@@ -9,7 +9,7 @@ import Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, UI_TINT } from "./ui";
-import { uiButton, uiPanel } from "./components";
+import { layoutCursor, uiButton, uiPanel, type LayoutCursor } from "./components";
 
 type View = "home" | "story" | "rifts" | "shop" | "chronicles" | "bestiary";
 type ShopTab = "arsenal" | "forge" | "hero";
@@ -162,22 +162,27 @@ export class MenuScene extends Phaser.Scene {
     const p = this.panel!;
 
     // Onglets Créatures / Défenses
+    const tabsY = 205, tabsH = 32;
     const tabs: { id: "creatures" | "defenses"; label: string }[] = [
       { id: "creatures", label: "Créatures" },
       { id: "defenses", label: "Défenses" },
     ];
     tabs.forEach((t, i) => {
       const active = this.bestiaryTab === t.id;
-      p.add(uiButton(this, 320 + i * 160, 205, t.label, { w: 130, h: 32, gold: active, fontSize: 15 },
+      p.add(uiButton(this, 320 + i * 160, tabsY, t.label, { w: 130, h: tabsH, gold: active, fontSize: 15 },
         () => { this.bestiaryTab = t.id; this.showView("bestiary"); }).container);
     });
 
-    if (this.bestiaryTab === "defenses") { this.buildDefensePages(); return; }
+    // Empilement vertical à partir du bas des onglets (+6px de respiration) : plus jamais
+    // de recalcul manuel d'offset par écran, ni de risque de chevauchement (bug #7/#9).
+    const cursor = layoutCursor(tabsY + tabsH / 2 + 6);
+
+    if (this.bestiaryTab === "defenses") { this.buildDefensePages(cursor); return; }
 
     const seen = this.profileSvc.get().bestiary;
     const enemies = Object.values(CONTENT.enemies);
-    enemies.forEach((e, i) => {
-      const y = 265 + i * 84;
+    enemies.forEach((e) => {
+      const y = cursor.next(76);
       const known = seen.includes(e.id);
       this.box(400, y, 640, 76, known ? 0x2b2118 : 0x221b12, known ? 0xc9a227 : 0x4a3f2e);
       if (!known) {
@@ -193,17 +198,17 @@ export class MenuScene extends Phaser.Scene {
       ].join("    ");
       p.add(this.add.text(110, y + 23, stats, { fontSize: "12px", color: LIGHT, ...TXT }));
     });
-    p.add(this.add.text(400, 265 + enemies.length * 84 - 24,
+    p.add(this.add.text(400, cursor.y + 12,
       "Les mini-boss sont des variantes renforcées des créatures connues.",
       { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5, 0));
   }
 
   /** Onglet Défenses : explique le rôle et les différences de chaque tour. */
-  private buildDefensePages() {
+  private buildDefensePages(cursor: LayoutCursor) {
     const p = this.panel!;
     const towers = Object.values(CONTENT.towers);
-    towers.forEach((t, i) => {
-      const y = 273 + i * 100;
+    towers.forEach((t) => {
+      const y = cursor.next(92);
       const locked = t.requiresUnlock !== null && !this.profileSvc.get().unlocks.includes(t.requiresUnlock);
       this.box(400, y, 640, 92, 0x2b2118, locked ? 0x6b5a3e : 0xc9a227);
       p.add(this.add.text(110, y - 34, `${t.name}${locked ? "  (verrouillée — Arsenal)" : ""}`, { fontSize: "17px", color: locked ? DIM : GOLD, ...TXT }));
@@ -217,7 +222,7 @@ export class MenuScene extends Phaser.Scene {
       p.add(this.add.text(110, y + 31, `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`,
         { fontSize: "12px", color: LIGHT, ...TXT }));
     });
-    p.add(this.add.text(400, 273 + towers.length * 100 - 28,
+    p.add(this.add.text(400, cursor.y + 12,
       "Le héros bloque et frappe les ennemis terrestres ; les volants l'ignorent — prévoyez l'Archerie.",
       { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5, 0));
   }
