@@ -8,8 +8,12 @@
 import Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
-import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, UI_TINT } from "./ui";
-import { layoutCursor, uiButton, uiPanel, type LayoutCursor } from "./components";
+import { FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, UI_TINT } from "./ui";
+import { ACCENT, TEXT } from "./theme";
+import {
+  layoutCursor, uiButton, uiChip, uiListRow, uiModal, uiNavCard, uiPanel, uiSectionHeader,
+  type LayoutCursor, type RowState, type UiChip,
+} from "./components";
 
 type View = "home" | "story" | "rifts" | "shop" | "chronicles" | "bestiary";
 type ShopTab = "arsenal" | "forge" | "hero";
@@ -26,12 +30,11 @@ const LORE_INTRO = [
   "Dressez vos tours. Menez la charge. Tenez les remparts.",
 ].join("\n");
 
-const RIFT = "#b07cc6";
-
 export class MenuScene extends Phaser.Scene {
   private profileSvc!: ProfileService;
   private panel: Phaser.GameObjects.Container | null = null;
-  private currencyTxt!: Phaser.GameObjects.Text;
+  private chipShards!: UiChip;
+  private chipSceaux!: UiChip;
   private currentView: View = "home";
   private currentShopTab: ShopTab = "arsenal";
   private bestiaryTab: "creatures" | "defenses" = "creatures";
@@ -44,9 +47,10 @@ export class MenuScene extends Phaser.Scene {
     setupCamera(this);
     this.panel = null;
     this.add.rectangle(400, 300, 800, 600, 0x1a140e);
-    this.add.text(400, 48, "⚔ Bastion", { fontSize: "40px", color: GOLD, ...TITLE }).setOrigin(0.5);
-    this.add.text(400, 88, "Le campement", { fontSize: "16px", color: DIM, ...TXT }).setOrigin(0.5);
-    this.currencyTxt = this.add.text(400, 122, "", { fontSize: "19px", color: LIGHT, ...TITLE }).setOrigin(0.5);
+    this.add.text(400, 48, "⚔ Bastion", { fontSize: "40px", color: TEXT.gold, ...TITLE }).setOrigin(0.5);
+    this.add.text(400, 88, "Le campement", { fontSize: "16px", color: TEXT.dim, ...TXT }).setOrigin(0.5);
+    this.chipShards = uiChip(this, 330, 122, { icon: "◆", text: "Éclats : 0", fontSize: 19, color: TEXT.light });
+    this.chipSceaux = uiChip(this, 470, 122, { icon: "⚜", text: "Sceaux : 0", fontSize: 19, color: TEXT.light });
     this.refreshCurrencies();
 
     if (!this.profileSvc.get().introSeen) this.showIntro();
@@ -55,21 +59,27 @@ export class MenuScene extends Phaser.Scene {
 
   private refreshCurrencies() {
     const p = this.profileSvc.get();
-    this.currencyTxt.setText(`◆ Éclats : ${p.shards}      ⚜ Sceaux : ${p.sceaux}`);
+    this.chipShards.setText(`Éclats : ${p.shards}`);
+    this.chipSceaux.setText(`Sceaux : ${p.sceaux}`);
   }
 
   // ---------- Intro lore (première visite) ----------
 
   private showIntro() {
-    const c = this.add.container(400, 300).setDepth(30);
-    c.add(this.add.rectangle(0, 0, 800, 600, 0x120d08, 0.97));
-    c.add(this.add.text(0, -150, "An 312 du Vieux Royaume", { fontSize: "15px", color: DIM, ...TXT }).setOrigin(0.5));
-    c.add(this.add.text(0, -50, LORE_INTRO, { fontSize: "19px", color: LIGHT, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-    c.add(uiButton(this, 0, 110, "🛡 Prendre le commandement", { w: 330, h: 50, gold: true, fontSize: 19 }, () => {
-      this.profileSvc.markIntroSeen();
-      c.destroy();
-      this.showView("story"); // on guide direct vers le combat
-    }).container);
+    const modal = uiModal(this, {
+      w: 600, h: 340,
+      title: "An 312 du Vieux Royaume",
+      body: LORE_INTRO,
+      dimAlpha: 0.9,
+      buttons: [{
+        label: "🛡 Prendre le commandement", w: 340, gold: true,
+        onClick: () => {
+          this.profileSvc.markIntroSeen();
+          modal.close();
+          this.showView("story"); // on guide direct vers le combat
+        },
+      }],
+    });
   }
 
   // ---------- Navigation ----------
@@ -124,12 +134,12 @@ export class MenuScene extends Phaser.Scene {
     const wonCount = this.profileSvc.get().chaptersWon.length;
     const total = CONTENT.chapters.length;
     const storyDone = this.profileSvc.storyCompleted();
-    const entries: { icon: string; title: string; sub: string; view: View }[] = [
+    const entries: { icon: string; title: string; sub: string; view: View; rift?: boolean }[] = [
       { icon: "📜", title: "Histoire", sub: wonCount > 0 ? `${wonCount}/${total} chapitres conquis` : "Chapitre 1 : La Route du Bastion", view: "story" },
       {
         icon: storyDone ? "🌀" : "🔒", title: "Failles infinies",
         sub: storyDone ? "Vagues sans fin, gloire au plus endurant — bientôt" : "Se débloque en achevant l'Histoire",
-        view: "rifts",
+        view: "rifts", rift: true,
       },
       { icon: "🛡", title: "Armurerie", sub: "Arsenal, forge des tours et sorts du héros", view: "shop" },
       { icon: "📖", title: "Bestiaire", sub: `Connaître l'ennemi, c'est déjà le vaincre — ${this.profileSvc.get().bestiary.length}/${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
@@ -137,21 +147,12 @@ export class MenuScene extends Phaser.Scene {
     ];
     entries.forEach((e, i) => {
       const y = 192 + i * 80;
-      this.box(400, y, 540, 68, 0x2b2118, e.view === "rifts" ? 0x6b5a3e : 0xc9a227, 12);
-      // Surbrillance au survol
-      const hl = this.add.graphics();
-      hl.fillStyle(0xc9a227, 0.07); hl.fillRoundedRect(130, y - 34, 540, 68, 12);
-      hl.lineStyle(1, 0xe8c252, 0.9); hl.strokeRoundedRect(130, y - 34, 540, 68, 12);
-      hl.setVisible(false);
-      p.add(hl);
-      p.add(this.add.text(160, y, e.icon, { fontSize: "26px" }).setOrigin(0.5));
-      p.add(this.add.text(205, y - 16, e.title, { fontSize: "19px", color: e.view === "rifts" ? RIFT : GOLD, ...TXT }));
-      p.add(this.add.text(205, y + 9, e.sub, { fontSize: "12px", color: DIM, ...TXT }));
-      const zone = this.add.zone(400, y, 540, 68).setInteractive({ cursor: CURSOR_POINT });
-      zone.on("pointerover", () => hl.setVisible(true));
-      zone.on("pointerout", () => hl.setVisible(false));
-      zone.on("pointerdown", () => this.showView(e.view));
-      p.add(zone);
+      p.add(uiNavCard(this, 400, y, {
+        icon: e.icon, title: e.title, sub: e.sub,
+        titleColor: e.rift ? TEXT.rift : TEXT.gold,
+        accent: e.rift ? ACCENT.dimBorder : ACCENT.gold,
+        onSelect: () => this.showView(e.view),
+      }));
     });
   }
 
@@ -230,60 +231,57 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Histoire (chapitres) ----------
 
   private buildStory() {
-    this.backButton("Histoire");
     const p = this.panel!;
+    p.add(uiSectionHeader(this, { title: "Histoire", onBack: () => this.showView("home") }));
 
     // Déblocage séquentiel : conquérir le chapitre précédent pour ouvrir le suivant
     const isUnlocked = (i: number) => CONTENT.chapters[i]!.playable && (i === 0 || this.profileSvc.chapterWon(i - 1));
 
     CONTENT.chapters.forEach((ch, i) => {
-      const y = 200 + i * 36;
+      const y = 202 + i * 42;
       const won = this.profileSvc.chapterWon(i);
       const unlocked = isUnlocked(i);
-      this.box(400, y, 640, 32, unlocked ? 0x2b2118 : 0x221b12, won ? 0x27ae60 : unlocked ? 0xc9a227 : 0x4a3f2e, 8);
-      p.add(this.add.text(100, y, `${i + 1}.`, { fontSize: "14px", color: unlocked ? GOLD : DIM, ...TXT }).setOrigin(0, 0.5));
-      p.add(this.add.text(135, y, unlocked || won ? ch.name : "???", { fontSize: "15px", color: unlocked ? LIGHT : DIM, ...TXT }).setOrigin(0, 0.5));
+      const state: RowState = won ? "done" : unlocked ? "normal" : "locked";
+      const title = `${i + 1}. ${unlocked || won ? ch.name : "???"}`;
+      const trailing = unlocked
+        ? { label: won ? "Rejouer" : "⚔ Se battre", onClick: () => this.scene.start("game", { profileSvc: this.profileSvc, chapterIndex: i }) }
+        : { label: ch.playable ? "🔒 Verrouillé" : "Bientôt" };
+      const row = uiListRow(this, 400, y, { w: 640, h: 38, title, trailing, state });
       if (won) {
         const stars = this.profileSvc.chapterStarsOf(i);
-        p.add(this.add.text(560, y, "★".repeat(stars) + "☆".repeat(3 - stars), { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0.5));
+        row.add(this.add.text(160, 0, "★".repeat(stars) + "☆".repeat(3 - stars), { fontSize: "15px", color: TEXT.gold, ...TXT }).setOrigin(0.5));
       }
-      if (unlocked) {
-        p.add(uiButton(this, 660, y, won ? "Rejouer" : "⚔ Se battre", { w: 104, h: 26, gold: !won, fontSize: 12 },
-          () => this.scene.start("game", { profileSvc: this.profileSvc, chapterIndex: i })).container);
-      } else {
-        p.add(this.add.text(660, y, ch.playable ? "🔒 Verrouillé" : "Bientôt", { fontSize: "13px", color: DIM, ...TXT }).setOrigin(0.5));
-      }
+      p.add(row);
     });
 
     // Lore du prochain objectif (premier chapitre débloqué non conquis)
     const next = CONTENT.chapters.findIndex((_ch, i) => isUnlocked(i) && !this.profileSvc.chapterWon(i));
     const lore = next >= 0 ? CONTENT.chapters[next]!.lore : "La vallée respire. Pour l'instant.";
-    p.add(this.add.text(400, 200 + CONTENT.chapters.length * 36 + 8, lore.replace("\n", " "),
-      { fontSize: "12px", color: DIM, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0));
+    p.add(this.add.text(400, 202 + CONTENT.chapters.length * 42 + 8, lore.replace("\n", " "),
+      { fontSize: "12px", color: TEXT.dim, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0));
   }
 
   // ---------- Failles infinies (mode séparé, teaser v1) ----------
 
   private buildRifts() {
-    this.backButton("Failles infinies");
     const p = this.panel!;
+    p.add(uiSectionHeader(this, { title: "Failles infinies", onBack: () => this.showView("home") }));
     if (!this.profileSvc.storyCompleted()) {
       p.add(this.add.text(400, 290,
         "Les Failles ne s'ouvrent qu'aux vainqueurs.\n\nAchevez l'Histoire — terrassez le Roi-Charogne —\net leur seuil vous sera révélé.",
-        { fontSize: "17px", color: LIGHT, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-      p.add(this.add.text(400, 410, `🔒 ${this.profileSvc.get().chaptersWon.length}/${CONTENT.chapters.length} chapitres conquis`, {
-        fontSize: "16px", color: DIM, ...TXT, backgroundColor: "#221b12", padding: { x: 16, y: 8 },
-      }).setOrigin(0.5));
+        { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
+      p.add(uiChip(this, 400, 410, {
+        icon: "🔒", text: `${this.profileSvc.get().chaptersWon.length}/${CONTENT.chapters.length} chapitres conquis`,
+        fontSize: 16, color: TEXT.dim, pill: true,
+      }).container);
       return;
     }
     p.add(this.add.text(400, 280,
       "Au-delà des terres connues, les Failles déversent\ndes hordes sans fin. Nul n'en est revenu —\nseuls les noms des plus endurants survivent,\ngravés dans les Chroniques.",
-      { fontSize: "17px", color: LIGHT, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-    p.add(this.add.text(400, 400, "🌀 Bientôt", {
-      fontSize: "20px", color: RIFT, ...TXT, backgroundColor: "#221b12", padding: { x: 20, y: 10 },
-    }).setOrigin(0.5));
+      { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
+    p.add(uiChip(this, 400, 400, { icon: "🌀", text: "Bientôt", fontSize: 20, color: TEXT.rift, pill: true }).container);
     p.add(this.add.text(400, 460, "Mode v1 : scaling agressif, modificateurs de Faille, leaderboard.",
-      { fontSize: "12px", color: DIM, ...TXT }).setOrigin(0.5));
+      { fontSize: "12px", color: TEXT.dim, ...TXT }).setOrigin(0.5));
   }
 
   // ---------- Armurerie (Arsenal / Forge / Héros) ----------

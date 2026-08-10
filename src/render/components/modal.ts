@@ -10,6 +10,8 @@ import { uiButton } from "./button";
 
 export interface UiModalButton {
   label: string;
+  /** Largeur du bouton (par défaut 150 — augmenter pour un libellé long). */
+  w?: number;
   gold?: boolean;
   color?: string;
   onClick: () => void;
@@ -55,11 +57,14 @@ export function uiModal(scene: Phaser.Scene, opts: UiModalOpts): UiModal {
   }
   const buttons = opts.buttons ?? [];
   const gap = 20;
-  const btnW = 150;
-  const totalW = buttons.length * btnW + (buttons.length - 1) * gap;
+  const widths = buttons.map(b => b.w ?? 150);
+  const totalW = widths.reduce((sum, w) => sum + w, 0) + gap * (buttons.length - 1);
+  let cursorX = -totalW / 2;
   buttons.forEach((b, i) => {
-    const x = -totalW / 2 + btnW / 2 + i * (btnW + gap);
-    c.add(uiButton(scene, x, opts.h / 2 - 45, b.label, { w: btnW, h: 40, gold: b.gold, color: b.color, fontSize: 16 }, () => b.onClick()).container);
+    const w = widths[i]!;
+    const x = cursorX + w / 2;
+    cursorX += w + gap;
+    c.add(uiButton(scene, x, opts.h / 2 - 45, b.label, { w, h: 40, gold: b.gold, color: b.color, fontSize: 16 }, () => b.onClick()).container);
   });
   return { container: c, close: () => c.destroy() };
 }
