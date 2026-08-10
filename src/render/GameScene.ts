@@ -13,7 +13,8 @@ import {
 } from "../core/sim";
 import type { EnemyState, PlayableChapter, RunState, SimEvent, TowerState } from "../core/types";
 import type { ProfileService } from "../meta/profile";
-import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, uiButton, uiPanel, UI_TINT } from "./ui";
+import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, UI_TINT } from "./ui";
+import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
 import { DECOR_FRAMES, enemyView, heroView, tileFor, towerView } from "./sprites";
 import { SpriteLayer } from "./EntityLayer";

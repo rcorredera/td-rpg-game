@@ -31,3 +31,26 @@ export const UI_TINT = {
   panelDim: 0x2c241b,   // panneau verrouillé/inactif
   btn: 0x8a7350,        // bouton secondaire (bois)
 } as const;
+
+/** Couleurs de texte (chaînes CSS) — source unique pour tout render/, remplace
+ *  les constantes locales dupliquées dans MenuScene/GameScene (ADR-007). */
+export const TEXT = {
+  gold: "#e8c252",   // titres, montants, accents
+  dim: "#a89878",    // sous-titres, texte secondaire, verrouillé
+  light: "#f0e6d2",  // corps de texte principal
+  ok: "#27ae60",     // acquis / victoire / conquis
+  bad: "#c0392b",    // coût inabordable / défaite
+  warn: "#e8a87c",   // avertissement doux (quitter, groundOnly)
+  sceau: "#c97ba2",  // monnaie Sceaux
+  rift: "#b07cc6",   // Failles (texte)
+} as const;
+
+/** Teintes de bordure/accent (nombres, pour Graphics/nine-slice) — même principe que TEXT. */
+export const ACCENT = {
+  gold: 0xc9a227,        // bordure active/focus
+  goldSoft: 0xe8c252,    // survol
+  locked: 0x4a3f2e,      // bordure verrouillé
+  lockedFill: 0x221b12,  // fond verrouillé
+  dimBorder: 0x6b5a3e,   // bordure inactive douce
+  won: 0x27ae60,         // bordure "conquis"
+} as const;
