@@ -47,7 +47,9 @@ export function uiListRow(scene: Phaser.Scene, x: number, y: number, opts: UiLis
   container.add(panel);
 
   const textX = -w / 2 + 40;
-  container.add(scene.add.text(textX, -14, opts.title, { fontSize: "17px", color: colors.titleColor, fontFamily: FONT_BODY }));
+  const title = scene.add.text(textX, opts.desc ? -14 : 0, opts.title, { fontSize: "17px", color: colors.titleColor, fontFamily: FONT_BODY });
+  if (!opts.desc) title.setOrigin(0, 0.5);
+  container.add(title);
   if (opts.desc) {
     container.add(scene.add.text(textX, 8, opts.desc, { fontSize: "12px", color: TEXT.dim, fontFamily: FONT_BODY }));
   }
