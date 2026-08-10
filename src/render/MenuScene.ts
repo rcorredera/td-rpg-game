@@ -8,7 +8,8 @@
 import Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
-import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, uiButton, uiPanel, UI_TINT } from "./ui";
+import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, UI_TINT } from "./ui";
+import { uiButton, uiPanel } from "./components";
 
 type View = "home" | "story" | "rifts" | "shop" | "chronicles" | "bestiary";
 type ShopTab = "arsenal" | "forge" | "hero";

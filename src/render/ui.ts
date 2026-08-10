@@ -1,19 +1,20 @@
 // ============================================================
-// render/ui.ts — Chrome d'UI partagé, basé sur le pack Kenney UI
-// (CC0, public/assets/kenney-ui). Boutons nine-slice + panneaux.
-// Les gris Kenney sont teintés pour rester dans la palette médiévale.
+// render/ui.ts — Chrome d'UI partagé : DPR, polices, curseurs,
+// caméra logique 800×600, préchargement du pack Kenney UI.
+// Les composants (boutons, panneaux…) vivent dans render/components/ (ADR-007).
 // ============================================================
 
 import Phaser from "phaser";
-import { UI_TINT } from "./theme";
 
 export { UI_TINT } from "./theme";
 
 const P = "assets/kenney-ui/PNG";
 
 /** Densité de rendu : le canvas est rendu à DPR× la taille logique (texte net sur écrans Retina).
- *  Les scènes compensent via cameras.main.setZoom(DPR) — les coordonnées restent en 800×600. */
-export const DPR = Math.min(Math.round(window.devicePixelRatio || 1), 2);
+ *  Les scènes compensent via cameras.main.setZoom(DPR) — les coordonnées restent en 800×600.
+ *  Garde `typeof window` : ce module est importé transitivement par les tests unitaires purs
+ *  de render/components/ (Vitest tourne en Node, sans DOM) — sans impact en navigateur. */
+export const DPR = typeof window !== "undefined" ? Math.min(Math.round(window.devicePixelRatio || 1), 2) : 1;
 
 /** Polices embarquées (public/fonts, OFL) — chargées dans main.ts avant le boot Phaser.
  *  Cinzel : capitales gravées (titres, boutons, chiffres). Alegreya : textes courants. */
@@ -109,8 +110,9 @@ function cursorCss(draw: (ctx: CanvasRenderingContext2D) => void, hx: number, hy
   return `url("${x1}") ${hx} ${hy}, ${fallback}`;
 }
 
-export const CURSOR_DEFAULT = cursorCss(drawArrowCursor, 5, 3, "auto");
-export const CURSOR_POINT = cursorCss(drawHandCursor, 14, 3, "pointer");
+const hasDom = typeof document !== "undefined";
+export const CURSOR_DEFAULT = hasDom ? cursorCss(drawArrowCursor, 5, 3, "auto") : "auto";
+export const CURSOR_POINT = hasDom ? cursorCss(drawHandCursor, 14, 3, "pointer") : "pointer";
 
 /** À appeler dans chaque create() de scène : caméra logique 800×600 + curseur gantelet. */
 export function setupCamera(scene: Phaser.Scene): void {
@@ -130,60 +132,4 @@ export function preloadUi(scene: Phaser.Scene): void {
   scene.load.svg("icon_spell", "assets/icons/arrow-cluster.svg", { width: 64, height: 64 });
 }
 
-/** Panneau nine-slice teinté (remplace les rectangles plats). */
-export function uiPanel(
-  scene: Phaser.Scene, x: number, y: number, w: number, h: number,
-  tint: number = UI_TINT.panel, alpha = 1,
-): Phaser.GameObjects.NineSlice {
-  const p = scene.add.nineslice(x, y, "ui_panel", undefined, w, h, 14, 14, 14, 14);
-  p.setTint(tint).setAlpha(alpha);
-  return p;
-}
-
-export interface UiButtonOpts {
-  w: number;
-  h?: number;
-  /** true = bouton d'action principal (jaune Kenney, texte sombre). */
-  gold?: boolean;
-  fontSize?: number;
-  color?: string;
-  disabled?: boolean;
-}
-
-export interface UiButton {
-  container: Phaser.GameObjects.Container;
-  img: Phaser.GameObjects.NineSlice;
-  txt: Phaser.GameObjects.Text;
-}
-
-/** Bouton nine-slice avec hover (desktop) et stopPropagation (ne déclenche pas le tap de scène). */
-export function uiButton(
-  scene: Phaser.Scene, x: number, y: number, label: string,
-  opts: UiButtonOpts, cb?: () => void,
-): UiButton {
-  const h = opts.h ?? 36;
-  const c = scene.add.container(x, y);
-  const img = scene.add.nineslice(0, 0, opts.gold ? "ui_btn_gold" : "ui_btn", undefined, opts.w, h, 14, 14, 14, 16);
-  if (!opts.gold) img.setTint(UI_TINT.btn);
-  const txt = scene.add.text(0, -2, label, {
-    fontSize: `${opts.fontSize ?? 15}px`,
-    color: opts.color ?? (opts.gold ? "#3a2c12" : "#f0e6d2"),
-    fontFamily: FONT_DISPLAY,
-  }).setOrigin(0.5);
-  c.add([img, txt]);
-  if (opts.disabled || !cb) {
-    c.setAlpha(0.55);
-    return { container: c, img, txt };
-  }
-  img.setInteractive({ cursor: CURSOR_POINT });
-  const hoverTint = opts.gold ? 0xfff2cf : 0xa68c64;
-  img.on("pointerover", () => { c.setScale(1.04); img.setTint(hoverTint); });
-  img.on("pointerout", () => { c.setScale(1); img.setTint(opts.gold ? 0xffffff : UI_TINT.btn); });
-  img.on("pointerup", () => c.setScale(1.04));
-  img.on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
-    ev?.stopPropagation?.();
-    c.setScale(0.96);
-    cb();
-  });
-  return { container: c, img, txt };
-}
+// uiPanel/uiButton ont déménagé vers render/components/ (registre de widgets, ADR-007).
