@@ -29,6 +29,14 @@ Le profil passe par l'interface `SaveAdapter` (`meta/save.ts`). Implémentation 
 
 Toutes les valeurs d'équilibrage vivent dans `src/content/index.ts`, typées par `ContentPack`. Règle absolue : aucune stat en dur dans `core/` ou `render/`. Rééquilibrer = modifier le content, sans toucher à la logique.
 
+## UI chrome / composants (ADR-007)
+
+`render/components/` : registre unique de widgets (panneau, bouton, modale, onglets, rangée de
+liste, carte de navigation, en-tête de section, chip) — API purement Phaser/données brutes, jamais
+de type `meta`/`content`/`core`. `render/theme.ts` reste la source unique de couleurs (`TEXT`
+couleurs de texte, `ACCENT` teintes de bordure, en plus des tokens existants). `render/ui.ts` ne
+porte plus que le chrome (DPR, polices, curseurs, caméra, préchargement).
+
 ## Mobile
 
 Viewport logique 800×600, `Phaser.Scale.FIT`. Inputs uniquement tap/pointer (le hover du campement est un bonus desktop, jamais requis). Capacitor prévu en v1 — ne pas introduire d'API desktop-only d'ici là.
