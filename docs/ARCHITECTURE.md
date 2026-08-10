@@ -35,11 +35,11 @@ Toutes les valeurs d'équilibrage vivent dans `src/content/index.ts`, typées pa
 liste, carte de navigation, en-tête de section, chip) — API purement Phaser/données brutes, jamais
 de type `meta`/`content`/`core`. `render/theme.ts` reste la source unique de couleurs (`TEXT`
 couleurs de texte, `ACCENT` teintes de bordure, en plus des tokens existants). `render/ui.ts` ne
-porte plus que le chrome (DPR, polices, curseurs, caméra, préchargement).
+porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, préchargement).
 
 ## Mobile
 
-Viewport logique 800×600, `Phaser.Scale.FIT`. Inputs uniquement tap/pointer (le hover du campement est un bonus desktop, jamais requis). Capacitor prévu en v1 — ne pas introduire d'API desktop-only d'ici là.
+Viewport logique 800×600, `Phaser.Scale.FIT`. Inputs uniquement tap/pointer (le hover du campement est un bonus desktop, jamais requis). Capacitor prévu en v1 — ne pas introduire d'API desktop-only d'ici là. Le framebuffer est dimensionné à la taille réellement affichée (`RENDER_SCALE`, `render/ui.ts`) pour éviter le flou d'étirement CSS de `Scale.FIT` sur les grands écrans (ADR-009).
 
 ## Debug
 
