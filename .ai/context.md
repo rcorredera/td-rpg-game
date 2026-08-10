@@ -23,6 +23,9 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   Tourelle/Mortier/Canon cryo + specs). **Saga/chapitres/lore profond = en attente du fichier lore du PO.**
 - **Tests** : 40 (sim + profil + save + registre de sprites). Le test de déterminisme protège ADR-001 ;
   `sprites.test.ts` garantit que tout ennemi/tour de CONTENT a un sprite.
+- **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
+  auto sur `main` (project page, `base` réglé dans `vite.config.ts`). Reste à faire côté GitHub :
+  activer Pages (Settings → Pages → Source: GitHub Actions).
 - **Équilibrage** : passe nº1 faite (hpExponent 1.12, or +30%, départ 160, specs boostées) — calibrée
   au **bot de simulation** (stratégies scriptées sur la sim headless, méthode décrite au GDD §Décisions).
 - **UI** : rendu HiDPI (texte net), polices embarquées **Cinzel** (titres/boutons) + **Alegreya**
