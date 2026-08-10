@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.local
+
+# OS junk
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# éditeurs
+.vscode/*
+!.vscode/extensions.json
+.idea/

@@ -1,0 +1,49 @@
+# Architecture — Bastion
+
+> Document vivant. Tout choix structurant passe par un ADR dans `docs/decisions/`.
+
+## Vue d'ensemble
+
+```
+src/
+  core/      Simulation pure, déterministe. ZÉRO dépendance Phaser/DOM. Testée en Vitest.
+  content/   Données d'équilibrage ET de structure (tours, ennemis, CHAPITRES — carte+vagues+lore
+             par chapitre, ADR-004 —, unlocks, forge, économie). Aucune stat ailleurs.
+  meta/      Profil de compte (monnaies, unlocks, forge, sorts, bestiaire, chapitres conquis,
+             meilleurs runs), persistence (SaveAdapter). Testée en Vitest.
+  render/    Scènes Phaser. Lit l'état du core, ne le mute jamais : passe par les commandes de sim.ts.
+public/assets/  Packs Kenney CC0 (TD + UI) — voir README.md du dossier. Re-skin sprites à venir.
+```
+
+## Frontière core / render (ADR-001)
+
+`core/sim.ts` expose : `createRun(content, profile, chapterIndex)`, `tick(state, content, dt)`, et des **commandes** (`buildTower`, `upgradeTower`, `sellTower`, `moveHero`, `castWhirlwind`, `castRally`, `castAccountSpell`, `startNextWave`). Le tick consomme un pas de temps fixe (1/60s) via un accumulateur (`timeAcc` — indispensable aux écrans 120Hz, voir pitfalls) ; la vitesse x2 multiplie le nombre de pas, pas le dt → simulation identique quelle que soit la vitesse (testé : test de déterminisme). Les cartes ont plusieurs chemins (`MapDef.paths`, dont des portails) ; chaque spawn/ennemi porte son `pathIndex` (ADR-004). La sim émet des `SimEvent` (tirs, morts, explosions) que le rendu consomme pour les fx ; elle ne sait pas qu'un rendu existe.
+
+Conséquences : testable sans navigateur, et si un jour il faut un serveur autoritaire (leaderboards de Failles), la sim tourne côté serveur telle quelle.
+
+## Persistence (ADR-002)
+
+Le profil passe par l'interface `SaveAdapter` (`meta/save.ts`). Implémentation v0 : localStorage avec validation/fallback sur profil neuf si corruption. Un swap vers cloud save ne touche que ce fichier.
+
+## Content as data (ADR-003)
+
+Toutes les valeurs d'équilibrage vivent dans `src/content/index.ts`, typées par `ContentPack`. Règle absolue : aucune stat en dur dans `core/` ou `render/`. Rééquilibrer = modifier le content, sans toucher à la logique.
+
+## Mobile
+
+Viewport logique 800×600, `Phaser.Scale.FIT`. Inputs uniquement tap/pointer (le hover du campement est un bonus desktop, jamais requis). Capacitor prévu en v1 — ne pas introduire d'API desktop-only d'ici là.
+
+## Debug
+
+`window.__game` (main.ts) expose l'instance Phaser : permet de piloter la sim depuis la console
+(`__game.scene.getScene('game').update(0, dtMs)`) — utilisé pour la vérification visuelle automatisée
+en headless, où la boucle RAF est suspendue. À retirer pour un build de distribution.
+
+## Commandes
+
+```
+npm install     # première fois
+npm run dev     # serveur de dev Vite
+npm test        # tests du core (Vitest)
+npm run build   # typecheck + build prod
+```

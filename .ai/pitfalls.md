@@ -1,0 +1,17 @@
+# Pièges connus
+- `tick()` consomme le temps réel en pas fixes de 1/60s : ne jamais passer un dt déjà multiplié par la vitesse (le `speed` est appliqué DANS tick).
+- Le reliquat de temps < 1/60s est conservé dans `RunState.timeAcc` entre les appels. NE PAS le supprimer : sans lui, les frames < 16.6ms (écrans 120Hz) n'avanceraient jamais la sim — jeu figé. Bug réel attrapé par le test de déterminisme.
+- `RunState.waveIndex` est 0-based et vaut -1 avant la première vague ; l'affichage HUD fait le +1.
+- Les volants (`flying`) sont ignorés par les tours `groundOnly` ET par le blocage héros : ne pas "corriger" ça, c'est voulu (GDD).
+- Fin de vague : la sim VIDE `s.enemies`. Dans les tests, asserter sur `s.kills`/`s.castleHp`, pas sur un ennemi gardé en référence.
+- `createRun`/`chapterOf` jettent si le chapitre n'est pas `playable` : toujours passer par les écrans (qui filtrent) ou garder l'index validé.
+- Les champs d'une Scene Phaser SURVIVENT aux `scene.start()` (même instance) : réinitialiser l'état dans `init()` (GameScene le fait) ; MenuScene garde volontairement `currentView` (retour post-run sur la dernière vue).
+- Phaser Graphics est redessiné chaque frame (immediate mode) : si perf mobile dégradée avec beaucoup d'entités, passer aux sprites Kenney déjà téléchargés (`public/assets/`) — ne pas optimiser avant mesure.
+- localStorage peut être indisponible (navigation privée iOS) : SaveAdapter fail-safe des deux côtés (load ET save), jamais crasher. Couvert par les tests.
+- Vérification visuelle headless : la boucle Phaser est suspendue en arrière-plan (RAF). Utiliser le hook debug `window.__game` (main.ts) → `__game.scene.getScene('game').update(0, dtMs)` pour avancer la sim manuellement.
+- Phaser rasterise chaque `Text` à sa création : les polices embarquées (Cinzel/Alegreya, `public/fonts/`) DOIVENT être chargées via FontFace AVANT `new Phaser.Game` (main.ts attend `loadFonts()`). Un texte créé avant verrait le fallback figé.
+- Les curseurs CSS sont générés à la volée sur canvas (`ui.ts`) — ne pas revenir aux PNG des packs (30px, flous), ni à la rasterisation qlmanage de SVG (sortie blanche, déjà tenté).
+- **Rendu (ADR-005)** : tout sprite/tuile/FX passe par `render/sprites.ts` (registre de skin) — point de swap unique. Ne PAS coder de frame en dur dans `GameScene`. Ajouter un ennemi/tour sans entrée dans `sprites.ts` casse `sprites.test.ts` (volontaire).
+- Skin actif = **Kenney TD** (planche `kenney-td/sheet.png`, tuiles 64×64, **23 colonnes**, `frame = row*23 + col`). Art vectoriel lisse → `pixelArt:false` (LINEAR), échelles fractionnaires OK (sprites natifs 64px → scale ~0.5-0.9). NB : pour un skin pixel (ex. Tiny 16×16), il faudrait repasser `pixelArt:true` + échelles entières (le framebuffer est à `DPR×`, zoom caméra `DPR` entier).
+- `SpriteLayer` (EntityLayer.ts) DÉTRUIT le sprite d'une entité absente de la liste (mort / vague vidée) — d'où le FX `onGone`. Ne pas oublier que la fin de vague vide `s.enemies` : tous les sprites restants sont alors détruits d'un coup (puffs multiples = normal).
+- Profondeurs GameScene : terrain −10, marqueurs de slot 50, entités `100+y` (tri vertical), overlay monde gfx 900, HUD 1000, confirm 3000, fin de run 4000. Une entité dessinée dans `gfx` (overlay 900) passe AU-DESSUS des sprites — n'y mettre que des overlays (barres, portées), jamais un corps d'entité.
