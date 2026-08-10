@@ -39,6 +39,12 @@ Viewport logique 800×600, `Phaser.Scale.FIT`. Inputs uniquement tap/pointer (le
 (`__game.scene.getScene('game').update(0, dtMs)`) — utilisé pour la vérification visuelle automatisée
 en headless, où la boucle RAF est suspendue. À retirer pour un build de distribution.
 
+## CI / Déploiement (ADR-006)
+
+`.github/workflows/ci.yml` : tests + build sur push `main` et sur toute PR ; déploiement GitHub
+Pages (job séparé, déclenché seulement si le build passe) sur push `main` uniquement. Hébergement
+en *project page* (`username.github.io/td-rpg-game/`) → `vite.config.ts` porte `base: "/td-rpg-game/"`.
+
 ## Commandes
 
 ```
