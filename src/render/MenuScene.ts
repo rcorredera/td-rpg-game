@@ -177,7 +177,7 @@ export class MenuScene extends Phaser.Scene {
     const seen = this.profileSvc.get().bestiary;
     const enemies = Object.values(CONTENT.enemies);
     enemies.forEach((e, i) => {
-      const y = 248 + i * 84;
+      const y = 272 + i * 84;
       const known = seen.includes(e.id);
       this.box(400, y, 640, 76, known ? 0x2b2118 : 0x221b12, known ? 0xc9a227 : 0x4a3f2e);
       if (!known) {
@@ -193,7 +193,7 @@ export class MenuScene extends Phaser.Scene {
       ].join("    ");
       p.add(this.add.text(110, y + 23, stats, { fontSize: "12px", color: LIGHT, ...TXT }));
     });
-    p.add(this.add.text(400, 248 + enemies.length * 84 - 24,
+    p.add(this.add.text(400, 272 + enemies.length * 84 - 24,
       "Les mini-boss sont des variantes renforcées des créatures connues.",
       { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5, 0));
   }
@@ -203,7 +203,7 @@ export class MenuScene extends Phaser.Scene {
     const p = this.panel!;
     const towers = Object.values(CONTENT.towers);
     towers.forEach((t, i) => {
-      const y = 256 + i * 100;
+      const y = 280 + i * 100;
       const locked = t.requiresUnlock !== null && !this.profileSvc.get().unlocks.includes(t.requiresUnlock);
       this.box(400, y, 640, 92, 0x2b2118, locked ? 0x6b5a3e : 0xc9a227);
       p.add(this.add.text(110, y - 34, `${t.name}${locked ? "  (verrouillée — Arsenal)" : ""}`, { fontSize: "17px", color: locked ? DIM : GOLD, ...TXT }));
@@ -217,7 +217,7 @@ export class MenuScene extends Phaser.Scene {
       p.add(this.add.text(110, y + 31, `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`,
         { fontSize: "12px", color: LIGHT, ...TXT }));
     });
-    p.add(this.add.text(400, 256 + towers.length * 100 - 28,
+    p.add(this.add.text(400, 280 + towers.length * 100 - 28,
       "Le héros bloque et frappe les ennemis terrestres ; les volants l'ignorent — prévoyez l'Archerie.",
       { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5, 0));
   }
