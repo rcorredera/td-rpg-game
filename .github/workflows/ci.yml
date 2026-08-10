@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch: {}
 
 permissions:
@@ -11,6 +12,7 @@ permissions:
 
 jobs:
   build:
+    if: "!(github.event_name == 'pull_request' && github.event.action == 'closed')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,22 +22,87 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      - name: Déterminer le chemin de base (racine sur main, sous-dossier par PR)
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "path=/td-rpg-game/pr-${{ github.event.pull_request.number }}/" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=/td-rpg-game/" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npx tsc --noEmit
+      - run: npx vite build --base "${{ steps.base.outputs.path }}"
+      - uses: actions/upload-artifact@v4
         with:
+          name: dist
           path: dist
 
-  deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+  deploy-main:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: build
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dist
+          destination_dir: .
+          keep_files: true
+
+  deploy-preview:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dist
+          destination_dir: pr-${{ github.event.pull_request.number }}
+          keep_files: true
+      - name: Commenter la PR avec le lien de preview
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            🔗 Preview : https://rcorredera.github.io/td-rpg-game/pr-${{ github.event.pull_request.number }}/
+            (redéployée à chaque push sur cette PR)
+
+  cleanup-preview:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      - name: Supprimer le dossier de preview de la PR fermée
+        run: |
+          rm -rf "pr-${{ github.event.pull_request.number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: nettoyer la preview de la PR #${{ github.event.pull_request.number }}"
+          git push

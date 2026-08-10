@@ -39,11 +39,14 @@ Viewport logique 800×600, `Phaser.Scale.FIT`. Inputs uniquement tap/pointer (le
 (`__game.scene.getScene('game').update(0, dtMs)`) — utilisé pour la vérification visuelle automatisée
 en headless, où la boucle RAF est suspendue. À retirer pour un build de distribution.
 
-## CI / Déploiement (ADR-006)
+## CI / Déploiement (ADR-006, ADR-008)
 
-`.github/workflows/ci.yml` : tests + build sur push `main` et sur toute PR ; déploiement GitHub
-Pages (job séparé, déclenché seulement si le build passe) sur push `main` uniquement. Hébergement
-en *project page* (`username.github.io/td-rpg-game/`) → `vite.config.ts` porte `base: "/td-rpg-game/"`.
+`.github/workflows/ci.yml` : tests + build sur push `main` et sur toute PR. Hébergement GitHub
+Pages en *project page* (`username.github.io/td-rpg-game/`, `vite.config.ts` porte
+`base: "/td-rpg-game/"` par défaut). Depuis ADR-008, la branche `gh-pages` sert aussi une **preview
+par PR** : `main` à la racine, chaque PR ouverte dans `/pr-<numéro>/` (lien commenté automatiquement
+sur la PR), nettoyée à la fermeture. Le `base` de build est surchargé par CI via `vite build --base`
+selon l'événement — pas de branche de config supplémentaire dans `vite.config.ts`.
 
 ## Commandes
 
