@@ -33,9 +33,12 @@ Toutes les valeurs d'équilibrage vivent dans `src/content/index.ts`, typées pa
 
 `render/components/` : registre unique de widgets (panneau, bouton, modale, onglets, rangée de
 liste, carte de navigation, en-tête de section, chip) — API purement Phaser/données brutes, jamais
-de type `meta`/`content`/`core`. `render/theme.ts` reste la source unique de couleurs (`TEXT`
-couleurs de texte, `ACCENT` teintes de bordure, en plus des tokens existants). `render/ui.ts` ne
-porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, préchargement).
+de type `meta`/`content`/`core`. `layoutCursor` (`components/layout.ts`) empile verticalement une
+liste d'éléments de hauteurs variables sans recalcul manuel d'offset par écran — à utiliser dès
+qu'un écran empile des rangées/cartes sous un en-tête ou des onglets (évite la classe de bug
+« chevauchement onglets/premier élément »). `render/theme.ts` reste la source unique de couleurs
+(`TEXT` couleurs de texte, `ACCENT` teintes de bordure, en plus des tokens existants). `render/ui.ts`
+ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, préchargement).
 
 ## Mobile
 

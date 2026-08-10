@@ -2,6 +2,7 @@
 // render/components/index.ts — Barrel du registre de composants UI (ADR-007).
 // ============================================================
 
+export * from "./layout";
 export * from "./panel";
 export * from "./button";
 export * from "./modal";
