@@ -1,5 +1,5 @@
 // ============================================================
-// render/ui.ts — Chrome d'UI partagé : DPR, polices, curseurs,
+// render/ui.ts — Chrome d'UI partagé : échelle de rendu, polices, curseurs,
 // caméra logique 800×600, préchargement du pack Kenney UI.
 // Les composants (boutons, panneaux…) vivent dans render/components/ (ADR-007).
 // ============================================================
@@ -10,11 +10,22 @@ export { UI_TINT } from "./theme";
 
 const P = "assets/kenney-ui/PNG";
 
-/** Densité de rendu : le canvas est rendu à DPR× la taille logique (texte net sur écrans Retina).
- *  Les scènes compensent via cameras.main.setZoom(DPR) — les coordonnées restent en 800×600.
+/** Échelle de rendu réelle : le framebuffer Phaser est dimensionné pour correspondre à la taille
+ *  physiquement affichée (fenêtre × devicePixelRatio, contenue en 4:3 comme Scale.FIT le fait déjà
+ *  en CSS), pas juste au devicePixelRatio brut — sinon Scale.FIT étire un canvas 800×600 par CSS
+ *  bien au-delà de sa résolution native sur un grand écran, et tout devient flou (texte compris,
+ *  cf ADR-009). Plafonné à 3 pour borner la mémoire sur les très grands/denses écrans.
+ *  Les scènes compensent via cameras.main.setZoom(RENDER_SCALE) — les coordonnées restent en 800×600.
  *  Garde `typeof window` : ce module est importé transitivement par les tests unitaires purs
- *  de render/components/ (Vitest tourne en Node, sans DOM) — sans impact en navigateur. */
-export const DPR = typeof window !== "undefined" ? Math.min(Math.round(window.devicePixelRatio || 1), 2) : 1;
+ *  de render/components/ (Vitest tourne en Node, sans DOM) — sans impact en navigateur.
+ *  Calculé une fois au boot, pas réactif au resize (limite connue, cf ADR-009). */
+export const RENDER_SCALE = (() => {
+  if (typeof window === "undefined") return 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const targetW = window.innerWidth * dpr;
+  const targetH = window.innerHeight * dpr;
+  return Math.min(3, Math.max(1, Math.min(targetW / 800, targetH / 600)));
+})();
 
 /** Polices embarquées (public/fonts, OFL) — chargées dans main.ts avant le boot Phaser.
  *  Cinzel : capitales gravées (titres, boutons, chiffres). Alegreya : textes courants. */
@@ -116,7 +127,7 @@ export const CURSOR_POINT = hasDom ? cursorCss(drawHandCursor, 14, 3, "pointer")
 
 /** À appeler dans chaque create() de scène : caméra logique 800×600 + curseur gantelet. */
 export function setupCamera(scene: Phaser.Scene): void {
-  scene.cameras.main.setZoom(DPR).centerOn(400, 300);
+  scene.cameras.main.setZoom(RENDER_SCALE).centerOn(400, 300);
   scene.input.setDefaultCursor(CURSOR_DEFAULT);
 }
 
