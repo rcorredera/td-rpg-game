@@ -52,12 +52,44 @@ const LAYOUT_PINCER: MapDef = {
 };
 
 /**
- * Vagues générées (placeholder ch.2-10) : volume croissant avec la difficulté `d`,
- * patterns cycliques, 2e source utilisée par intermittence à partir de la vague 4.
+ * Créature introduite à chaque chapitre — une de plus par niveau, puis des mélanges
+ * (ADR-022). Chacune neutralise une tour et en valorise une autre : le joueur ne
+ * subit pas un nouveau monstre, il doit revoir sa composition.
+ */
+const NEWCOMER: Record<number, string> = {
+  2: "rat",       // saturation → dégâts de zone
+  3: "wraith",    // insensible au froid → puissance brute
+  4: "gargoyle",  // volant lourd → anti-aérien investi
+  5: "golem",     // cuirassé → gros coups ou brûlure
+};
+
+/** Effectif de la vague de présentation, par créature : une nuée se découvre en
+ *  nombre, un cuirassé à l'unité. Calibré au banc — la première version noyait le
+ *  joueur sous neuf gargouilles et faisait tomber le chapitre 4 en une vague. */
+const FRESH_COUNT: Record<string, number> = { rat: 8, wraith: 3, gargoyle: 1.6, golem: 1.2 };
+
+/** Créatures disponibles à un chapitre donné : le socle plus tout ce qui précède. */
+function rosterFor(num: number): string[] {
+  const base = ["goblin", "orc", "bat", "brute"];
+  const unlocked = Object.entries(NEWCOMER)
+    .filter(([at]) => num >= Number(at))
+    .map(([, id]) => id);
+  return [...base, ...unlocked];
+}
+
+/**
+ * Vagues générées (ch.2-10) : volume croissant avec la difficulté, patterns
+ * cycliques, 2e source par intermittence à partir de la vague 4. La vague 2 de
+ * chaque chapitre met en vedette la créature qui y apparaît, seule et en nombre :
+ * découvrir une mécanique au milieu d'un mélange ne l'enseigne pas.
  * Déterministe (pas de RNG) : même content à chaque chargement.
  */
-function makeWaves(d: number, secondPath: boolean): WaveDef[] {
+function makeWaves(num: number, secondPath: boolean): WaveDef[] {
+  const d = num - 1;
   const waveCount = d >= 9 ? 12 : 10;
+  const roster = rosterFor(num);
+  const fresh = NEWCOMER[num];
+  const has = (id: string) => roster.includes(id);
   const waves: WaveDef[] = [];
   for (let w = 0; w < waveCount; w++) {
     // Facteur de volume. Abaissé avec la densification (ADR-020) : des vagues plus
@@ -66,23 +98,66 @@ function makeWaves(d: number, secondPath: boolean): WaveDef[] {
     const k = 1 + d * 0.2 + w * 0.12;
     const spawns: WaveSpawn[] = [];
     switch (w % 5) {
-      case 0: spawns.push({ enemyId: "goblin", count: Math.round(6 * k), intervalS: 0.7, delayS: 1 }); break;
-      case 1: spawns.push({ enemyId: "orc", count: Math.round(4 * k), intervalS: 1.25, delayS: 1 }, { enemyId: "goblin", count: Math.round(4 * k), intervalS: 0.65, delayS: 5 }); break;
-      case 2: spawns.push({ enemyId: "bat", count: Math.round(5 * k), intervalS: 0.65, delayS: 1 }, { enemyId: "orc", count: Math.round(3 * k), intervalS: 1.4, delayS: 4 }); break;
-      case 3: spawns.push({ enemyId: "brute", count: Math.max(1, Math.round(k)), intervalS: 3.5, delayS: 1 }, { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.5, delayS: 3 }); break;
-      default: spawns.push({ enemyId: "orc", count: Math.round(5 * k), intervalS: 1.0, delayS: 1 }, { enemyId: "bat", count: Math.round(4 * k), intervalS: 0.7, delayS: 5 });
+      case 0:
+        // Ouverture : TOUJOURS la piétaille de base. C'est la vague où le joueur
+        // pose ses premières tours avec 160 pièces — y mettre une nouveauté la lui
+        // ferait subir sans moyen d'y répondre.
+        spawns.push({ enemyId: "goblin", count: Math.round(6 * k), intervalS: 0.7, delayS: 1 });
+        break;
+      case 1:
+        // Montée en puissance : le joueur pose sa deuxième vague de tours.
+        spawns.push({ enemyId: "orc", count: Math.round(4 * k), intervalS: 1.25, delayS: 1 },
+                    { enemyId: "goblin", count: Math.round(4 * k), intervalS: 0.65, delayS: 5 });
+        break;
+      case 2:
+        // Vague de PRÉSENTATION : la nouveauté du chapitre, seule et lisible.
+        // Placée en 3e position et non en 2e — mesuré, le joueur n'avait alors que
+        // deux tours et perdait la moitié de son château sans avoir eu les moyens
+        // de répondre. Une mécanique ne s'enseigne pas quand elle est imparable.
+        if (fresh) spawns.push({ enemyId: fresh, count: Math.max(1, Math.round(FRESH_COUNT[fresh]! * k)), intervalS: fresh === "rat" ? 0.3 : 1.6, delayS: 1 });
+        else {
+          spawns.push({ enemyId: "bat", count: Math.round(5 * k), intervalS: 0.65, delayS: 1 },
+                      { enemyId: "orc", count: Math.round(3 * k), intervalS: 1.4, delayS: 4 });
+        }
+        break;
+      case 3:
+        // Front lourd : ce qui encaisse devant, ce qui sature derrière.
+        spawns.push(has("golem")
+          ? { enemyId: "golem", count: Math.max(1, Math.round(0.45 * k)), intervalS: 6, delayS: 1 }
+          : { enemyId: "brute", count: Math.max(1, Math.round(k)), intervalS: 3.5, delayS: 1 });
+        spawns.push(has("rat")
+          ? { enemyId: "rat", count: Math.round(6 * k), intervalS: 0.32, delayS: 3 }
+          : { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.5, delayS: 3 });
+        break;
+      default:
+        // Mélange complet : le ciel s'alourdit, et le contrôle ne suffit plus
+        // quand des spectres l'ignorent. C'est ici que les créatures se combinent.
+        spawns.push({ enemyId: "orc", count: Math.round(5 * k), intervalS: 1.0, delayS: 1 },
+                    { enemyId: "bat", count: Math.round(4 * k), intervalS: 0.7, delayS: 5 });
+        if (has("gargoyle")) spawns.push({ enemyId: "gargoyle", count: Math.max(1, Math.round(0.7 * k)), intervalS: 3.5, delayS: 6 });
+        if (has("wraith")) spawns.push({ enemyId: "wraith", count: Math.max(1, Math.round(1.4 * k)), intervalS: 1.1, delayS: 3 });
     }
     if (secondPath && w >= 3 && w % 2 === 1) {
       spawns.push({ enemyId: w % 4 === 1 ? "goblin" : "orc", count: Math.round(3 * k), intervalS: 0.85, delayS: 2, pathIndex: 1 });
     }
     const wave: WaveDef = { spawns };
-    if (w === 4) wave.miniBoss = { enemyId: "brute", hpMult: 2 + 0.25 * d };
-    // Dernière vague : gros mini-boss. Ch.10 : placeholder du Roi-Charogne
-    // en attendant le vrai boss multi-phases (GDD §Boss final).
-    // Multiplicateurs abaissés (ADR-020) : un boss est une cible ISOLÉE, donc les
-    // tours à zone n'y peuvent rien. Un ×12 n'était soutenable que par une archerie
-    // dominante — celle-là même qui rendait le choix de tour inutile.
-    if (w === waveCount - 1) wave.miniBoss = { enemyId: "brute", hpMult: d >= 9 ? 7 : 3 + 0.35 * d };
+    // Boss de mi-parcours (vague 5) : le Chef de guerre dès qu'il entre en scène,
+    // la Brute renforcée avant. Multiplicateurs volontairement bas (ADR-020) : un
+    // boss est une cible ISOLÉE, les tours à zone n'y peuvent rien.
+    if (w === 4) {
+      wave.miniBoss = has("golem")
+        ? { enemyId: "warlord", hpMult: 1 + 0.07 * d }
+        : { enemyId: "brute", hpMult: 2 + 0.25 * d };
+    }
+    // Boss final. Le ch.10 dresse la Vouivre — un boss VOLANT, qui invalide d'un
+    // coup toute défense bâtie sur les catapultes (GDD §Boss final).
+    if (w === waveCount - 1) {
+      wave.miniBoss = d >= 9
+        ? { enemyId: "wyvern", hpMult: 2.4 }
+        : has("golem")
+          ? { enemyId: "warlord", hpMult: 1.5 + 0.12 * d }
+          : { enemyId: "brute", hpMult: 3 + 0.35 * d };
+    }
     waves.push(wave);
   }
   return waves;
@@ -91,7 +166,7 @@ function makeWaves(d: number, secondPath: boolean): WaveDef[] {
 /** Chapitres 2-10 : contenu généré provisoire. Noms/lore = placeholders (docs/LORE.md). */
 function makeChapter(num: number, name: string, lore: string): ChapterDef {
   const map = num % 2 === 0 ? LAYOUT_RIFT : LAYOUT_PINCER;
-  return { id: `ch${num}`, name, lore, playable: true, map, waves: makeWaves(num - 1, true) };
+  return { id: `ch${num}`, name, lore, playable: true, map, waves: makeWaves(num, true) };
 }
 
 export const CONTENT: ContentPack = {
@@ -206,6 +281,49 @@ export const CONTENT: ContentPack = {
       id: "bat", name: "Chauve-souris",
       lore: "Sortie des failles, elle ignore routes et barrages au sol.\nLes catapultes ne peuvent rien contre ce qui vole.",
       hp: 30, speed: 95, flying: true, goldReward: 9, damageToCastle: 1, meleeDps: 0,
+    },
+
+    // ---- Créatures posant chacune une QUESTION à laquelle une tour répond (ADR-022).
+    // Une créature qui ne neutralise aucune tour n'ajoute que de la difficulté.
+
+    // Question : la saturation. Réponse : les dégâts de zone.
+    rat: {
+      id: "rat", name: "Rat de faille",
+      lore: "Ils sortent du sol par vagues, gris et innombrables.\nUn seul ne vaut pas une flèche. C'est bien le problème.",
+      hp: 14, speed: 100, flying: false, goldReward: 4, damageToCastle: 1, meleeDps: 4,
+    },
+    // Question : le ciel, mais lourd. Réponse : de l'anti-aérien VRAIMENT investi.
+    gargoyle: {
+      id: "gargoyle", name: "Gargouille",
+      lore: "Descendue des corniches du Vieux Royaume, la pierre lui tient lieu de peau.\nElle vole : vos catapultes la regarderont passer.",
+      hp: 115, speed: 42, flying: true, goldReward: 26, damageToCastle: 3, meleeDps: 0,
+    },
+    // Question : l'armure. Réponse : les gros coups, ou le feu qui ronge les PV max.
+    golem: {
+      id: "golem", name: "Golem de pierre",
+      lore: "Les flèches s'y ébrèchent sans laisser de marque.\nIl faut le briser, ou le laisser brûler de l'intérieur.",
+      hp: 330, speed: 24, flying: false, goldReward: 42, damageToCastle: 5, meleeDps: 26,
+      armor: 11,
+    },
+    // Question : le contrôle. Réponse : la puissance brute — le givre ne le touche pas.
+    wraith: {
+      id: "wraith", name: "Spectre",
+      lore: "Le froid ne mord pas ce qui est déjà glacé.\nIl traverse la vallée sans jamais ralentir le pas.",
+      hp: 58, speed: 88, flying: false, goldReward: 16, damageToCastle: 2, meleeDps: 12,
+      slowImmune: true,
+    },
+
+    // ---- Boss. Créatures à part entière et non une brute agrandie : un boss doit
+    // se reconnaître à sa silhouette avant de se lire à sa barre de vie.
+    warlord: {
+      id: "warlord", name: "Chef de guerre",
+      lore: "Il porte les couleurs du Roi-Charogne et la hache qui a ouvert la Herse.\nCe qui tombe devant lui, il l'enjambe.",
+      hp: 480, speed: 26, flying: false, goldReward: 90, damageToCastle: 8, meleeDps: 40,
+    },
+    wyvern: {
+      id: "wyvern", name: "Vouivre",
+      lore: "La dernière chose que virent les Portes du Nord.\nAucun mur n'a jamais arrêté ce qui passe au-dessus.",
+      hp: 700, speed: 38, flying: true, goldReward: 150, damageToCastle: 10, meleeDps: 0,
     },
   },
 

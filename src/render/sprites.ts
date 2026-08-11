@@ -27,6 +27,12 @@ export interface SpriteRef {
   tint?: number;
   /** Échelle par-dessus l'échelle de base. */
   scale?: number;
+  /**
+   * Taille d'affichage en unités logiques. Relève du SKIN, pas de la scène : la
+   * hiérarchie de taille porte de l'information (un golem doit se voir massif au
+   * premier regard) et changer de skin doit pouvoir la revoir d'un seul endroit.
+   */
+  size?: number;
 }
 
 /** Vue d'une tour. Le skin médiéval dessine la tour entière : plus de
@@ -37,12 +43,23 @@ export interface TowerView {
 }
 
 // ---- Ennemis ------------------------------------------------------------
+// La taille croît avec la menace : le joueur doit hiérarchiser une vague d'un coup
+// d'œil, avant d'avoir lu la moindre barre de vie.
 const ENEMIES: Record<string, SpriteRef> = {
-  goblin: { key: "spr_goblin" },
-  orc:    { key: "spr_orc" },
-  brute:  { key: "spr_brute" },
-  bat:    { key: "spr_bat" },
+  rat:      { key: "spr_rat", size: 38 },
+  goblin:   { key: "spr_goblin", size: 46 },
+  wraith:   { key: "spr_wraith", size: 50 },
+  bat:      { key: "spr_bat", size: 52 },
+  orc:      { key: "spr_orc", size: 54 },
+  gargoyle: { key: "spr_gargoyle", size: 60 },
+  brute:    { key: "spr_brute", size: 62 },
+  golem:    { key: "spr_golem", size: 70 },
+  warlord:  { key: "spr_warlord", size: 72 },
+  wyvern:   { key: "spr_wyvern", size: 78 },
 };
+
+/** Taille par défaut si un skin oublie de la préciser. */
+export const ENEMY_SIZE_FALLBACK = 46;
 
 // ---- Tours --------------------------------------------------------------
 // Une entrée par PALIER visuel : l'amélioration doit se voir sur la carte, pas

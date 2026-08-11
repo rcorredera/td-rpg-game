@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CONTENT } from "../content/index";
+import { CONTENT, UNLOCKS } from "../content/index";
 import { autoplayAll, autoplayChapter, type Policy } from "./autoplay";
 import { table } from "./report";
 
@@ -135,6 +135,42 @@ describe("rôles des tours — diversifier doit payer", () => {
       const solo = run([id]);
       expect(solo.wins, `${CONTENT.towers[id]!.name} seule finit tout le jeu`)
         .toBeLessThan(CONTENT.chapters.filter(c => c.playable).length);
+    }
+  });
+});
+
+describe("progression — la méta doit être la condition de la fin du jeu", () => {
+  const LAST = CONTENT.chapters.filter(c => c.playable).length - 1;
+  const veteran = {
+    unlocks: UNLOCKS.map(u => u.id),
+    forge: { tower_archer: 4, tower_catapult: 4, tower_frost: 4 },
+    skills: { whirlwind: 4, rally: 4 },
+  };
+
+  it("rend le dernier chapitre infranchissable sans méta-progression", () => {
+    // Si le jeu se finit avec un profil vierge, la boucle run → monnaies → run plus
+    // fort n'est qu'un décor : rien n'oblige jamais à dépenser quoi que ce soit.
+    const raw = autoplayChapter(CONTENT, LAST, { policy: "spread" });
+    expect(raw.result.victory).toBe(false);
+  });
+
+  it("le rend franchissable avec l'armurerie et la forge", () => {
+    // Le pendant du test précédent : une méta indispensable mais insuffisante
+    // rendrait le dernier chapitre simplement impossible.
+    const vet = autoplayChapter(CONTENT, LAST, { policy: "spread", profile: veteran });
+    expect(vet.result.victory).toBe(true);
+  });
+
+  it("introduit une créature de plus à chaque chapitre du début de campagne", () => {
+    // La progression du bestiaire est le fil du mode Histoire : sans elle, tous les
+    // chapitres se ressemblent quelles que soient les cartes.
+    const seen = CONTENT.chapters.map(ch =>
+      ch.playable
+        ? new Set(ch.waves.flatMap(w => [...w.spawns.map(s => s.enemyId), ...(w.miniBoss ? [w.miniBoss.enemyId] : [])])).size
+        : 0);
+    for (let i = 1; i < 5; i++) {
+      expect(seen[i], `ch${i + 1} n'apporte aucune créature de plus que le ch${i}`)
+        .toBeGreaterThan(seen[i - 1]!);
     }
   });
 });
