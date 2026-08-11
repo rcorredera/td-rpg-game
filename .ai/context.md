@@ -40,11 +40,12 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   (framebuffer, zoom, rectangle visible, encoches), réactif au resize/rotation ; invite « tournez
   votre appareil » en CSS sur mobile portrait.
 - **Chantier UI/UX en cours** : socle format (ADR-010) + cibles tactiles (ADR-011, `touchSize`) +
-  registre d'icônes maison, fin des emoji (ADR-012, `render/icons.ts`). Reste au plan validé —
-  **liste défilante** (pas encore faite : une liste plus longue que l'écran déborde sans recours,
-  le Bestiaire cassera dès l'ajout de créatures) ; suite de l'identité visuelle (fond texturé,
-  hiérarchie typographique, passe sur le terrain de combat — herbe trop saturée) ; puis
-  transitions/feedback et migration des écrans restants (Boutique, Chroniques, Bestiaire) sur le kit.
+  registre d'icônes maison, fin des emoji (ADR-012) + grille de niveaux et listes défilantes
+  (ADR-013). Tous les sous-écrans du campement sont passés sur le kit ; `backButton()`/`row()`
+  positionnelles supprimées. L'état « inabordable » du GDD est enfin rendu (coût rouge, cadre
+  atténué). **Reste** : identité visuelle (fond des écrans encore uni `#1a140e`, hiérarchie
+  typographique, passe sur le terrain de combat — herbe trop saturée, décor peu visible) ; puis
+  transitions d'écran et retours visuels (gain de monnaie, achat).
 
 ## Prochaine grosse feature actée (design au GDD, à implémenter)
 **Équipement du héros + loot** : 3 slots (arme/armure/relique), butin en fin de run victorieux

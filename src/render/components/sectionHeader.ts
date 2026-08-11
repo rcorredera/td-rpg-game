@@ -6,23 +6,45 @@
 import Phaser from "phaser";
 import { TEXT } from "../theme";
 import { FONT_DISPLAY } from "../ui";
+import { touchSize } from "../viewport";
 import { uiButton } from "./button";
 
 export interface UiSectionHeaderOpts {
   title: string;
   x?: number;
   y?: number;
+  /** Demi-largeur du bloc de contenu : le bouton retour s'aligne sur son bord gauche. */
+  halfWidth?: number;
   onBack?: () => void;
   backLabel?: string;
 }
 
-export function uiSectionHeader(scene: Phaser.Scene, opts: UiSectionHeaderOpts): Phaser.GameObjects.Container {
+export interface UiSectionHeader {
+  container: Phaser.GameObjects.Container;
+  /** Y du bas de l'en-tête — les écrans empilent leur contenu À PARTIR DE LÀ,
+   *  jamais depuis une constante : le bouton retour grandit avec le plancher
+   *  tactile et poussait sinon le titre sous les onglets (bug mobile réel). */
+  bottom: number;
+}
+
+export function uiSectionHeader(scene: Phaser.Scene, opts: UiSectionHeaderOpts): UiSectionHeader {
   const x = opts.x ?? 400;
   const y = opts.y ?? 165;
+  const half = opts.halfWidth ?? 320;
   const container = scene.add.container(0, 0);
+
+  const btnW = touchSize(130);
+  const btnH = touchSize(30);
   if (opts.onBack) {
-    container.add(uiButton(scene, x - 320, y, opts.backLabel ?? "⟵ Campement", { w: 130, h: 30, fontSize: 13 }, opts.onBack).container);
+    container.add(uiButton(scene, x - half + btnW / 2, y, opts.backLabel ?? "⟵ Campement",
+      { w: btnW, h: btnH, fontSize: 13 }, opts.onBack).container);
   }
-  container.add(scene.add.text(x, y, opts.title, { fontSize: "20px", color: TEXT.gold, fontFamily: FONT_DISPLAY }).setOrigin(0.5));
-  return container;
+
+  // Le titre est centré, mais jamais au point de passer sous le bouton retour.
+  const titleX = Math.max(x, x - half + btnW + 90);
+  container.add(scene.add.text(titleX, y, opts.title, {
+    fontSize: "20px", color: TEXT.gold, fontFamily: FONT_DISPLAY,
+  }).setOrigin(0.5));
+
+  return { container, bottom: y + Math.max(btnH, 26) / 2 };
 }

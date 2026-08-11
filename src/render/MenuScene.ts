@@ -13,8 +13,9 @@ import { touchSize, viewport } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
 import { ACCENT, TEXT } from "./theme";
 import {
-  layoutCursor, uiButton, uiChip, uiListRow, uiModal, uiNavCard, uiPanel, uiSectionHeader,
-  type LayoutCursor, type RowState, type UiChip,
+  layoutCursor, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiNavCard, uiPanel,
+  uiScrollList, uiSectionHeader,
+  type LayoutCursor, type RowState, type UiChip, type UiScrollList,
 } from "./components";
 
 type View = "home" | "story" | "rifts" | "shop" | "chronicles" | "bestiary";
@@ -105,34 +106,67 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /** Panneau Kenney (nine-slice teinté) + liseré d'état, ajouté au panel courant. */
-  private box(x: number, y: number, w: number, h: number, fill: number, stroke: number, r = 10): Phaser.GameObjects.Graphics {
+  private box(x: number, y: number, w: number, h: number, fill: number, stroke: number, r = 10,
+              target?: Phaser.GameObjects.Container): Phaser.GameObjects.Graphics {
     // fill historique (0x22…/0x2b…) → teinte sombre ; on garde la sémantique des appels existants
+    const t = target ?? this.panel!;
     const tint = fill === 0x221b12 ? UI_TINT.panelDim : UI_TINT.panel;
-    this.panel!.add(uiPanel(this, x, y, w, h, tint));
+    t.add(uiPanel(this, x, y, w, h, tint));
     const g = this.add.graphics();
     g.lineStyle(1, stroke, 0.85); g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
-    this.panel!.add(g);
+    t.add(g);
     return g;
   }
 
-  /** Bouton retour vers le hub, commun aux sous-écrans. */
-  private backButton(title: string) {
-    const p = this.panel!;
-    p.add(uiButton(this, 80, 165, "⟵ Campement", { w: 130, h: 30, fontSize: 13 }, () => this.showView("home")).container);
-    p.add(this.add.text(400, 165, title, { fontSize: "20px", color: GOLD, ...TITLE }).setOrigin(0.5));
+  /** En-tête de sous-écran (retour + titre). Renvoie le Y à partir duquel empiler :
+   *  les écrans ne doivent PLUS partir d'une constante, le bouton retour grandissant
+   *  avec le plancher tactile (c'est ce qui masquait le titre du Bestiaire sur mobile). */
+  private header(title: string): number {
+    const h = uiSectionHeader(this, { title, onBack: () => this.showView("home") });
+    this.panel!.add(h.container);
+    return h.bottom;
   }
 
-  /** Rangée générique : cadre, titre, description, bouton à droite. */
-  private row(y: number, title: string, desc: string, btnLabel: string, btnColor: string, cb: (() => void) | null) {
-    const p = this.panel!;
-    this.box(400, y, 600, 62, 0x2b2118, 0xc9a227);
-    p.add(this.add.text(120, y - 14, title, { fontSize: "17px", color: LIGHT, ...TXT }));
-    p.add(this.add.text(120, y + 8, desc, { fontSize: "12px", color: DIM, ...TXT }));
-    if (cb) {
-      p.add(uiButton(this, 630, y, btnLabel, { w: 96, h: 34, gold: true, fontSize: 14 }, cb).container);
-    } else {
-      p.add(this.add.text(630, y, btnLabel, { fontSize: "15px", color: btnColor, ...TXT }).setOrigin(0.5));
-    }
+  /** Barre d'onglets posée sous `top`. Renvoie le Y du BAS des onglets — leur
+   *  hauteur suit le plancher tactile, elle ne peut pas être supposée. */
+  private tabs<T extends string>(
+    top: number, defs: { id: T; label: string }[], active: T, onPick: (id: T) => void,
+  ): number {
+    const h = touchSize(32);
+    const w = touchSize(130);
+    const gap = 12;
+    const totalW = defs.length * w + (defs.length - 1) * gap;
+    const cy = top + 10 + h / 2;
+    defs.forEach((t, i) => {
+      const x = 400 - totalW / 2 + w / 2 + i * (w + gap);
+      this.panel!.add(uiButton(this, x, cy, t.label,
+        { w, h, gold: active === t.id, fontSize: 15 }, () => onPick(t.id)).container);
+    });
+    return cy + h / 2;
+  }
+
+  /** Zone défilante occupant tout l'espace restant sous `top`, jusqu'au bas de l'écran. */
+  private scrollArea(top: number): UiScrollList {
+    const v = viewport();
+    const y = top + 10;
+    const scroll = uiScrollList(this, { x: v.left, y, w: v.width, h: Math.max(80, v.bottom - y - 12) });
+    this.panel!.add(scroll.content);
+    return scroll;
+  }
+
+  /** Rangée de boutique, empilée dans une zone défilante. Migrée sur `uiListRow`
+   *  (kit ADR-007) : hauteur effective et états gérés par le composant. */
+  private row(
+    cursor: LayoutCursor, c: Phaser.GameObjects.Container,
+    title: string, desc: string, trailingLabel: string, trailingColor: string,
+    cb: (() => void) | null, state: RowState = "normal",
+  ) {
+    const r = uiListRow(this, 400, 0, {
+      w: 640, title, desc, state,
+      trailing: cb ? { label: trailingLabel, onClick: cb } : { label: trailingLabel, color: trailingColor },
+    });
+    r.container.setY(cursor.next(r.h, 10));
+    c.add(r.container);
   }
 
   // ---------- Hub ----------
@@ -172,114 +206,113 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Bestiaire (découverte progressive) ----------
 
   private buildBestiary() {
-    this.backButton("Bestiaire");
-    const p = this.panel!;
-
-    // Onglets Créatures / Défenses
-    const tabsY = 205, tabsH = 32;
-    const tabs: { id: "creatures" | "defenses"; label: string }[] = [
+    const top = this.header("Bestiaire");
+    const tabsY = this.tabs(top, [
       { id: "creatures", label: "Créatures" },
       { id: "defenses", label: "Défenses" },
-    ];
-    tabs.forEach((t, i) => {
-      const active = this.bestiaryTab === t.id;
-      p.add(uiButton(this, 320 + i * 160, tabsY, t.label, { w: 130, h: tabsH, gold: active, fontSize: 15 },
-        () => { this.bestiaryTab = t.id; this.showView("bestiary"); }).container);
-    });
+    ], this.bestiaryTab, (id) => { this.bestiaryTab = id; this.showView("bestiary"); });
 
-    // Empilement vertical à partir du bas des onglets (+6px de respiration) : plus jamais
-    // de recalcul manuel d'offset par écran, ni de risque de chevauchement (bug #7/#9).
-    const cursor = layoutCursor(tabsY + tabsH / 2 + 6);
+    // Liste défilante : le Bestiaire grandit à chaque créature ajoutée, il ne peut
+    // plus dépendre de ce qui « tient » dans 600 px (ADR-013).
+    const scroll = this.scrollArea(tabsY);
+    const c = scroll.content;
+    const cursor = layoutCursor(0);
 
-    if (this.bestiaryTab === "defenses") { this.buildDefensePages(cursor); return; }
+    if (this.bestiaryTab === "defenses") { this.buildDefensePages(cursor, c, scroll); return; }
 
     const seen = this.profileSvc.get().bestiary;
     const enemies = Object.values(CONTENT.enemies);
     enemies.forEach((e) => {
       const y = cursor.next(76);
       const known = seen.includes(e.id);
-      this.box(400, y, 640, 76, known ? 0x2b2118 : 0x221b12, known ? 0xc9a227 : 0x4a3f2e);
+      this.box(400, y, 640, 76, known ? 0x2b2118 : 0x221b12, known ? 0xc9a227 : 0x4a3f2e, 10, c);
       if (!known) {
-        p.add(this.add.text(110, y - 24, "???", { fontSize: "17px", color: DIM, ...TXT }));
-        p.add(this.add.text(110, y + 2, "Croisez cette créature au combat pour compléter sa page.", { fontSize: "12px", color: DIM, ...TXT }));
+        c.add(this.add.text(110, y - 24, "???", { fontSize: "17px", color: DIM, ...TXT }));
+        c.add(this.add.text(110, y + 2, "Croisez cette créature au combat pour compléter sa page.", { fontSize: "12px", color: DIM, ...TXT }));
         return;
       }
-      p.add(this.add.text(110, y - 26, `${e.name}${e.flying ? "  ·  volant" : ""}`, { fontSize: "17px", color: GOLD, ...TXT }));
-      p.add(this.add.text(110, y - 5, e.lore, { fontSize: "11px", color: DIM, ...TXT, lineSpacing: 2 }));
+      c.add(this.add.text(110, y - 26, `${e.name}${e.flying ? "  ·  volant" : ""}`, { fontSize: "17px", color: GOLD, ...TXT }));
+      c.add(this.add.text(110, y - 5, e.lore, { fontSize: "11px", color: DIM, ...TXT, lineSpacing: 2 }));
       const stats = [
         `❤ ${e.hp} PV`, `Vitesse ${e.speed}`, `◆ ${e.goldReward}`,
         `Base -${e.damageToCastle} PV`, e.meleeDps > 0 ? `⚔ ${e.meleeDps}/s` : "⚔ inoffensif au contact",
       ].join("    ");
-      p.add(this.add.text(110, y + 23, stats, { fontSize: "12px", color: LIGHT, ...TXT }));
+      c.add(this.add.text(110, y + 23, stats, { fontSize: "12px", color: LIGHT, ...TXT }));
     });
-    p.add(this.add.text(400, cursor.y + 12,
+    c.add(this.add.text(400, cursor.next(28) - 6,
       "Les mini-boss sont des variantes renforcées des créatures connues.",
-      { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5, 0));
+      { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5));
+    scroll.setContentHeight(cursor.y);
   }
 
   /** Onglet Défenses : explique le rôle et les différences de chaque tour. */
-  private buildDefensePages(cursor: LayoutCursor) {
-    const p = this.panel!;
+  private buildDefensePages(cursor: LayoutCursor, c: Phaser.GameObjects.Container, scroll: UiScrollList) {
     const towers = Object.values(CONTENT.towers);
     towers.forEach((t) => {
       const y = cursor.next(92);
       const locked = t.requiresUnlock !== null && !this.profileSvc.get().unlocks.includes(t.requiresUnlock);
-      this.box(400, y, 640, 92, 0x2b2118, locked ? 0x6b5a3e : 0xc9a227);
-      p.add(this.add.text(110, y - 34, `${t.name}${locked ? "  (verrouillée — Arsenal)" : ""}`, { fontSize: "17px", color: locked ? DIM : GOLD, ...TXT }));
-      p.add(this.add.text(110, y - 13, t.lore, { fontSize: "11px", color: DIM, ...TXT, lineSpacing: 2 }));
+      this.box(400, y, 640, 92, 0x2b2118, locked ? 0x6b5a3e : 0xc9a227, 10, c);
+      c.add(this.add.text(110, y - 34, `${t.name}${locked ? "  (verrouillée — Arsenal)" : ""}`, { fontSize: "17px", color: locked ? DIM : GOLD, ...TXT }));
+      c.add(this.add.text(110, y - 13, t.lore, { fontSize: "11px", color: DIM, ...TXT, lineSpacing: 2 }));
       // Rôle tactique : LA ligne qui différencie les tours
       const role = t.splashRadius > 0 ? `Dégâts de zone (rayon ${t.splashRadius})` : "Monocible";
       const target = t.groundOnly ? "⚠ ne touche PAS les volants" : "vise sol et volants";
       const slow = t.slow ? ` · ralentit (vitesse ×${t.slow.factor} pendant ${t.slow.duration}s)` : "";
-      p.add(this.add.text(110, y + 13, `${role} · ${target}${slow}`, { fontSize: "12px", color: t.groundOnly ? "#e8a87c" : LIGHT, ...TXT }));
+      c.add(this.add.text(110, y + 13, `${role} · ${target}${slow}`, { fontSize: "12px", color: t.groundOnly ? "#e8a87c" : LIGHT, ...TXT }));
       const l1 = t.levels[0]!, l3 = t.levels[t.levels.length - 1]!;
-      p.add(this.add.text(110, y + 31, `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`,
+      c.add(this.add.text(110, y + 31, `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`,
         { fontSize: "12px", color: LIGHT, ...TXT }));
     });
-    p.add(this.add.text(400, cursor.y + 12,
+    c.add(this.add.text(400, cursor.next(30) - 6,
       "Le héros bloque et frappe les ennemis terrestres ; les volants l'ignorent — prévoyez l'Archerie.",
-      { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5, 0));
+      { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5));
+    scroll.setContentHeight(cursor.y);
   }
 
   // ---------- Histoire (chapitres) ----------
 
   private buildStory() {
-    const p = this.panel!;
-    p.add(uiSectionHeader(this, { title: "Histoire", onBack: () => this.showView("home") }));
+    const top = this.header("Histoire");
 
     // Déblocage séquentiel : conquérir le chapitre précédent pour ouvrir le suivant
     const isUnlocked = (i: number) => CONTENT.chapters[i]!.playable && (i === 0 || this.profileSvc.chapterWon(i - 1));
 
-    const rowsCursor = layoutCursor(202 - touchSize(38) / 2);
-    CONTENT.chapters.forEach((ch, i) => {
+    // Grille plutôt que liste : les chapitres sont des items courts et nombreux.
+    // En paysage, une liste verticale gâche la largeur et déborde dès 10 entrées,
+    // là où une grille les montre tous d'un coup (ADR-013).
+    const scroll = this.scrollArea(top);
+    const c = scroll.content;
+    const tiles = CONTENT.chapters.map((ch, i) => {
       const won = this.profileSvc.chapterWon(i);
       const unlocked = isUnlocked(i);
-      const state: RowState = won ? "done" : unlocked ? "normal" : "locked";
-      const title = `${i + 1}. ${unlocked || won ? ch.name : "???"}`;
-      const trailing = unlocked
-        ? { label: won ? "Rejouer" : "⚔ Se battre", onClick: () => this.scene.start("game", { profileSvc: this.profileSvc, chapterIndex: i }) }
-        : { label: ch.playable ? "Verrouillé" : "Bientôt" };
-      const probe = uiListRow(this, 400, 0, { w: 640, h: 38, title, trailing, state });
-      probe.container.setY(rowsCursor.next(probe.h, 4));
-      if (won) {
-        const stars = this.profileSvc.chapterStarsOf(i);
-        probe.container.add(this.add.text(160, 0, "★".repeat(stars) + "☆".repeat(3 - stars), { fontSize: "15px", color: TEXT.gold, ...TXT }).setOrigin(0.5));
-      }
-      p.add(probe.container);
+      return {
+        index: i + 1,
+        name: unlocked || won ? ch.name : "???",
+        state: (won ? "done" : unlocked ? "normal" : "locked") as RowState,
+        stars: won ? this.profileSvc.chapterStarsOf(i) : 0,
+        onSelect: unlocked
+          ? () => this.scene.start("game", { profileSvc: this.profileSvc, chapterIndex: i })
+          : undefined,
+      };
     });
+    const grid = uiLevelGrid(this, 400, 6, tiles, Math.min(700, viewport().width - 60));
+    c.add(grid.container);
 
     // Lore du prochain objectif (premier chapitre débloqué non conquis)
     const next = CONTENT.chapters.findIndex((_ch, i) => isUnlocked(i) && !this.profileSvc.chapterWon(i));
     const lore = next >= 0 ? CONTENT.chapters[next]!.lore : "La vallée respire. Pour l'instant.";
-    p.add(this.add.text(400, rowsCursor.y + 8, lore.replace("\n", " "),
-      { fontSize: "12px", color: TEXT.dim, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0));
+    const loreY = 6 + grid.layout.totalH + 14;
+    const loreText = this.add.text(400, loreY, lore.replace("\n", " "),
+      { fontSize: "12px", color: TEXT.dim, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0);
+    c.add(loreText);
+    scroll.setContentHeight(loreY + loreText.height + 12);
   }
 
   // ---------- Failles infinies (mode séparé, teaser v1) ----------
 
   private buildRifts() {
     const p = this.panel!;
-    p.add(uiSectionHeader(this, { title: "Failles infinies", onBack: () => this.showView("home") }));
+    this.header("Failles infinies");
     if (!this.profileSvc.storyCompleted()) {
       p.add(this.add.text(400, 290,
         "Les Failles ne s'ouvrent qu'aux vainqueurs.\n\nAchevez l'Histoire — terrassez le Roi-Charogne —\net leur seuil vous sera révélé.",
@@ -306,59 +339,62 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Armurerie (Arsenal / Forge / Héros) ----------
 
   private buildShop() {
-    this.backButton("Armurerie");
-    const p = this.panel!;
-    const tabs: { id: ShopTab; label: string }[] = [
-      { id: "arsenal", label: "Arsenal" },
-      { id: "forge", label: "Forge" },
-      { id: "hero", label: "Héros" },
-    ];
-    tabs.forEach((t, i) => {
-      const active = this.currentShopTab === t.id;
-      p.add(uiButton(this, 250 + i * 150, 205, t.label, { w: 120, h: 32, gold: active, fontSize: 15 },
-        () => { this.currentShopTab = t.id; this.showView("shop"); }).container);
-    });
-    if (this.currentShopTab === "arsenal") this.buildArsenalRows();
-    else if (this.currentShopTab === "forge") this.buildForgeRows();
-    else this.buildHeroRows();
+    const top = this.header("Armurerie");
+    const tabsY = this.tabs(top, [
+      { id: "arsenal" as ShopTab, label: "Arsenal" },
+      { id: "forge" as ShopTab, label: "Forge" },
+      { id: "hero" as ShopTab, label: "Héros" },
+    ], this.currentShopTab, (id) => { this.currentShopTab = id; this.showView("shop"); });
+
+    const scroll = this.scrollArea(tabsY);
+    const cursor = layoutCursor(0);
+    if (this.currentShopTab === "arsenal") this.buildArsenalRows(cursor, scroll.content);
+    else if (this.currentShopTab === "forge") this.buildForgeRows(cursor, scroll.content);
+    else this.buildHeroRows(cursor, scroll.content);
+    scroll.setContentHeight(cursor.y);
   }
 
-  private buildArsenalRows() {
+  private buildArsenalRows(cursor: LayoutCursor, c: Phaser.GameObjects.Container) {
     const p = this.profileSvc.get();
-    UNLOCKS.forEach((u, i) => {
-      const y = 268 + i * 78;
+    UNLOCKS.forEach((u) => {
       const owned = p.unlocks.includes(u.id);
-      this.row(y, u.name, u.desc,
+      // « Inabordable » : cadre atténué et coût en rouge tant que les Éclats manquent
+      // (état prévu au GDD, jamais rendu jusqu'ici).
+      const affordable = p.shards >= u.cost;
+      this.row(cursor, c, u.name, u.desc,
         owned ? "Acquis" : `${u.cost} ◆`,
-        owned ? OK : GOLD,
-        owned ? null : () => { if (this.profileSvc.buy(u.id)) { this.refreshCurrencies(); this.showView("shop"); } });
+        owned ? OK : affordable ? GOLD : TEXT.bad,
+        owned || !affordable ? null : () => { if (this.profileSvc.buy(u.id)) { this.refreshCurrencies(); this.showView("shop"); } },
+        owned ? "done" : affordable ? "normal" : "unaffordable");
     });
   }
 
-  private buildForgeRows() {
-    const unlocks = this.profileSvc.get().unlocks;
+  private buildForgeRows(cursor: LayoutCursor, c: Phaser.GameObjects.Container) {
+    const prof = this.profileSvc.get();
+    const unlocks = prof.unlocks;
     const pct = Math.round(CONTENT.forge.damageMultPerLevel * 100);
     const maxLvl = CONTENT.forge.upgradeCosts.length;
-    Object.values(CONTENT.towers).forEach((t, i) => {
-      const y = 268 + i * 78;
+    Object.values(CONTENT.towers).forEach((t) => {
       const locked = t.requiresUnlock !== null && !unlocks.includes(t.requiresUnlock);
       const lvl = this.profileSvc.forgeLevel(t.id);
       const cost = this.profileSvc.forgeNextCost(t.id);
       const stars = "★".repeat(lvl) + "☆".repeat(maxLvl - lvl);
       if (locked) {
-        this.row(y, `${t.name}  ${stars}`, "Débloquez d'abord cette tour (Arsenal).", "Verrouillé", DIM, null);
+        this.row(cursor, c, `${t.name}  ${stars}`, "Débloquez d'abord cette tour (Arsenal).", "Verrouillé", DIM, null, "locked");
       } else if (cost === null) {
-        this.row(y, `${t.name}  ${stars}`, `+${pct}% dégâts par niveau — niveau maximum atteint.`, "Max", OK, null);
+        this.row(cursor, c, `${t.name}  ${stars}`, `+${pct}% dégâts par niveau — niveau maximum atteint.`, "Max", OK, null, "done");
       } else {
-        this.row(y, `${t.name}  ${stars}`, `+${pct}% dégâts permanents par niveau (actuel : +${lvl * pct}%).`,
-          `${cost} ◆`, GOLD,
-          () => { if (this.profileSvc.buyForge(t.id)) { this.refreshCurrencies(); this.showView("shop"); } });
+        const affordable = prof.shards >= cost;
+        this.row(cursor, c, `${t.name}  ${stars}`, `+${pct}% dégâts permanents par niveau (actuel : +${lvl * pct}%).`,
+          `${cost} ◆`, affordable ? GOLD : TEXT.bad,
+          affordable ? () => { if (this.profileSvc.buyForge(t.id)) { this.refreshCurrencies(); this.showView("shop"); } } : null,
+          affordable ? "normal" : "unaffordable");
       }
     });
   }
 
-  private buildHeroRows() {
-    this.panel!.add(this.add.text(400, 240, `${CONTENT.hero.name} — les Sceaux ⚜ se gagnent avec les kills du héros en run`,
+  private buildHeroRows(cursor: LayoutCursor, c: Phaser.GameObjects.Container) {
+    c.add(this.add.text(400, cursor.next(26), `${CONTENT.hero.name} — les Sceaux ⚜ se gagnent avec les kills du héros en run`,
       { fontSize: "13px", color: DIM, ...TXT }).setOrigin(0.5));
 
     const skills: { id: SkillId; name: string; desc: (lvl: number) => string }[] = [
@@ -378,48 +414,49 @@ export class MenuScene extends Phaser.Scene {
       },
     ];
 
-    skills.forEach((sk, i) => {
-      const y = 280 + i * 78;
+    skills.forEach((sk) => {
       const def = CONTENT.hero.skills[sk.id];
       const lvl = this.profileSvc.skillLevel(sk.id);
       const cost = this.profileSvc.skillNextCost(sk.id);
       const title = `${sk.name} — niv. ${lvl}/${def.levels.length}`;
       if (cost === null) {
-        this.row(y, title, sk.desc(lvl), "Max", OK, null);
+        this.row(cursor, c, title, sk.desc(lvl), "Max", OK, null, "done");
       } else {
-        this.row(y, title, sk.desc(lvl), `${cost} ⚜`, SCEAU,
-          () => { if (this.profileSvc.buySkill(sk.id)) { this.refreshCurrencies(); this.showView("shop"); } });
+        const affordable = this.profileSvc.get().sceaux >= cost;
+        this.row(cursor, c, title, sk.desc(lvl), `${cost} ⚜`, affordable ? SCEAU : TEXT.bad,
+          affordable ? () => { if (this.profileSvc.buySkill(sk.id)) { this.refreshCurrencies(); this.showView("shop"); } } : null,
+          affordable ? "normal" : "unaffordable");
       }
     });
 
     // Teaser : second héros (GDD : roster v1)
-    const y = 280 + skills.length * 78;
-    this.box(400, y, 600, 62, 0x221b12, 0x6b5a3e);
-    this.panel!.add(this.add.text(120, y - 14, "???", { fontSize: "17px", color: DIM, ...TXT }));
-    this.panel!.add(this.add.text(120, y + 8, "Un nouveau héros rejoindra bientôt le campement…", { fontSize: "12px", color: DIM, ...TXT }));
-    this.panel!.add(this.add.text(630, y, "Bientôt", { fontSize: "15px", color: DIM, ...TXT }).setOrigin(0.5));
+    this.row(cursor, c, "???", "Un nouveau héros rejoindra bientôt le campement…", "Bientôt", DIM, null, "locked");
   }
 
   // ---------- Chroniques (meilleurs runs, futur leaderboard) ----------
 
   private buildChronicles() {
-    this.backButton("Chroniques");
+    const top = this.header("Chroniques");
     const runs = this.profileSvc.get().bestRuns;
     if (runs.length === 0) {
-      this.panel!.add(this.add.text(400, 340, "Les Chroniques sont vierges.\nLe Roi-Charogne n'attendra pas — partez au combat !",
+      this.panel!.add(this.add.text(400, top + 120, "Les Chroniques sont vierges.\nLe Roi-Charogne n'attendra pas — partez au combat !",
         { fontSize: "16px", color: DIM, ...TXT, align: "center", lineSpacing: 6 }).setOrigin(0.5));
       return;
     }
-    this.panel!.add(this.add.text(400, 210, `Vos ${runs.length} plus hauts faits`, { fontSize: "14px", color: DIM, ...TXT }).setOrigin(0.5));
+    const scroll = this.scrollArea(top);
+    const c = scroll.content;
+    const cursor = layoutCursor(0);
+    c.add(this.add.text(400, cursor.next(24), `Vos ${runs.length} plus hauts faits`, { fontSize: "14px", color: DIM, ...TXT }).setOrigin(0.5));
     runs.forEach((r, i) => {
-      const y = 250 + i * 52;
+      const y = cursor.next(touchSize(44), 8);
       const date = new Date(r.dateISO).toLocaleDateString("fr-FR");
-      this.box(400, y, 600, 44, 0x2b2118, r.victory ? 0x27ae60 : 0x6b5a3e, 8);
-      this.panel!.add(this.add.text(120, y, `#${i + 1}`, { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0, 0.5));
+      this.box(400, y, 600, touchSize(44), 0x2b2118, r.victory ? 0x27ae60 : 0x6b5a3e, 8, c);
+      c.add(this.add.text(120, y, `#${i + 1}`, { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0, 0.5));
       const chap = r.chapter !== undefined ? `Ch.${r.chapter + 1} — ` : "";
-      this.panel!.add(this.add.text(170, y, `${chap}${r.waves} vague${r.waves > 1 ? "s" : ""} — ${r.kills} kills`, { fontSize: "15px", color: LIGHT, ...TXT }).setOrigin(0, 0.5));
-      this.panel!.add(this.add.text(500, y, r.victory ? "Victoire" : "Défaite", { fontSize: "14px", color: r.victory ? OK : DIM, ...TXT }).setOrigin(0.5));
-      this.panel!.add(this.add.text(680, y, date, { fontSize: "13px", color: DIM, ...TXT }).setOrigin(1, 0.5));
+      c.add(this.add.text(170, y, `${chap}${r.waves} vague${r.waves > 1 ? "s" : ""} — ${r.kills} kills`, { fontSize: "15px", color: LIGHT, ...TXT }).setOrigin(0, 0.5));
+      c.add(this.add.text(500, y, r.victory ? "Victoire" : "Défaite", { fontSize: "14px", color: r.victory ? OK : DIM, ...TXT }).setOrigin(0.5));
+      c.add(this.add.text(680, y, date, { fontSize: "13px", color: DIM, ...TXT }).setOrigin(1, 0.5));
     });
+    scroll.setContentHeight(cursor.y);
   }
 }
