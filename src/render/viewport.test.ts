@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeViewport, MAX_DPR, WORLD_H, WORLD_W } from "./viewport";
+import { computeViewport, MAX_DPR, TOUCH_MIN_CSS, WORLD_H, WORLD_W } from "./viewport";
 
 describe("computeViewport", () => {
   it("garde la zone de jeu 800×600 entièrement visible sur tout écran", () => {
@@ -64,6 +64,34 @@ describe("computeViewport", () => {
   it("signale le portrait pour proposer la rotation", () => {
     expect(computeViewport(375, 812, 2).portrait).toBe(true);
     expect(computeViewport(812, 375, 2).portrait).toBe(false);
+  });
+
+  it("traduit le plancher tactile en unités logiques pour chaque appareil", () => {
+    // Le contrat : `touchMin` unités logiques doivent VALOIR TOUCH_MIN_CSS pixels réels.
+    // C'est la propriété qui compte — la valeur en unités logiques, elle, dépend de l'écran.
+    const devices: [string, number, number, number][] = [
+      ["bureau", 2004, 1030, 1],
+      ["mobile paysage", 780, 360, 2],
+      ["tablette", 1024, 768, 2],
+      ["petit portable", 1280, 800, 1],
+    ];
+    for (const [, w, h, dpr] of devices) {
+      const v = computeViewport(w, h, dpr);
+      expect(v.touchMin * v.cssPerLogical).toBeCloseTo(TOUCH_MIN_CSS, 6);
+    }
+  });
+
+  it("exige des cibles plus grandes sur un écran court que sur un grand écran", () => {
+    // Piège que ce socle corrige : une hauteur écrite en dur (ex. 40) est confortable
+    // sur un grand écran et trop petite sur mobile — le plancher doit donc MONTER
+    // quand l'écran rapetisse, pas rester constant.
+    const desktop = computeViewport(2004, 1030, 1);
+    const mobile = computeViewport(780, 360, 2);
+    expect(mobile.touchMin).toBeGreaterThan(desktop.touchMin);
+    // Sur mobile, un bouton de 40 unités logiques serait sous le plancher : c'est
+    // exactement le cas que `touchSize()` doit rattraper.
+    expect(mobile.touchMin).toBeGreaterThan(40);
+    expect(desktop.touchMin).toBeLessThan(40);
   });
 
   it("ne divise jamais par zéro sur un écran dégénéré", () => {

@@ -51,6 +51,13 @@ Le framebuffer couvre la fenêtre **entière** à la densité réelle (`Scale.NO
 d'écran est un **débord** que le fond habille et auquel le HUD s'ancre. Les coordonnées restent
 logiques (800×600) — `core/` ignore l'écran.
 
+**Cibles tactiles (ADR-011)** : le plancher d'ergonomie est exprimé en pixels RÉELS
+(`TOUCH_MIN_CSS = 44`) et traduit en unités logiques par le viewport (`touchMin`, ~26 sur grand
+écran, ~73 sur mobile paysage — 1 unité logique n'y vaut que 0,6 px). `touchSize(desired)` applique
+ce plancher ; tout composant cliquable y passe et renvoie ses **dimensions effectives**, d'après
+lesquelles les écrans empilent (via `layoutCursor`). Ne jamais écrire une hauteur de zone cliquable
+en dur : elle ne peut pas être juste sur tous les écrans à la fois.
+
 Règles pour tout nouvel écran : dimensionner les fonds sur `viewport().width/height` (jamais
 800×600 en dur), ancrer l'UI de bord sur `safeLeft/safeTop/safeRight/safeBottom`, et s'abonner via
 `onSceneResize()` (`render/ui.ts`) pour se réancrer au resize/rotation. Inputs uniquement

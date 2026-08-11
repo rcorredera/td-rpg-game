@@ -15,7 +15,7 @@ import { BATTLEFIELD } from "../core/types";
 import type { EnemyState, PlayableChapter, RunState, SimEvent, TowerState } from "../core/types";
 import type { ProfileService } from "../meta/profile";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
-import { viewport } from "./viewport";
+import { touchSize, viewport } from "./viewport";
 import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
 import { DECOR_FRAMES, enemyView, heroView, tileFor, towerView } from "./sprites";
@@ -372,7 +372,11 @@ export class GameScene extends Phaser.Scene {
     // Le HUD s'ancre aux bords RÉELS de l'écran, pas au cadre 800×600 : ressources
     // à gauche, actions et sorts à droite (sous le pouce). Sur un écran large, la
     // barre s'étale au lieu de laisser du vide sur les côtés (ADR-010).
-    const barH = 70;
+    // La barre se dimensionne d'après ses boutons, pas l'inverse : sur mobile leur
+    // plancher tactile dépasse la hauteur historique de 70 (ADR-011).
+    const btnH = touchSize(40);
+    const iconS = touchSize(48);
+    const barH = Math.max(70, Math.max(btnH, iconS) + 22);
     const cy = v.safeBottom - barH / 2;   // axe des contrôles
     this.hudTop = v.safeBottom - barH;
     const xL = v.safeLeft, xR = v.safeRight;
@@ -389,7 +393,7 @@ export class GameScene extends Phaser.Scene {
     };
     // Bouton Kenney nine-slice (gold = action principale)
     const mkBtn = (key: string, x: number, w: number, label: string, cb: () => void, size = 14, gold = false) => {
-      const plate = this.add.nineslice(x, cy, gold ? "ui_btn_gold" : "ui_btn", undefined, w, 40, 14, 14, 14, 16);
+      const plate = this.add.nineslice(x, cy, gold ? "ui_btn_gold" : "ui_btn", undefined, w, btnH, 14, 14, 14, 16);
       if (!gold) plate.setTint(UI_TINT.btn);
       plate.setInteractive({ cursor: CURSOR_POINT })
         .on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); cb(); });
@@ -401,14 +405,15 @@ export class GameScene extends Phaser.Scene {
     };
     // Sorts : boutons-icônes carrés (cooldown affiché sous l'icône)
     const mkIconBtn = (key: string, x: number, icon: string, cb: () => void) => {
-      const plate = this.add.nineslice(x, cy, "ui_btn", undefined, 48, 48, 14, 14, 14, 16);
+      const plate = this.add.nineslice(x, cy, "ui_btn", undefined, iconS, iconS, 14, 14, 14, 16);
       plate.setTint(UI_TINT.btn);
       plate.setInteractive({ cursor: CURSOR_POINT })
         .on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); cb(); });
       this.hudPlates[key] = plate; this.hud.add(plate);
-      const img = this.add.image(x, cy - 4, icon).setDisplaySize(26, 26).setTint(0xf0e6d2);
+      const glyph = iconS * 0.54;
+      const img = this.add.image(x, cy - iconS * 0.08, icon).setDisplaySize(glyph, glyph).setTint(0xf0e6d2);
       this.hudIcons[key] = img; this.hud.add(img);
-      const cd = this.add.text(x, cy + 16, "", { fontSize: "10px", color: "#e8c252", fontFamily: FONT_DISPLAY }).setOrigin(0.5);
+      const cd = this.add.text(x, cy + iconS * 0.33, "", { fontSize: "10px", color: "#e8c252", fontFamily: FONT_DISPLAY }).setOrigin(0.5);
       this.hudTexts[key] = cd; this.hud.add(cd);
     };
 
@@ -420,32 +425,42 @@ export class GameScene extends Phaser.Scene {
     // --- Groupe droit : actions, posées de droite à gauche ---
     // Les sorts occupent l'extrémité (les plus utilisés en combat), puis les
     // contrôles de vague. `▶ Vague` reste en or : c'est l'action principale.
-    let x = xR - 32;
-    if (this.run.hasAccountSpell) { mkIconBtn("spell", x, "icon_spell", () => { this.spellMode = true; }); x -= 56; }
-    mkIconBtn("rally", x, "icon_rally", () => {
+    // Posés de droite à gauche à partir du bord sûr, chacun d'après sa largeur
+    // effective : les boutons grossissent sur mobile sans jamais se chevaucher.
+    let x = xR - 16;
+    const place = (w: number, draw: (cx: number) => void) => {
+      x -= w / 2;
+      draw(x);
+      x -= w / 2 + 8;
+    };
+    if (this.run.hasAccountSpell) {
+      place(iconS, cx => mkIconBtn("spell", cx, "icon_spell", () => { this.spellMode = true; }));
+    }
+    place(iconS, cx => mkIconBtn("rally", cx, "icon_rally", () => {
       if (castRally(this.run, CONTENT)) {
         // Onde de portée au lancement : montre la zone d'effet du cri de ralliement
         const sk = CONTENT.hero.skills.rally.levels[this.run.skillLevels.rally - 1]!;
         this.fx.push({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 650, life: 650 });
       }
-    });
-    x -= 56;
-    mkIconBtn("ww", x, "icon_ww", () => { const evs: SimEvent[] = []; castWhirlwind(this.run, CONTENT, evs); this.consumeEvents(evs); });
-    x -= 48;
-    mkBtn("speed", x, 48, "x1", () => { this.run.speed = this.run.speed === 1 ? 2 : 1; });
-    x -= 68;
-    mkBtn("auto", x, 76, "Auto ✗", () => { this.autoWave = !this.autoWave; this.autoWaveAt = null; });
-    x -= 98;
-    mkBtn("nextWave", x, 100, "▶ Vague", () => { startNextWave(this.run, CONTENT); }, 15, true);
+    }));
+    place(iconS, cx => mkIconBtn("ww", cx, "icon_ww", () => {
+      const evs: SimEvent[] = []; castWhirlwind(this.run, CONTENT, evs); this.consumeEvents(evs);
+    }));
+    const wSpeed = touchSize(48), wAuto = touchSize(76), wWave = touchSize(100);
+    place(wSpeed, cx => mkBtn("speed", cx, wSpeed, "x1", () => { this.run.speed = this.run.speed === 1 ? 2 : 1; }));
+    place(wAuto, cx => mkBtn("auto", cx, wAuto, "Auto ✗", () => { this.autoWave = !this.autoWave; this.autoWaveAt = null; }));
+    place(wWave, cx => mkBtn("nextWave", cx, wWave, "▶ Vague", () => { startNextWave(this.run, CONTENT); }, 15, true));
 
     // Séparateur entre le bloc d'état et le bloc d'actions
     bar.lineStyle(1, 0xc9a227, 0.15);
-    bar.lineBetween(x - 62, this.hudTop + 12, x - 62, v.safeBottom - 12);
+    bar.lineBetween(x - 8, this.hudTop + 12, x - 8, v.safeBottom - 12);
     this.hud.setDepth(1000);
 
-    // Bouton quitter : coin haut-gauche sûr (sous l'encoche éventuelle)
-    this.quitBtn = uiButton(this, v.safeLeft + 55, v.safeTop + 26, "⟵ Camp", { w: 86, h: 32, fontSize: 13 },
-      () => this.openQuitConfirm()).container.setDepth(1000);
+    // Bouton quitter : coin haut-gauche sûr (sous l'encoche éventuelle). Sa hauteur
+    // effective décide de son centre, sinon il déborderait au-dessus sur mobile.
+    const quitH = touchSize(32), quitW = touchSize(86);
+    this.quitBtn = uiButton(this, v.safeLeft + 10 + quitW / 2, v.safeTop + 8 + quitH / 2, "⟵ Camp",
+      { w: quitW, h: quitH, fontSize: 13 }, () => this.openQuitConfirm()).container.setDepth(1000);
 
     // Annonce de Faille (portails) — haut de l'écran, visible uniquement quand pertinent
     this.hudTexts["portalWarn"] = this.add.text(GAME_W / 2, v.safeTop + 10, "", {

@@ -7,6 +7,7 @@
 import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
 import { CURSOR_POINT, FONT_BODY } from "../ui";
+import { touchSize } from "../viewport";
 import { uiFramedPanel } from "./panel";
 
 export interface UiNavCardOpts {
@@ -21,9 +22,15 @@ export interface UiNavCardOpts {
   onSelect: () => void;
 }
 
-export function uiNavCard(scene: Phaser.Scene, x: number, y: number, opts: UiNavCardOpts): Phaser.GameObjects.Container {
+export interface UiNavCard {
+  container: Phaser.GameObjects.Container;
+  /** Hauteur EFFECTIVE après plancher tactile — l'écran empile d'après elle. */
+  h: number;
+}
+
+export function uiNavCard(scene: Phaser.Scene, x: number, y: number, opts: UiNavCardOpts): UiNavCard {
   const w = opts.w ?? 540;
-  const h = opts.h ?? 68;
+  const h = touchSize(opts.h ?? 68);
   const container = scene.add.container(x, y);
 
   const { container: panel } = uiFramedPanel(scene, 0, 0, { w, h, borderColor: opts.accent ?? ACCENT.gold, radius: 12 });
@@ -49,5 +56,5 @@ export function uiNavCard(scene: Phaser.Scene, x: number, y: number, opts: UiNav
   zone.on("pointerdown", () => opts.onSelect());
   container.add(zone);
 
-  return container;
+  return { container, h };
 }

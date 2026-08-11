@@ -22,6 +22,11 @@ export const WORLD_H = BATTLEFIELD.h;
 /** Plafond de densité : au-delà, le framebuffer coûte plus qu'il n'apporte. */
 export const MAX_DPR = 2;
 
+/** Plancher d'ergonomie tactile, en pixels CSS (44 px : Apple HIG ; Material dit 48 dp).
+ *  Exprimé en pixels RÉELS, pas en unités logiques — c'est le doigt qui décide, pas le repère
+ *  du jeu. `Viewport.touchMin` fait la conversion pour l'écran courant. */
+export const TOUCH_MIN_CSS = 44;
+
 /** Encoches / barres système, en pixels CSS (env(safe-area-inset-*)). */
 export interface SafeInsets {
   top: number;
@@ -53,6 +58,13 @@ export interface Viewport {
   safeTop: number;
   safeRight: number;
   safeBottom: number;
+  /** Pixels CSS par unité logique — pont entre le repère du jeu et l'ergonomie réelle. */
+  cssPerLogical: number;
+  /** Taille minimale d'une cible tactile, EN UNITÉS LOGIQUES, pour atteindre
+   *  `TOUCH_MIN_CSS` à l'écran. Varie fortement selon l'appareil : ~26 sur un grand
+   *  écran de bureau, ~73 sur un mobile paysage. Les composants s'en servent comme
+   *  plancher — c'est ce qui empêche d'écrire une hauteur trop petite à la main. */
+  touchMin: number;
   /** Écran plus haut que large : proposer de tourner l'appareil (paysage cible). */
   portrait: boolean;
 }
@@ -84,9 +96,12 @@ export function computeViewport(
 
   // Les encoches sont exprimées en px CSS : converties en unités logiques.
   const k = d / zoom;
+  const cssPerLogical = w / width;
   return {
     canvasW, canvasH, cssW: w, cssH: h, zoom,
     left, top, right: left + width, bottom: top + height, width, height,
+    cssPerLogical,
+    touchMin: TOUCH_MIN_CSS / cssPerLogical,
     safeLeft: left + insets.left * k,
     safeTop: top + insets.top * k,
     safeRight: left + width - insets.right * k,
@@ -103,6 +118,13 @@ let current: Viewport = computeViewport(WORLD_W, WORLD_H, 1);
 
 export function viewport(): Viewport {
   return current;
+}
+
+/** Hauteur/largeur effective d'un élément interactif : jamais sous le plancher tactile
+ *  de l'écran courant. À utiliser dans TOUT composant cliquable plutôt qu'une valeur
+ *  écrite à la main — sur mobile, 40 unités logiques ne font que ~24 px sous le doigt. */
+export function touchSize(desired: number): number {
+  return Math.max(desired, current.touchMin);
 }
 
 type Listener = (v: Viewport) => void;

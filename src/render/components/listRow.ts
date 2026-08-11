@@ -6,6 +6,7 @@
 import Phaser from "phaser";
 import { ACCENT, TEXT, UI_TINT } from "../theme";
 import { FONT_BODY } from "../ui";
+import { touchSize } from "../viewport";
 import { uiFramedPanel } from "./panel";
 import { uiButton } from "./button";
 
@@ -36,9 +37,19 @@ export interface UiListRowOpts {
   state?: RowState;
 }
 
-export function uiListRow(scene: Phaser.Scene, x: number, y: number, opts: UiListRowOpts): Phaser.GameObjects.Container {
+export interface UiListRow {
+  container: Phaser.GameObjects.Container;
+  /** Hauteur EFFECTIVE : la rangée grandit pour rester tapable ET pour contenir son
+   *  bouton d'action, qui a lui aussi son plancher. L'écran doit empiler d'après
+   *  cette valeur — sinon les rangées se chevauchent sur mobile. */
+  h: number;
+}
+
+export function uiListRow(scene: Phaser.Scene, x: number, y: number, opts: UiListRowOpts): UiListRow {
   const w = opts.w ?? 600;
-  const h = opts.h ?? 62;
+  // Le bouton interne impose son propre plancher : la rangée doit pouvoir le loger.
+  const btnH = touchSize(34);
+  const h = Math.max(touchSize(opts.h ?? 62), btnH + 14);
   const state = opts.state ?? "normal";
   const colors = rowColors(state);
 
@@ -63,5 +74,5 @@ export function uiListRow(scene: Phaser.Scene, x: number, y: number, opts: UiLis
     }).setOrigin(0.5));
   }
 
-  return container;
+  return { container, h };
 }

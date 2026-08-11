@@ -39,10 +39,12 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   surface sur mobile portrait, le reste en bandes noires). `render/viewport.ts` = source unique
   (framebuffer, zoom, rectangle visible, encoches), réactif au resize/rotation ; invite « tournez
   votre appareil » en CSS sur mobile portrait.
-- **Chantier UI/UX en cours** : socle format posé (ADR-010). Reste au plan validé — cibles tactiles
-  garanties par les composants + liste défilante ; puis identité visuelle (remplacer les icônes
-  emoji système par un vrai set, fond texturé, hiérarchie, passe sur le terrain de combat) ; puis
-  transitions/feedback et migration des écrans restants (Boutique, Chroniques, Bestiaire) sur le kit.
+- **Chantier UI/UX en cours** : socle format posé (ADR-010) + cibles tactiles garanties par les
+  composants (ADR-011, `touchSize`). Reste au plan validé — **liste défilante** (pas encore faite :
+  une liste plus longue que l'écran déborde sans recours, le Bestiaire cassera dès l'ajout de
+  créatures) ; identité visuelle (remplacer les icônes emoji système par un vrai set, fond texturé,
+  hiérarchie, passe sur le terrain de combat) ; puis transitions/feedback et migration des écrans
+  restants (Boutique, Chroniques, Bestiaire) sur le kit.
 
 ## Prochaine grosse feature actée (design au GDD, à implémenter)
 **Équipement du héros + loot** : 3 slots (arme/armure/relique), butin en fin de run victorieux
