@@ -508,7 +508,9 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private buildHeroRows(cursor: LayoutCursor, c: Phaser.GameObjects.Container) {
-    c.add(this.add.text(400, cursor.next(26), `${CONTENT.hero.name} — les Sceaux ⚜ se gagnent avec les kills du héros en run`,
+    // Dit ce qui est RÉELLEMENT récompensé (ADR-021) : le temps passé à retenir la
+    // horde, et non les kills — sinon le joueur optimise la mauvaise chose.
+    c.add(this.add.text(400, cursor.next(26), `${CONTENT.hero.name} — les Sceaux ⚜ se gagnent en retenant la horde au corps à corps`,
       { fontSize: "13px", color: DIM, ...TXT }).setOrigin(0.5));
 
     const skills: { id: SkillId; name: string; desc: (lvl: number) => string }[] = [

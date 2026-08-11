@@ -23,7 +23,7 @@ class MemAdapter implements SaveAdapter {
 function result(over: Partial<RunResult> = {}): RunResult {
   return {
     victory: false, wavesCleared: 3, castleHpLeft: 0,
-    shards: 15, kills: 20, heroKills: 4, sceaux: 1, seenEnemies: ["goblin"], stars: 0,
+    shards: 15, kills: 20, heroKills: 4, heroBlockSeconds: 36, heroDeaths: 0, sceaux: 1, seenEnemies: ["goblin"], stars: 0,
     ...over,
   };
 }

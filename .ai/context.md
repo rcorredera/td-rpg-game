@@ -20,6 +20,15 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
+- **Méta-progression (ADR-021) — FAIT** : armurerie vidée en **5 runs** au lieu de 2, puits d'Éclats
+  en 14, sorts en **12 runs** au lieu de 2, et le ch.10 rapporte **×3,32** le ch.1 au lieu de ×1,11.
+  Le rapport du banc affiche « aucune saturation détectée ». Les **Sceaux paient le temps de blocage**
+  (`heroBlockSeconds`) et non les kills — la métrique récompensait le placement le moins efficace ;
+  −1 par mort du héros pour éviter le sacrifice répété. Armurerie 3 → **6 paliers** (120 → 420 ◆),
+  sorts 3 → **4 niveaux** (24 → 56 ⚜). `UnlockDef` vit désormais dans le `ContentPack` **avec ses
+  effets** (`castleHp`, `startingGold`, `heroRespawnS`, `accountSpell`) : ajouter un palier ne touche
+  plus à la sim. ⚠ Deux textes d'UI annonçaient encore les kills — une monnaie doit **dire** ce
+  qu'elle récompense. Garanties testées, courbe prouvée par mutation.
 - **Chemins & cartes (ADR-019)** : le tracé dessiné ne s'écarte plus du chemin que suit la sim
   (spline de Catmull-Rom → arrondi de coins borné, `render/path.ts` pur) — **64,7 px d'écart mesurés
   avant, 5,8 après**, pour une route de 46 de large. Les unités marchaient visiblement à côté de leur

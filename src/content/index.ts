@@ -4,7 +4,8 @@
 // Coordonnées logiques : 800x600 (le rendu scale).
 // ============================================================
 
-import type { ChapterDef, ContentPack, MapDef, WaveDef, WaveSpawn } from "../core/types";
+import type { ChapterDef, ContentPack, MapDef, UnlockDef, WaveDef, WaveSpawn } from "../core/types";
+export type { UnlockDef };
 
 // ---------- Cartes des chapitres 2+ (placeholders en attente du lore) ----------
 
@@ -266,21 +267,26 @@ export const CONTENT: ContentPack = {
     hp: 220, speed: 110, meleeDps: 30, meleeRange: 42, respawnS: 8,
     // Sorts à 3 niveaux, upgrades payés en Sceaux (GDD §Méta).
     skills: {
+      // 4 niveaux par sort, et non 3 : à 24 Sceaux au total le puits se vidait en
+      // 2 runs alors qu'un run en rapporte 2 à 4 (mesuré au banc). 56 Sceaux tient
+      // désormais une douzaine de parties (ADR-021).
       whirlwind: {
         levels: [
           { damage: 45, radius: 70, cooldownS: 9 },
           { damage: 70, radius: 80, cooldownS: 8 },
           { damage: 100, radius: 90, cooldownS: 7 },
+          { damage: 145, radius: 100, cooldownS: 6 },
         ],
-        upgradeCosts: [4, 8],
+        upgradeCosts: [4, 8, 16],
       },
       rally: {
         levels: [
           { fireRateMult: 1.6, radius: 150, durationS: 5, cooldownS: 18 },
           { fireRateMult: 1.8, radius: 160, durationS: 6, cooldownS: 16 },
           { fireRateMult: 2.0, radius: 175, durationS: 7, cooldownS: 14 },
+          { fireRateMult: 2.3, radius: 190, durationS: 8, cooldownS: 12 },
         ],
-        upgradeCosts: [4, 8],
+        upgradeCosts: [4, 8, 16],
       },
     },
   },
@@ -292,6 +298,18 @@ export const CONTENT: ContentPack = {
   // Vente de tour : 65% de l'investissement remboursé (GDD : 60-70%, à affiner au playtest).
   economy: { sellRefundRate: 0.65, startingGold: 160 },
 
+  // Armurerie. Six paliers échelonnés plutôt que trois : à 120 Éclats au total, le
+  // catalogue se vidait en 2 runs alors que le jeu compte 10 chapitres (ADR-021).
+  // Chaque entrée porte son effet — la simulation les applique sans les connaître.
+  unlocks: [
+    { id: "tower_frost", name: "Tour de givre", desc: "Ralentit les ennemis en zone. Le 3e pilier de votre défense.", cost: 30 },
+    { id: "castle_hp_1", name: "Remparts renforcés", desc: "+10 PV de château à chaque partie.", cost: 40, castleHp: 10 },
+    { id: "spell_arrow_rain", name: "Pluie de flèches", desc: "Sort de compte utilisable en partie (longue recharge).", cost: 55, accountSpell: true },
+    { id: "war_chest", name: "Coffre de guerre", desc: "+70 pièces d'or au début de chaque bataille.", cost: 75, startingGold: 70 },
+    { id: "hero_respawn_1", name: "Serment du Chevalier", desc: "Le héros revient au combat 3 s plus tôt.", cost: 90, heroRespawnS: 3 },
+    { id: "castle_hp_2", name: "Donjon de pierre", desc: "+15 PV de château supplémentaires.", cost: 130, castleHp: 15 },
+  ],
+
   // Barème de fin de run. Ces valeurs vivaient en dur dans `computeResult` : hors
   // de portée d'ADR-003, elles n'ont jamais été rééquilibrées avec le reste, d'où
   // une méta saturée en 2 runs (mesurable via `npm run balance`).
@@ -300,8 +318,13 @@ export const CONTENT: ContentPack = {
     shardsCastleBonus: 20,
     shardsVictoryBonus: 25,
     shardsFloor: 3,
-    heroKillsPerSceau: 4,
+    // Un chapitre tardif doit payer nettement plus qu'un rejeu du premier, sinon
+    // farmer la carte la plus facile est strictement optimal (mesuré : ×1,11 seulement
+    // entre le ch.1 et le ch.10). Progression douce mais nette, ×1 → ×3.
+    shardsChapterMult: [1, 1.22, 1.44, 1.66, 1.88, 2.1, 2.32, 2.54, 2.76, 3],
+    heroBlockSecondsPerSceau: 9,
     sceauxVictoryBonus: 2,
+    sceauxPerHeroDeath: 1,
   },
 
   // Étoiles : "château beaucoup touché" = plus de 50% des PV perdus (GDD §Étoiles).
@@ -311,11 +334,8 @@ export const CONTENT: ContentPack = {
 };
 
 // ---------- Unlocks méta (écran compte) ----------
-
-export interface UnlockDef { id: string; name: string; desc: string; cost: number }
-
-export const UNLOCKS: UnlockDef[] = [
-  { id: "tower_frost", name: "Tour de givre", desc: "Ralentit les ennemis. Le 3e pilier de votre défense.", cost: 30 },
-  { id: "spell_arrow_rain", name: "Pluie de flèches", desc: "Sort de compte utilisable en partie (gros recharge).", cost: 50 },
-  { id: "castle_hp_1", name: "Remparts renforcés", desc: "+10 PV de château au départ de chaque partie.", cost: 40 },
-];
+// Vit désormais DANS le ContentPack (`CONTENT.unlocks`) : chaque déblocage porte ses
+// effets, que `createRun` applique sans les connaître. Le catalogue passe de 3 à 6
+// entrées et de 120 à 420 Éclats — à 120, il se vidait en 2 runs pour 10 chapitres
+// (ADR-021). Réexporté ici : c'est le nom sous lequel l'UI et la méta le lisent.
+export const UNLOCKS: UnlockDef[] = CONTENT.unlocks;

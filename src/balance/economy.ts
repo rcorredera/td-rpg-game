@@ -11,7 +11,7 @@
 // ============================================================
 
 import type { ContentPack } from "../core/types";
-import type { UnlockDef } from "../content/index";
+import type { UnlockDef } from "../core/types";
 import { playableChapter } from "./datasheet";
 
 /** Gains d'un run, calculés comme `computeResult` — même barème, sans jouer. */
@@ -31,8 +31,12 @@ export function shardsForRun(
   return Math.max(waves > 0 ? r.shardsFloor : 0, Math.round((base + hpBonus + victoryBonus) * mult));
 }
 
-export function sceauxForRun(c: ContentPack, heroKills: number, victory = true): number {
-  return Math.floor(heroKills / c.rewards.heroKillsPerSceau) + (victory ? c.rewards.sceauxVictoryBonus : 0);
+export function sceauxForRun(c: ContentPack, heroBlockSeconds: number, victory = true, heroDeaths = 0): number {
+  return Math.max(0,
+    Math.floor(heroBlockSeconds / c.rewards.heroBlockSecondsPerSceau)
+    + (victory ? c.rewards.sceauxVictoryBonus : 0)
+    - heroDeaths * c.rewards.sceauxPerHeroDeath,
+  );
 }
 
 // ---------- Puits ----------
@@ -76,20 +80,20 @@ export interface EconomyHealth {
   runsToBuyUnlocks: number;
   /** Runs du chapitre 1 pour épuiser TOUT le puits d'Éclats (armurerie + forge). */
   runsToDrainShards: number;
-  /** Runs pour maxer les sorts, à `heroKills` kills héros par run. */
+  /** Runs pour maxer les sorts, au temps de blocage supposé par run. */
   runsToMaxSkills: number;
   /** Chapitres jouables disponibles — la durée à couvrir. */
   chapterCount: number;
 }
 
-/** `heroKillsPerRun` : hypothèse de jeu actif, à confronter au chiffre mesuré par l'autoplay. */
-export function economyHealth(c: ContentPack, unlocks: UnlockDef[], heroKillsPerRun = 40): EconomyHealth {
+/** `blockSecondsPerRun` : médiane MESURÉE au banc (14 à 50 s selon le chapitre), pas une hypothèse — la valeur optimiste d'origine faisait croire le puits de Sceaux trois fois plus vite rempli qu'il ne l'est. */
+export function economyHealth(c: ContentPack, unlocks: UnlockDef[], blockSecondsPerRun = 35): EconomyHealth {
   const playable = c.chapters.flatMap((ch, i) => (ch.playable ? [i] : []));
   const shardsPerChapter = playable.map(i => shardsForRun(c, i));
   const first = shardsPerChapter[0] ?? 0;
   const last = shardsPerChapter[shardsPerChapter.length - 1] ?? 0;
   const s = sinks(c, unlocks);
-  const perRunSceaux = sceauxForRun(c, heroKillsPerRun);
+  const perRunSceaux = sceauxForRun(c, blockSecondsPerRun);
   return {
     sinks: s,
     shardsPerChapter,

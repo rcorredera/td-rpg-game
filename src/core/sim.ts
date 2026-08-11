@@ -7,7 +7,7 @@
 import { BATTLEFIELD } from "./types";
 import type {
   ContentPack, EnemyState, PlayableChapter, Profile, RunResult, RunState, SimEvent,
-  TowerSpecDef, TowerState, Vec2,
+  TowerSpecDef, TowerState, UnlockDef, Vec2,
 } from "./types";
 
 const FIXED_DT = 1 / 60; // pas de temps fixe : la vitesse x2 multiplie le nb de ticks, pas dt
@@ -49,11 +49,16 @@ function posOnPath(path: Vec2[], lengths: number[], d: number): Vec2 {
 export function createRun(content: ContentPack, profile: Profile, chapterIndex = 0): RunState {
   const ch = content.chapters[chapterIndex];
   if (!ch || !ch.playable) throw new Error(`chapitre ${chapterIndex} injouable`);
-  const castleBonus = profile.unlocks.includes("castle_hp_1") ? 10 : 0;
+  // Effets des déblocages : lus dans le content, jamais codés ici (ADR-003/021).
+  // Ajouter un palier d'armurerie ne doit pas obliger à toucher à la simulation.
+  const owned = content.unlocks.filter(u => profile.unlocks.includes(u.id));
+  const sum = (pick: (u: UnlockDef) => number | undefined) =>
+    owned.reduce((a, u) => a + (pick(u) ?? 0), 0);
+  const castleBonus = sum(u => u.castleHp);
   const heroStart = ch.map.paths[0]!.waypoints[0]!;
   return {
     time: 0, timeAcc: 0, speed: 1, phase: "building", chapterIndex,
-    gold: content.economy.startingGold,
+    gold: content.economy.startingGold + sum(u => u.startingGold),
     castleHp: ch.map.castleHp + castleBonus,
     castleHpMax: ch.map.castleHp + castleBonus,
     waveIndex: -1,
@@ -63,10 +68,12 @@ export function createRun(content: ContentPack, profile: Profile, chapterIndex =
       target: { x: heroStart.x + 60, y: heroStart.y },
       hp: content.hero.hp, maxHp: content.hero.hp,
       alive: true, respawnAt: 0, whirlwindReady: 0, rallyReady: 0,
+      // Plancher à 2 s : un respawn instantané ferait du héros un bloqueur infini.
+      respawnS: Math.max(2, content.hero.respawnS - sum(u => u.heroRespawnS)),
     },
     accountSpellReady: 0,
-    hasAccountSpell: profile.unlocks.includes("spell_arrow_rain"),
-    nextUid: 1, kills: 0, heroKills: 0, heroDeaths: 0,
+    hasAccountSpell: owned.some(u => u.accountSpell),
+    nextUid: 1, kills: 0, heroKills: 0, heroDeaths: 0, heroBlockSeconds: 0,
     skillLevels: { whirlwind: profile.skills?.whirlwind ?? 1, rally: profile.skills?.rally ?? 1 },
     forgeLevels: { ...profile.forge },
     seenEnemies: [],
@@ -299,11 +306,12 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
     }
     if (best) {
       blockedUid = best.uid;
+      s.heroBlockSeconds += dt; // → Sceaux : le temps passé à retenir la horde
       damageEnemy(s, c, best, c.hero.meleeDps * dt, events, true);
       if (best.alive) {
         h.hp -= c.enemies[best.defId]!.meleeDps * dt;
         if (h.hp <= 0) {
-          h.alive = false; h.respawnAt = s.time + c.hero.respawnS;
+          h.alive = false; h.respawnAt = s.time + h.respawnS;
           s.heroDeaths += 1; // → étoiles
           events.push({ type: "heroDied" });
         }
@@ -428,8 +436,14 @@ export function computeResult(s: RunState, c: ContentPack): RunResult {
     s.waveIndex >= 0 ? r.shardsFloor : 0,
     Math.round((base + hpBonus + victoryBonus) * chapterMult),
   );
-  // Sceaux (monnaie héros) : récompense l'usage actif du héros (GDD §Économie)
-  const sceaux = Math.floor(s.heroKills / r.heroKillsPerSceau) + (victory ? r.sceauxVictoryBonus : 0);
+  // Sceaux (monnaie héros) : récompense le TEMPS passé à retenir la horde, pas les
+  // kills. Mesuré : un héros posté en dernier rempart tue moins mais fait gagner ;
+  // indexer sur les kills payait donc le placement le moins efficace (ADR-021).
+  const sceaux = Math.max(0,
+    Math.floor(s.heroBlockSeconds / r.heroBlockSecondsPerSceau)
+    + (victory ? r.sceauxVictoryBonus : 0)
+    - s.heroDeaths * r.sceauxPerHeroDeath,
+  );
   // Étoiles (GDD §Étoiles) : 3 = sans-faute, 1 = héros mort ET château très entamé, 2 = entre les deux
   let stars = 0;
   if (victory) {
@@ -440,6 +454,7 @@ export function computeResult(s: RunState, c: ContentPack): RunResult {
   }
   return {
     victory, wavesCleared, castleHpLeft: s.castleHp, shards,
-    kills: s.kills, heroKills: s.heroKills, sceaux, seenEnemies: [...s.seenEnemies], stars,
+    kills: s.kills, heroKills: s.heroKills, heroBlockSeconds: s.heroBlockSeconds,
+    heroDeaths: s.heroDeaths, sceaux, seenEnemies: [...s.seenEnemies], stars,
   };
 }

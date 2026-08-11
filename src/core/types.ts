@@ -134,6 +134,26 @@ export type ChapterDef =
 
 export type PlayableChapter = Extract<ChapterDef, { playable: true }>;
 
+/**
+ * Déblocage d'armurerie, acheté en Éclats. Porte SES PROPRES EFFETS : le bonus de
+ * « Remparts renforcés » vivait en dur dans `createRun`, hors de portée d'ADR-003 —
+ * ajouter un palier obligeait alors à modifier la simulation.
+ */
+export interface UnlockDef {
+  id: string;
+  name: string;
+  desc: string;
+  cost: number;
+  /** Points de vie de château supplémentaires. */
+  castleHp?: number;
+  /** Or de départ supplémentaire. */
+  startingGold?: number;
+  /** Secondes retirées au délai de réapparition du héros. */
+  heroRespawnS?: number;
+  /** Débloque un sort de compte utilisable en partie. */
+  accountSpell?: boolean;
+}
+
 /** Barème des gains de fin de run, en Éclats (méta défense) et Sceaux (méta héros). */
 export interface RewardRules {
   /** Éclats par vague nettoyée. */
@@ -147,10 +167,13 @@ export interface RewardRules {
   /** Multiplicateur d'Éclats par chapitre (index = chapitre). Absent = 1 :
    *  sans lui, finir le chapitre 9 rapporte autant que rejouer le chapitre 1. */
   shardsChapterMult?: number[];
-  /** Kills du héros nécessaires pour 1 Sceau. */
-  heroKillsPerSceau: number;
+  /** Secondes de blocage du héros nécessaires pour 1 Sceau. */
+  heroBlockSecondsPerSceau: number;
   /** Sceaux forfaitaires de victoire. */
   sceauxVictoryBonus: number;
+  /** Sceaux retirés par mort du héros. Le blocage récompense l'engagement ; sans
+   *  contrepartie, se jeter dans la horde pour mourir aussitôt serait rentable. */
+  sceauxPerHeroDeath: number;
 }
 
 export interface ContentPack {
@@ -167,6 +190,8 @@ export interface ContentPack {
   forge: { damageMultPerLevel: number; upgradeCosts: number[] };
   /** Économie in-run : taux de remboursement à la vente, or de départ (GDD §Économie). */
   economy: { sellRefundRate: number; startingGold: number };
+  /** Déblocages d'armurerie, effets compris (ADR-021). */
+  unlocks: UnlockDef[];
   /** Récompenses de fin de run (GDD §Économie). Vivaient en dur dans `computeResult`,
    *  hors de portée d'ADR-003 : c'est ce qui les a laissées dériver pendant que le
    *  reste de l'équilibrage bougeait. Toute la méta-progression se règle ici. */
@@ -241,6 +266,8 @@ export interface HeroState {
   pos: Vec2; target: Vec2;
   hp: number; maxHp: number;
   alive: boolean; respawnAt: number;
+  /** Délai de réapparition effectif (base du content moins les déblocages). */
+  respawnS: number;
   whirlwindReady: number; rallyReady: number;
 }
 
@@ -268,8 +295,13 @@ export interface RunState {
   hasAccountSpell: boolean;
   nextUid: number;
   kills: number;
-  /** Kills réalisés par le héros (mêlée + Tournoiement) → Sceaux en fin de run. */
+  /** Kills réalisés par le héros (mêlée + Tournoiement). */
   heroKills: number;
+  /** Secondes cumulées pendant lesquelles le héros a BLOQUÉ un ennemi → Sceaux.
+   *  Mesure l'usage réel du héros là où les kills mesuraient surtout son placement :
+   *  posté à l'entrée il tue beaucoup et laisse le château tomber, posté en dernier
+   *  rempart il tue moins et fait gagner (GDD §Économie, ADR-021). */
+  heroBlockSeconds: number;
   /** Niveaux des sorts, copiés du profil au createRun. */
   skillLevels: { whirlwind: number; rally: number };
   /** Niveaux de forge par tour, copiés du profil au createRun. */
@@ -287,6 +319,10 @@ export interface RunResult {
   shards: number;
   kills: number;
   heroKills: number;
+  /** Secondes passées à bloquer la horde — la base des Sceaux (ADR-021). */
+  heroBlockSeconds: number;
+  /** Morts du héros : elles coûtent des Sceaux et pèsent sur les étoiles. */
+  heroDeaths: number;
   sceaux: number;
   /** Types d'ennemis croisés (fusionnés dans le Bestiaire du profil). */
   seenEnemies: string[];

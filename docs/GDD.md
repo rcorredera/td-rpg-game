@@ -145,8 +145,8 @@ Gobelin (rapide/fragile), Orc (standard), Brute (lent/tanky), Chauve-souris (vol
 - **Dégâts au château** : un ennemi qui atteint la base **explose** (fx + flash) et inflige `damageToCastle × (PV_max/PV_base)^0.5` — plus le monstre est renforcé (scaling de vague, mini-boss), plus ça fait mal : un mini-boss ×4 PV tape ×2. Exposant dans le content (`scaling.castleDamageExponent`). La base a une **barre de PV toujours visible** sur la carte (vert → jaune → rouge) + compteur `PV/PVmax` au HUD.
 - Or par kill : valeur fixe par archétype (voir `src/content/index.ts`) — +30% à la passe nº1.
 - Or de départ : 160 (dans le content désormais, plus en dur dans la sim).
-- **Éclats fin de run** : `max(plancher, (vagues×5 + bonusPV + bonusVictoire) × multChapitre)` où bonusPV = `(PV restants / PV max) × 20` si victoire, bonusVictoire = 25, plancher = 3 dès qu'une vague est entamée. Principe : **une défaite paie toujours**, ne jamais punir l'essai. Barème dans le content (`rewards`) depuis ADR-018 — il vivait en dur dans `computeResult`, hors de portée d'ADR-003, ce qui explique qu'il n'ait jamais suivi le reste. `shardsChapterMult` (par chapitre, défaut 1) est le levier contre le farm du ch.1, **pas encore réglé**.
-- **Sceaux ⚜ fin de run** (monnaie du héros) : `floor(kills du héros / 4) + 2 si victoire`. Comptent les kills en mêlée et au Tournoiement (pas la Pluie de flèches : sort de compte, pas du héros). Intention : récompenser l'usage **actif** du héros, pas le camping. Deux monnaies séparées pour pouvoir équilibrer les robinets indépendamment — fusion possible plus tard si ça complexifie pour rien (voir Décisions ouvertes).
+- **Éclats fin de run** : `max(plancher, (vagues×5 + bonusPV + bonusVictoire) × multChapitre)` où bonusPV = `(PV restants / PV max) × 20` si victoire, bonusVictoire = 25, plancher = 3 dès qu'une vague est entamée. Principe : **une défaite paie toujours**, ne jamais punir l'essai. Barème dans le content (`rewards`) depuis ADR-018 — il vivait en dur dans `computeResult`, hors de portée d'ADR-003, ce qui explique qu'il n'ait jamais suivi le reste. `shardsChapterMult` porte la courbe par chapitre : **×1 au ch.1 → ×3,32 au ch.10** (ADR-021). Sans elle, le ch.10 ne rapportait que ×1,11 le ch.1 et farmer la carte la plus facile était strictement optimal.
+- **Sceaux ⚜ fin de run** (monnaie du héros) : `floor(secondes de blocage / 9) + 2 si victoire − 1 par mort du héros`, jamais négatif. Le compteur tourne tant que le héros **retient** un ennemi au corps à corps. Indexés sur ses **kills** jusqu'à l'ADR-021, ils payaient le mauvais placement : mesuré au banc, un héros posté à l'entrée tue beaucoup et laisse le château tomber, un héros en dernier rempart tue moins et fait *gagner*. La pénalité de mort évite l'inverse — se jeter dans la horde pour mourir aussitôt. Gain réel mesuré : **2 à 4 Sceaux par run**. Deux monnaies séparées pour équilibrer les robinets indépendamment.
 
 ## Équilibrage — méthode et constats (ADR-018)
 
@@ -207,13 +207,16 @@ que soit la façon de jouer. C'est la colonne « Charge » du rapport de pressio
 
 Organisée dans l'**Armurerie** (+ Chroniques) — voir §Lore & présentation pour la structure :
 
-**Arsenal** — 3 unlocks en Éclats :
+**Arsenal** — 6 unlocks en Éclats, **420 au total** (ADR-021). À 3 unlocks et 120 Éclats, le catalogue se vidait en 2 runs pour 10 chapitres. Chaque entrée porte **ses propres effets** dans le content : ajouter un palier ne touche plus à la simulation.
 
 | Unlock | Coût | Intention |
 |---|---|---|
 | Tour de givre | 30 | Le joueur joue ~2 runs avec 2 tours, puis débloque le 3e pilier (courbe d'apprentissage) |
-| Pluie de flèches | 50 | Sort de compte castable en run, gros cooldown |
 | Remparts renforcés | 40 | +10 PV château, premier palier passif |
+| Pluie de flèches | 55 | Sort de compte castable en run, gros cooldown |
+| Coffre de guerre | 75 | +70 or au départ — ouvre des ouvertures de partie différentes |
+| Serment du Chevalier | 90 | Héros de retour 3 s plus tôt : soutient le rôle de bloqueur que paient les Sceaux |
+| Donjon de pierre | 130 | +15 PV château, palier tardif |
 
 **Forge** — amélioration des troupes en Éclats : par tour, **4 niveaux** à +10% de dégâts permanents (20/45/80/130 ◆). Une tour verrouillée à la méta doit d'abord être débloquée. Puits de dépense long terme des Éclats — étendu après constat de playtest : tout était acheté au ch.4.
 
@@ -227,7 +230,7 @@ Réponse au mur de progression méta : une **page Équipement** dans l'Armurerie
 - Doublons → recyclage en Sceaux (pas d'inventaire infini à gérer).
 - À chiffrer : tables de loot dans le content, écran d'équipement, affichage des stats du héros.
 
-**Héros** — sorts à 3 niveaux, payés en **Sceaux ⚜** : Tournoiement (dégâts/rayon ↑, recharge ↓) et Ralliement (cadence/durée ↑, recharge ↓), 4 ⚜ puis 8 ⚜ par sort. L'onglet affiche aussi un emplacement « ??? — bientôt » : teaser du 2e héros (roster v1).
+**Héros** — sorts à **4 niveaux**, payés en **Sceaux ⚜** : Tournoiement (dégâts/rayon ↑, recharge ↓) et Ralliement (cadence/durée ↑, recharge ↓), 4 puis 8 puis 16 ⚜ par sort — **56 ⚜ au total**, soit une douzaine de parties. À 3 niveaux et 24 ⚜, tout était maxé en 2 runs (ADR-021). L'onglet affiche aussi un emplacement « ??? — bientôt » : teaser du 2e héros (roster v1).
 
 **Chroniques** — top 5 des runs (vagues, kills, victoire, date), persisté dans le profil. Base du futur leaderboard des Failles : le jour où un serveur existe, ces entrées remontent telles quelles.
 

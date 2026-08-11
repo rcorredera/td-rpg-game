@@ -703,7 +703,9 @@ export class GameScene extends Phaser.Scene {
     }
     overlay.add(this.add.text(0, -30, `Vagues : ${result.wavesCleared}/${this.ch.waves.length}`, { fontSize: "18px", color: C.uiText, fontFamily: FONT_BODY }).setOrigin(0.5));
     overlay.add(this.add.text(0, 5, `Éclats gagnés : +${result.shards}`, { fontSize: "20px", color: "#7ec8e3", fontFamily: FONT_BODY }).setOrigin(0.5));
-    if (result.sceaux > 0) overlay.add(this.add.text(0, 32, `Sceaux gagnés : +${result.sceaux} ⚜ (${result.heroKills} kills du héros)`, { fontSize: "15px", color: "#c97ba2", fontFamily: FONT_BODY }).setOrigin(0.5));
+    // Les Sceaux paient le TEMPS passé à retenir la horde, pas les kills (ADR-021) :
+    // l'écran doit dire ce qui est récompensé, sinon le joueur optimise autre chose.
+    if (result.sceaux > 0) overlay.add(this.add.text(0, 32, `Sceaux gagnés : +${result.sceaux} ⚜ (${Math.round(result.heroBlockSeconds)}s à retenir la horde)`, { fontSize: "15px", color: "#c97ba2", fontFamily: FONT_BODY }).setOrigin(0.5));
     overlay.add(uiButton(this, 0, 75, "Retour au campement", { w: 240, h: 44, gold: true, fontSize: 17 },
       () => this.scene.start("menu", { profileSvc: this.profileSvc })).container);
   }
