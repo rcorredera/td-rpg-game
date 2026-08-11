@@ -28,7 +28,11 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   d'un chapitre à l'autre (ch.10 = ×1,11 le ch.1) donc farm du ch.1 optimal ; armurerie et sorts
   saturés en 2 runs ; difficulté non monotone (ch.3 perdu, ch.4-9 gagnés) ; 1 800-3 800 or inutilisé
   au ch.10 (6 emplacements partout) ; Sceaux indexés sur les kills du héros alors que son bon
-  placement en fait moins. Détail et chiffres : GDD §Équilibrage.
+  placement en fait moins ; **pas de triangle de rôles** — archerie seule 9/10 victoires, mélange
+  5/10, catapulte seule et givre seul 0/10 (`--compo`). Détail et chiffres : GDD §Équilibrage.
+  ⚠ **Conséquence pour le contenu à venir** : un ennemi « anti-X » ne crée de la stratégie que si
+  la tour censée le contrer vaut la peine d'être construite. Réparer les rôles AVANT d'ajouter des
+  types d'ennemis, sinon ils ajoutent de la difficulté et non de la décision.
 - **Équilibrage** : passe nº1 faite (hpExponent 1.12, or +30%, départ 160, specs boostées) — calibrée
   au **bot de simulation** (stratégies scriptées sur la sim headless, méthode décrite au GDD §Décisions).
 - **UI** : rendu HiDPI (texte net), polices embarquées **Cinzel** (titres/boutons) + **Alegreya**

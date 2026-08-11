@@ -45,6 +45,14 @@ export interface AutoplayOptions {
   useHero?: boolean;
   /** Profil méta simulé (unlocks, forge, niveaux de sorts). Défaut : profil vierge. */
   profile?: Partial<Profile>;
+  /**
+   * Force la composition de la défense (cycle d'ids de tours). Défaut : `BUILD_CYCLE`.
+   *
+   * C'est le levier qui mesure s'il existe une DÉCISION tactique : si une défense
+   * mono-tour obtient le même résultat qu'une composition variée, alors choisir sa
+   * tour ne sert à rien et ajouter des types d'ennemis n'y changera rien.
+   */
+  towers?: string[];
 }
 
 /** Ce qui s'est passé sur une vague — le grain utile pour lire une défaite. */
@@ -93,9 +101,9 @@ function emptyProfile(over: Partial<Profile> = {}): Profile {
  */
 const BUILD_CYCLE = ["tower_archer", "tower_catapult", "tower_archer", "tower_frost", "tower_catapult"];
 
-function nextTowerId(c: ContentPack, s: RunState, unlocks: string[]): string | null {
-  for (let i = 0; i < BUILD_CYCLE.length; i++) {
-    const id = BUILD_CYCLE[(s.towers.length + i) % BUILD_CYCLE.length]!;
+function nextTowerId(c: ContentPack, s: RunState, unlocks: string[], cycle: string[]): string | null {
+  for (let i = 0; i < cycle.length; i++) {
+    const id = cycle[(s.towers.length + i) % cycle.length]!;
     const def = c.towers[id];
     if (!def) continue;
     if (def.requiresUnlock && !unlocks.includes(def.requiresUnlock)) continue;
@@ -135,7 +143,7 @@ function spendOnUpgrades(c: ContentPack, s: RunState): boolean {
 }
 
 /** Dépense tout l'or possible avant de lancer la vague, selon la politique. */
-function spend(c: ContentPack, s: RunState, policy: Policy, unlocks: string[]): void {
+function spend(c: ContentPack, s: RunState, policy: Policy, unlocks: string[], cycle: string[]): void {
   const slots = playableChapter(c, s.chapterIndex).map.slots.length;
   // `focus` s'arrête à un tiers des emplacements et met tout dans les niveaux.
   const buildCap = policy === "focus" ? Math.max(1, Math.ceil(slots / 3)) : slots;
@@ -149,7 +157,7 @@ function spend(c: ContentPack, s: RunState, policy: Policy, unlocks: string[]): 
       : s.towers.length < buildCap && s.towers.length <= s.waveIndex + 1;
 
     if (wantBuild) {
-      const id = nextTowerId(c, s, unlocks);
+      const id = nextTowerId(c, s, unlocks, cycle);
       const slot = freeSlot(c, s);
       if (id !== null && slot !== null && buildTower(s, c, slot, id, unlocks)) continue;
     }
@@ -158,7 +166,7 @@ function spend(c: ContentPack, s: RunState, policy: Policy, unlocks: string[]): 
     // tenter quand même. Borné par `buildCap` et NON par `slots` — sinon `focus`
     // finirait par occuper toute la carte et cesserait d'être une politique distincte.
     if (!wantBuild && s.towers.length < buildCap) {
-      const id = nextTowerId(c, s, unlocks);
+      const id = nextTowerId(c, s, unlocks, cycle);
       const slot = freeSlot(c, s);
       if (id !== null && slot !== null && buildTower(s, c, slot, id, unlocks)) continue;
     }
@@ -193,7 +201,7 @@ export function autoplayChapter(c: ContentPack, chapterIndex: number, opts: Auto
   let firstLeakWave: number | null = null;
 
   for (let w = 0; w < ch.waves.length; w++) {
-    spend(c, s, policy, profile.unlocks);
+    spend(c, s, policy, profile.unlocks, opts.towers ?? BUILD_CYCLE);
 
     const castleHpBefore = s.castleHp;
     const goldBefore = s.gold;

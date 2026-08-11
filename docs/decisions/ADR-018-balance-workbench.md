@@ -83,6 +83,9 @@ Le banc a payé dès sa première exécution, en révélant quatre défauts qu'a
   parcours tue *moins* mais fait *gagner* des chapitres que le laisser à l'entrée
   perd. Comme la monnaie est indexée sur ses kills, elle paie le placement le moins
   efficace.
+- **Le triangle de rôles n'existe pas.** Une défense d'archeries seules gagne 9
+  chapitres sur 10 ; un mélange des trois tours n'en gagne que 5 ; catapulte seule et
+  givre seul, aucun. Choisir sa tour n'est pas une décision — c'est un piège.
 
 Coût accepté : les formules d'analyse dupliquent celles de la sim. Les tests miroirs
 sont ce qui rend cette duplication tenable — sans eux, cet ADR serait à refuser.
