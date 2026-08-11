@@ -36,15 +36,20 @@ export function uiButton(
   // écrite à la main reste confortable sur grand écran mais devient inatteignable
   // au doigt sur mobile (cf. `touchSize`, ADR-011).
   const h = touchSize(opts.h ?? 36);
-  const w = touchSize(opts.w);
   const c = scene.add.container(x, y);
-  const img = scene.add.nineslice(0, 0, opts.gold ? "ui_btn_gold" : "ui_btn", undefined, w, h, 14, 14, 14, 16);
+  const img = scene.add.nineslice(0, 0, opts.gold ? "ui_btn_gold" : "ui_btn", undefined, touchSize(opts.w), h, 14, 14, 14, 16);
   if (!opts.gold) img.setTint(UI_TINT.btn);
   const txt = scene.add.text(0, -2, label, {
     fontSize: `${opts.fontSize ?? 15}px`,
     color: opts.color ?? (opts.gold ? "#3a2c12" : "#f0e6d2"),
     fontFamily: FONT_DISPLAY,
   }).setOrigin(0.5);
+
+  // Le bouton s'élargit pour contenir son libellé : la police est remontée sur
+  // petit écran (ADR-015), et une largeur demandée en dur laissait le texte
+  // dépasser de la plaque.
+  const w = Math.max(img.width, txt.width + 22);
+  if (w !== img.width) img.setSize(w, h);
   c.add([img, txt]);
   if (opts.disabled || !cb) {
     c.setAlpha(0.55);

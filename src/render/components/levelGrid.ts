@@ -9,7 +9,7 @@
 import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
-import { touchSize } from "../viewport";
+import { scaleFont, touchSize } from "../viewport";
 import { uiFramedPanel } from "./panel";
 import { rowColors, type RowState } from "./listRow";
 
@@ -64,8 +64,11 @@ export function uiLevelGrid(
   tiles: LevelTile[], availW: number, maxCols = 5,
 ): UiLevelGrid {
   const gap = 10;
-  // La tuile doit rester tapable : c'est le plancher qui décide sa hauteur.
-  const cellH = Math.max(74, touchSize(74));
+  // La tuile doit rester tapable ET loger son contenu : numéro, nom sur deux
+  // lignes, étoiles. Les polices sont remontées sur petit écran (ADR-015), donc
+  // une hauteur fixe faisait déborder le nom hors de la tuile.
+  const numH = scaleFont(26), nameH = scaleFont(12);
+  const cellH = Math.max(touchSize(74), numH + nameH * 2 + 30);
   const layout = gridLayout(tiles.length, availW, maxCols, gap, cellH);
   const container = scene.add.container(0, 0);
   const x0 = cx - layout.totalW / 2 + layout.cellW / 2;
@@ -83,13 +86,19 @@ export function uiLevelGrid(
     });
     cell.add(panel);
 
-    cell.add(scene.add.text(0, -20, String(t.index), {
+    // Numéro et nom empilés d'après leurs hauteurs réelles, le bloc étant remonté
+    // pour laisser la place aux étoiles en bas.
+    const num = scene.add.text(0, 0, String(t.index), {
       fontSize: "26px", color: t.state === "locked" ? TEXT.dim : TEXT.gold, fontFamily: FONT_DISPLAY,
-    }).setOrigin(0.5));
-    cell.add(scene.add.text(0, 6, t.name, {
+    }).setOrigin(0.5, 0);
+    const name = scene.add.text(0, 0, t.name, {
       fontSize: "12px", color: colors.titleColor, fontFamily: FONT_BODY,
       align: "center", wordWrap: { width: layout.cellW - 12 },
-    }).setOrigin(0.5, 0));
+    }).setOrigin(0.5, 0);
+    const top0 = -cellH / 2 + 6;
+    num.setY(top0);
+    name.setY(top0 + num.height + 2);
+    cell.add([num, name]);
 
     if (t.state === "done") {
       const s = t.stars ?? 0;

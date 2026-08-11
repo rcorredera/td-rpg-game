@@ -15,7 +15,7 @@ import { BATTLEFIELD } from "../core/types";
 import type { EnemyState, PlayableChapter, RunState, SimEvent, TowerState } from "../core/types";
 import type { ProfileService } from "../meta/profile";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
-import { touchSize, viewport } from "./viewport";
+import { scaleFont, touchSize, viewport } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
 import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { uiButton, uiPanel } from "./components";
@@ -88,6 +88,8 @@ export class GameScene extends Phaser.Scene {
   private quitBtn: Phaser.GameObjects.Container | null = null;
   /** Haut de la barre de HUD en unités logiques — les taps au-dessous sont ignorés. */
   private hudTop = GAME_H - 70;
+  /** Bord gauche sûr du HUD : origine de la cascade or / base / vague. */
+  private hudLeftX = 0;
 
   constructor() { super("game"); }
 
@@ -412,12 +414,15 @@ export class GameScene extends Phaser.Scene {
     bar.lineStyle(2, 0xc9a227, 0.35); bar.lineBetween(v.left, this.hudTop, v.right, this.hudTop);
     this.hud.add(bar);
 
-    // Libellé passif (sans plaque)
-    const mk = (key: string, x: number, label: string, size = 16) => {
-      const t = this.add.text(x, cy, label, { fontSize: `${size}px`, color: C.uiText, fontFamily: FONT_DISPLAY }).setOrigin(0.5);
+    // Libellé passif (sans plaque), aligné à gauche : le groupe est ensuite mis en
+    // cascade d'après les largeurs réelles (`layoutHudLeft`), car les valeurs
+    // changent en jeu et les polices sont remontées sur petit écran (ADR-015).
+    const mk = (key: string, _x: number, label: string, size = 16) => {
+      const t = this.add.text(0, cy, label, { fontSize: `${size}px`, color: C.uiText, fontFamily: FONT_DISPLAY }).setOrigin(0, 0.5);
       this.hudTexts[key] = t; this.hud.add(t);
     };
-    // Bouton Kenney nine-slice (gold = action principale)
+    // Bouton Kenney nine-slice (gold = action principale). La plaque s'élargit pour
+    // contenir son libellé, comme `uiButton`.
     const mkBtn = (key: string, x: number, w: number, label: string, cb: () => void, size = 14, gold = false) => {
       const plate = this.add.nineslice(x, cy, gold ? "ui_btn_gold" : "ui_btn", undefined, w, btnH, 14, 14, 14, 16);
       if (!gold) plate.setTint(UI_TINT.btn);
@@ -427,7 +432,9 @@ export class GameScene extends Phaser.Scene {
       const t = this.add.text(x, cy - 2, label, {
         fontSize: `${size}px`, color: gold ? "#3a2c12" : C.uiText, fontFamily: FONT_DISPLAY,
       }).setOrigin(0.5);
+      if (t.width + 20 > plate.width) plate.setSize(t.width + 20, btnH);
       this.hudTexts[key] = t; this.hud.add(t);
+      return plate.width;
     };
     // Sorts : boutons-icônes carrés (cooldown affiché sous l'icône)
     const mkIconBtn = (key: string, x: number, icon: string, cb: () => void) => {
@@ -444,13 +451,15 @@ export class GameScene extends Phaser.Scene {
     };
 
     // --- Groupe gauche : état du run (lecture seule) ---
-    mk("gold", xL + 50, "");
+    mk("gold", 0, "");
     // Icône du registre plutôt qu'un emoji 🏰 : rendu identique sur tout OS et
     // teintable (elle vire au rouge quand la base souffre — cf. update()).
-    this.hudIcons["castle"] = this.add.image(xL + 108, cy, ICON.castle).setDisplaySize(17, 17);
+    const cs = Math.max(17, scaleFont(15));
+    this.hudIcons["castle"] = this.add.image(0, cy, ICON.castle).setDisplaySize(cs, cs);
     this.hud.add(this.hudIcons["castle"]!);
-    mk("castle", xL + 148, "");
-    mk("wave", xL + 243, "", 15);
+    mk("castle", 0, "");
+    mk("wave", 0, "", 15);
+    this.hudLeftX = xL + 14;
 
     // --- Groupe droit : actions, posées de droite à gauche ---
     // Les sorts occupent l'extrémité (les plus utilisés en combat), puis les
@@ -458,10 +467,12 @@ export class GameScene extends Phaser.Scene {
     // Posés de droite à gauche à partir du bord sûr, chacun d'après sa largeur
     // effective : les boutons grossissent sur mobile sans jamais se chevaucher.
     let x = xR - 16;
-    const place = (w: number, draw: (cx: number) => void) => {
+    // `draw` renvoie la largeur EFFECTIVE de la plaque (elle a pu s'élargir pour
+    // loger son libellé) : sans ça, les boutons se chevauchaient sur petit écran.
+    const place = (w: number, draw: (cx: number) => number | void) => {
       x -= w / 2;
-      draw(x);
-      x -= w / 2 + 8;
+      const real = draw(x) ?? w;
+      x -= Math.max(w, real) / 2 + 8 + Math.max(0, real - w) / 2;
     };
     if (this.run.hasAccountSpell) {
       place(iconS, cx => mkIconBtn("spell", cx, "icon_spell", () => { this.spellMode = true; }));
@@ -540,6 +551,7 @@ export class GameScene extends Phaser.Scene {
       .setColor(castlePct > 0.55 ? C.uiText : castlePct > 0.25 ? "#e8c252" : "#c0392b");
     this.hudIcons["castle"]?.setTint(castleTint);
     this.hudTexts["wave"]?.setText(`Vague ${Math.max(0, r.waveIndex + 1)}/${this.ch.waves.length}`);
+    this.layoutHudLeft();
     const waveReady = r.phase === "building";
     this.hudTexts["nextWave"]?.setAlpha(waveReady ? 1 : 0.35);
     this.hudPlates["nextWave"]?.setAlpha(waveReady ? 1 : 0.35);
@@ -555,6 +567,27 @@ export class GameScene extends Phaser.Scene {
     skill("ww", r.hero.whirlwindReady);
     skill("rally", r.hero.rallyReady);
     skill("spell", r.accountSpellReady);
+  }
+
+  /** Met en cascade or → base → vague d'après leurs largeurs courantes. Recalculé
+   *  à chaque frame car les valeurs changent en jeu (« 160 » puis « 1160 ») et une
+   *  position fixe finissait par faire se chevaucher les libellés. */
+  private layoutHudLeft() {
+    const gap = 16;
+    let x = this.hudLeftX;
+    const put = (t?: Phaser.GameObjects.Text) => {
+      if (!t) return;
+      t.setX(x);
+      x += t.width + gap;
+    };
+    put(this.hudTexts["gold"]);
+    const icon = this.hudIcons["castle"];
+    if (icon) {
+      icon.setX(x + icon.displayWidth / 2);
+      x += icon.displayWidth + 6;
+    }
+    put(this.hudTexts["castle"]);
+    put(this.hudTexts["wave"]);
   }
 
   /** Auto-vague : enchaîne les vagues suivantes après un court délai. La 1re vague reste manuelle (GDD §Boucle in-run). */

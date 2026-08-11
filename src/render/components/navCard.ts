@@ -7,7 +7,7 @@
 import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
 import { CURSOR_POINT, FONT_BODY } from "../ui";
-import { touchSize } from "../viewport";
+import { scaleFont, touchSize } from "../viewport";
 import { uiFramedPanel } from "./panel";
 
 export interface UiNavCardOpts {
@@ -35,7 +35,9 @@ export interface UiNavCard {
 
 export function uiNavCard(scene: Phaser.Scene, x: number, y: number, opts: UiNavCardOpts): UiNavCard {
   const w = opts.w ?? 540;
-  const h = touchSize(opts.h ?? 68);
+  // La carte doit loger son texte : sur petit écran, les polices sont remontées
+  // (ADR-015) et une hauteur fixe ne suffisait plus.
+  const h = Math.max(touchSize(opts.h ?? 68), scaleFont(19) + scaleFont(12) + 26);
   const container = scene.add.container(x, y);
 
   const { container: panel } = uiFramedPanel(scene, 0, 0, { w, h, borderColor: opts.accent ?? ACCENT.gold, radius: 12 });
@@ -55,8 +57,17 @@ export function uiNavCard(scene: Phaser.Scene, x: number, y: number, opts: UiNav
   container.add(
     scene.add.image(iconX, 0, opts.icon).setDisplaySize(glyph, glyph).setTint(opts.iconColor ?? ACCENT.goldSoft),
   );
-  container.add(scene.add.text(textX, -16, opts.title, { fontSize: "19px", color: opts.titleColor ?? TEXT.gold, fontFamily: FONT_BODY }));
-  container.add(scene.add.text(textX, 9, opts.sub, { fontSize: "12px", color: TEXT.dim, fontFamily: FONT_BODY }));
+
+  // Bloc titre + sous-titre centré d'après les hauteurs RÉELLES des textes : la
+  // taille de police est remontée sur petit écran (ADR-015), donc des Y en dur
+  // faisaient déborder le texte hors de la carte.
+  const title = scene.add.text(textX, 0, opts.title, { fontSize: "19px", color: opts.titleColor ?? TEXT.gold, fontFamily: FONT_BODY });
+  const sub = scene.add.text(textX, 0, opts.sub, { fontSize: "12px", color: TEXT.dim, fontFamily: FONT_BODY });
+  const gap = 2;
+  const blockH = title.height + gap + sub.height;
+  title.setY(-blockH / 2);
+  sub.setY(-blockH / 2 + title.height + gap);
+  container.add([title, sub]);
 
   const zone = scene.add.zone(0, 0, w, h).setInteractive({ cursor: CURSOR_POINT });
   zone.on("pointerover", () => highlight.setVisible(true));
