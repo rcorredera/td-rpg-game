@@ -1,0 +1,16 @@
+<!-- Rat de faille — la nuée. Silhouette BASSE et horizontale, museau pointu,
+     longue queue : tout l'inverse du gobelin dressé. Petit et gris, il ne doit
+     jamais avoir l'air d'une menace individuelle — c'est le nombre qui tue. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g stroke="#241a12" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M12 42c-6 2-8 8-4 12" fill="none" stroke-width="3"/>
+    <ellipse cx="34" cy="40" rx="17" ry="10" fill="#7a7168"/>
+    <path d="M24 33a5 5 0 0 1 8 0z" fill="#9c9289"/>
+    <path d="M44 33a5 5 0 0 1 8 0z" fill="#9c9289"/>
+    <path d="M48 36c7 0 11 3 13 6-3 3-7 5-13 5z" fill="#9c9289"/>
+  </g>
+  <ellipse cx="52" cy="40" rx="2.2" ry="2" fill="#f5e04a"/>
+  <circle cx="52.4" cy="40.2" r="1" fill="#241a12"/>
+  <path d="M59 41h4v1.6h-4z" fill="#f2ede0"/>
+  <path d="M26 44h16v3H26z" fill="#5d564f" opacity="0.7"/>
+</svg>
