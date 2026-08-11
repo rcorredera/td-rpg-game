@@ -20,6 +20,14 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
+- **Chemins & cartes (ADR-019)** : le tracé dessiné ne s'écarte plus du chemin que suit la sim
+  (spline de Catmull-Rom → arrondi de coins borné, `render/path.ts` pur) — **64,7 px d'écart mesurés
+  avant, 5,8 après**, pour une route de 46 de large. Les unités marchaient visiblement à côté de leur
+  route alors que les tours visaient leur position réelle. Les layouts `LAYOUT_RIFT`/`LAYOUT_PINCER`
+  (ch.2-10) sont redessinés : « Tenailles » convergeait mal (voie 2 à 940 px contre 1280, couverte
+  par 3 emplacements sur 6 → **6/6 et longueurs à 2 %**), « Faille » faisait un demi-tour. Trois
+  propriétés de carte sont désormais testées sur chaque voie de chaque chapitre (écart de tracé,
+  couverture ≥ 2/3, longueurs à ±25 %), **prouvées par mutation**. `PATH_WIDTH` = source unique.
 - **Banc d'essai (ADR-018)** : `npm run balance` mesure le jeu sans y jouer — fiches ennemis/tours,
   pression par vague, santé de la méta, et un joueur artificiel (3 politiques) sur les 10 chapitres.
   `src/balance/`, hors bundle. Les formules qui doublent celles de la sim sont verrouillées par des
