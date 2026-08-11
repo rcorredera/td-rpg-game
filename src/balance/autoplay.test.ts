@@ -102,6 +102,43 @@ describe("autoplay — compositions de défense", () => {
   });
 });
 
+describe("rôles des tours — diversifier doit payer", () => {
+  // GARANTIE DE DESIGN, pas de code. Le GDD promet un « triangle de rôles » ; il
+  // n'existait que dans l'intention : une défense d'archeries seules gagnait 9
+  // chapitres sur 10 quand un mélange n'en gagnait que 5 (ADR-020). Choisir sa tour
+  // n'était pas une décision, c'était un piège — et aucun ennemi « anti-X » n'aurait
+  // rien changé tant que la tour censée le contrer ne valait pas d'être construite.
+  const unlocked = { unlocks: ["tower_frost"] };
+  const run = (towers: string[]) => {
+    const rs = autoplayAll(CONTENT, { policy: "spread", towers, profile: unlocked });
+    return {
+      wins: rs.filter(r => r.result.victory).length,
+      hp: rs.reduce((a, r) => a + r.result.castleHpLeft, 0),
+    };
+  };
+
+  it("fait gagner le mélange plus souvent que n'importe quelle tour seule", () => {
+    const ids = Object.keys(CONTENT.towers);
+    const mix = run(ids);
+    for (const id of ids) {
+      const solo = run([id]);
+      expect(mix.wins, `${CONTENT.towers[id]!.name} seule gagne autant que le mélange`)
+        .toBeGreaterThan(solo.wins);
+      expect(mix.hp, `${CONTENT.towers[id]!.name} seule protège autant que le mélange`)
+        .toBeGreaterThan(solo.hp);
+    }
+  });
+
+  it("laisse chaque tour seule insuffisante", () => {
+    // Une tour qui suffit à elle seule à finir le jeu rend les deux autres décoratives.
+    for (const id of Object.keys(CONTENT.towers)) {
+      const solo = run([id]);
+      expect(solo.wins, `${CONTENT.towers[id]!.name} seule finit tout le jeu`)
+        .toBeLessThan(CONTENT.chapters.filter(c => c.playable).length);
+    }
+  });
+});
+
 describe("report — mise en forme", () => {
   it("aligne les colonnes sur le contenu le plus large", () => {
     const out = table(["A", "B"], [["très-long", "1"]]).split("\n");
