@@ -225,9 +225,28 @@ export function startNextWave(s: RunState, c: ContentPack): boolean {
 
 // ---------- tick ----------
 
-function damageEnemy(s: RunState, c: ContentPack, e: EnemyState, dmg: number, events: SimEvent[], byHero = false): void {
+/**
+ * Part des dégâts bruts qu'une armure ne peut jamais absorber. Sans plancher, une
+ * tour trop faible infligerait 0 et la vague ne finirait jamais.
+ *
+ * À 10 %, une armure de 11 ramenait l'archerie de base à un dixième de ses dégâts :
+ * la tour la plus courante devenait décorative, ce qui punit surtout le joueur qui
+ * n'a pas encore les moyens de s'adapter. 25 % laisse l'armure très dissuasive sans
+ * la rendre absolue (ADR-022).
+ */
+const ARMOR_FLOOR = 0.25;
+
+/**
+ * `ignoreArmor` : les dégâts exprimés en % des PV max (brûlures) traversent
+ * l'armure — c'est précisément ce qui en fait la réponse aux ennemis cuirassés.
+ */
+function damageEnemy(
+  s: RunState, c: ContentPack, e: EnemyState, dmg: number,
+  events: SimEvent[], byHero = false, ignoreArmor = false,
+): void {
   if (!e.alive) return;
-  e.hp -= dmg;
+  const armor = ignoreArmor ? 0 : c.enemies[e.defId]!.armor ?? 0;
+  e.hp -= armor > 0 ? Math.max(dmg * ARMOR_FLOOR, dmg - armor) : dmg;
   if (e.hp <= 0) {
     e.alive = false;
     const def = c.enemies[e.defId]!;
@@ -322,7 +341,9 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
   // 4. Déplacement ennemis — chacun sur son chemin (+ brûlure des spécialisations feu)
   for (const e of s.enemies) {
     if (!e.alive) continue;
-    if (s.time < e.burnUntil) damageEnemy(s, c, e, e.maxHp * e.burnPctPerS * dt, events);
+    // La brûlure ronge un % des PV max : elle IGNORE l'armure, ce qui en fait la
+    // réponse aux ennemis cuirassés que les tirs directs n'entament plus (ADR-022).
+    if (s.time < e.burnUntil) damageEnemy(s, c, e, e.maxHp * e.burnPctPerS * dt, events, false, true);
     if (!e.alive) continue;
     e.blocked = e.uid === blockedUid;
     if (e.blocked) continue;
@@ -351,7 +372,8 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
     if (spec?.aura) {
       const slot = ch.map.slots[t.slotIndex]!;
       for (const e of s.enemies) {
-        if (!e.alive || (def.groundOnly && c.enemies[e.defId]!.flying)) continue;
+        const eDef = c.enemies[e.defId]!;
+        if (!e.alive || (def.groundOnly && eDef.flying) || eDef.slowImmune) continue;
         if (dist(e.pos, slot) <= spec.aura.radius) {
           e.slowUntil = s.time + 0.15;
           e.slowFactor = spec.aura.slowFactor;
@@ -386,7 +408,9 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
     const applyHit = (e: EnemyState) => {
       damageEnemy(s, c, e, damage, events);
       if (!e.alive) return;
-      if (slowFx) { e.slowUntil = s.time + slowFx.duration; e.slowFactor = slowFx.factor; }
+      if (slowFx && !c.enemies[e.defId]!.slowImmune) {
+        e.slowUntil = s.time + slowFx.duration; e.slowFactor = slowFx.factor;
+      }
       if (spec?.burn) { e.burnUntil = s.time + spec.burn.durationS; e.burnPctPerS = spec.burn.pctMaxHpPerS; }
     };
 

@@ -95,11 +95,43 @@ La **meilleure** note est conservée par chapitre (jamais dégradée), affichée
 - **Portails de Faille** : un chemin marqué `portal` n'apparaît que lorsqu'il sert. Règle : **annoncé pendant la phase building précédente** (« ⚠ Une Faille s'ouvrira à la prochaine vague ! »), actif le temps de la vague, puis disparaît. Supporté sim + rendu ; premier usage prévu dans les chapitres à venir.
 - **Tailles de cartes** : décision ouverte — tout est en 800×600 logique aujourd'hui ; des cartes plus grandes imposeraient scroll/zoom (coût UX mobile non trivial). À trancher quand on conçoit les ch.2+.
 
-## Bestiaire
+## Bestiaire (ADR-022)
 
-**Écran in-game** (porte du Campement) à **découverte progressive** : croiser une créature en run débloque sa page — lore + caractéristiques (PV, vitesse, or, dégâts château, riposte, volant). Non croisée = « ??? ». La découverte est trackée par la sim (`seenEnemies`) et fusionnée dans le profil en fin de run. Les stats affichées viennent du content : l'écran sert aussi de **suivi interne** de ce qui existe. Chaque monstre a 2 lignes de lore (provisoires, à harmoniser avec le fichier de lore). Les mini-boss sont présentés comme variantes renforcées, pas comme entrées séparées.
+Dix créatures. Chacune est conçue pour **neutraliser une tour et en valoriser une
+autre** — une créature qui n'invalide rien n'ajoute que de la difficulté, jamais de
+décision.
 
-**À étoffer (session dédiée)** : le casting v0 (gobelin/orc/brute/chauve-souris) ne tiendra pas 10 chapitres. Lister : nouveaux monstres, PV/vitesse/récompenses, **compétences spéciales** (la structure actuelle `EnemyDef` ne couvre que des stats passives — soigneur, invocateur, enragé, sapeur de tours demanderont une extension sim). À nourrir aussi avec le fichier de lore (noms).
+| Créature | Question posée | Neutralise | Valorise |
+|---|---|---|---|
+| Gobelin / Orc / Brute | volume, encaissement | — | socle |
+| Chauve-souris | le ciel, léger | catapulte | archerie |
+| **Rat de faille** | saturation (14 PV, très serrés) | le mono-cible | catapulte |
+| **Spectre** | insensible au ralentissement | tour de givre | puissance brute |
+| **Gargouille** | volant *lourd* (115 PV) | catapulte | archerie investie |
+| **Golem de pierre** | cuirassé (armure 11) | tirs rapides et faibles | gros coups, brûlure |
+| **Chef de guerre** | boss terrestre (vagues 5 et 10) | les tours à zone | dégâts mono-cible |
+| **Vouivre** | boss **volant** (chapitre 10) | toute défense au sol | anti-aérien |
+
+**Deux mécaniques** portent ces rôles, toutes deux dans le content :
+- `armor` — réduction plate par coup, avec un plancher à 25 % des dégâts bruts. La
+  **brûlure en % des PV max l'ignore** : c'est ce qui donne enfin une raison de
+  préférer « Feu grégeois » à « Trébuchet ».
+- `slowImmune` — interdit de bâtir toute sa défense sur le contrôle.
+
+**Progression** : une créature apparaît à chacun des chapitres 2 à 5 (rat, spectre,
+gargouille, golem), les suivants les mélangent. La **3e vague** de chaque chapitre la
+présente seule : une mécanique s'enseigne avant de se combiner, et jamais quand elle
+est encore imparable — placée en 2e vague, le joueur n'avait que deux tours et perdait
+la moitié de son château.
+
+Le Bestiaire **affiche les traits** (`cuirassé 11`, `insensible au froid`) à côté de
+« volant » : sa promesse est « connaître l'ennemi, c'est déjà le vaincre », et taire
+ce qui décide du choix de tour la contredit.
+
+**Propriété acquise** : le chapitre 10 est infranchissable sans méta-progression et
+franchissable avec (mesuré : 11 vagues sur 12 avec un profil vierge, victoire à 16 PV
+avec un profil équipé). La boucle run → monnaies → run plus fort cesse d'être décorative.
+
 
 ## Boucle in-run
 

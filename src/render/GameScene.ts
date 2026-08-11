@@ -20,7 +20,7 @@ import { ICON, preloadIcons } from "./icons";
 import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
-import { enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
+import { ENEMY_SIZE_FALLBACK, enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
 import { drawDirtPath, ensureTerrainTextures, TEX_GRASS } from "./terrain";
 import { PATH_WIDTH, roundedPath } from "./path";
 import { GROUND, HERO_C, SIGNAL } from "./palette";
@@ -977,7 +977,10 @@ export class GameScene extends Phaser.Scene {
    *  ~15 px à l'écran et étaient indiscernables. La hiérarchie de taille porte
    *  aussi de l'information — la brute doit se voir grosse au premier regard. */
   private enemySize(e: EnemyState): number {
-    const base = e.defId === "brute" ? 62 : e.defId === "orc" ? 54 : e.defId === "bat" ? 52 : 46;
+    // La taille vit dans le registre de skin (ADR-005/022), plus dans une cascade
+    // de ternaires ici : à dix créatures elle devenait illisible, et un changement
+    // de skin doit pouvoir revoir toute la hiérarchie d'un seul endroit.
+    const base = enemyView(e.defId).size ?? ENEMY_SIZE_FALLBACK;
     return this.isBoss(e) ? base * 1.45 : base;
   }
 

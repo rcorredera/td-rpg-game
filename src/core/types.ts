@@ -67,6 +67,14 @@ export interface EnemyDef {
   damageToCastle: number;
   /** Dégâts au héros par seconde quand bloqué. */
   meleeDps: number;
+  /**
+   * Réduction PLATE retranchée à chaque coup reçu. Punit les tirs rapides et
+   * faibles, récompense les gros coups — et la brûlure en % des PV max l'ignore
+   * complètement. C'est ce qui donne une réponse à un ennemi cuirassé (ADR-022).
+   */
+  armor?: number;
+  /** Insensible au ralentissement : rend le contrôle inopérant contre lui. */
+  slowImmune?: boolean;
 }
 
 export interface WaveSpawn {

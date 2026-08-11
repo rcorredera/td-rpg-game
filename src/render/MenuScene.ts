@@ -348,8 +348,17 @@ export class MenuScene extends Phaser.Scene {
         `❤ ${e.hp} PV`, `Vitesse ${e.speed}`, `◆ ${e.goldReward}`,
         `Base -${e.damageToCastle} PV`, e.meleeDps > 0 ? `⚔ ${e.meleeDps}/s` : "⚔ inoffensif au contact",
       ].join("    ");
+      // Traits accolés au nom, comme « volant ». Ce sont eux qui dictent la réponse :
+      // un Bestiaire qui les tait laisse le joueur découvrir sur le tas qu'une tour
+      // ne sert à rien contre cette créature — et « connaître l'ennemi » est sa
+      // promesse (ADR-022).
+      const traits = [
+        e.flying ? "volant" : "",
+        e.armor ? `cuirassé ${e.armor}` : "",
+        e.slowImmune ? "insensible au froid" : "",
+      ].filter(Boolean);
       this.lorePage(cursor, c, [
-        { text: `${e.name}${e.flying ? "  ·  volant" : ""}`, size: 17, color: GOLD },
+        { text: `${e.name}${traits.length ? `  ·  ${traits.join("  ·  ")}` : ""}`, size: 17, color: GOLD },
         { text: e.lore, size: 11, color: DIM, wrap: 560 },
         { text: stats, size: 12, color: LIGHT, wrap: 560 },
       ], 0xc9a227, 0x2b2118, { key: enemyView(e.id).key, known: true });

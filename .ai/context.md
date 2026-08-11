@@ -20,6 +20,18 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
+- **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
+  et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
+  sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups
+  ou brûlure), + 2 vrais boss : **Chef de guerre** (v5/v10) et **Vouivre** (boss VOLANT du ch.10).
+  Deux mécaniques neuves dans le content : `armor` (réduction plate, plancher 25 % — la brûlure en
+  % PV max l'IGNORE, ce qui donne enfin une raison de préférer Feu grégeois à Trébuchet) et
+  `slowImmune`. Une créature apparaît aux ch.2-5, les suivants les mélangent ; la **3e vague** de
+  chaque chapitre la présente seule. Le Bestiaire affiche les traits (`cuirassé 11`, `insensible au
+  froid`). Taille d'affichage déplacée dans `sprites.ts` (`SpriteRef.size`, ADR-005) — elle était en
+  ternaires dans `GameScene`. ⚠ **Propriété acquise et testée** : le ch.10 est INFRANCHISSABLE sans
+  méta et franchissable avec (11/12 vagues à vide, victoire à 16 PV équipé) — la boucle
+  run → monnaies → run plus fort n'est plus décorative.
 - **Méta-progression (ADR-021) — FAIT** : armurerie vidée en **5 runs** au lieu de 2, puits d'Éclats
   en 14, sorts en **12 runs** au lieu de 2, et le ch.10 rapporte **×3,32** le ch.1 au lieu de ×1,11.
   Le rapport du banc affiche « aucune saturation détectée ». Les **Sceaux paient le temps de blocage**
