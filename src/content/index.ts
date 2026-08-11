@@ -19,9 +19,13 @@ const LAYOUT_RIFT: MapDef = {
     // Raccourci assumé (~29 %) : c'est l'intérêt d'une Faille, elle saute la montée.
     { waypoints: [{ x: 280, y: -20 }, { x: 280, y: 180 }, { x: 520, y: 180 }, { x: 520, y: 400 }, { x: 820, y: 400 }], portal: true },
   ],
+  // 8 emplacements, contre 6 au chapitre 1. La difficulté monte de chapitre en
+  // chapitre mais la défense était plafonnée à 6 partout : passé la mi-partie l'or
+  // s'accumulait sans emploi (1 800 à 3 800 pièces mesurées) et il n'y avait plus
+  // aucune décision économique à prendre (ADR-020).
   slots: [
-    { x: 120, y: 330 }, { x: 330, y: 290 }, { x: 390, y: 90 },
-    { x: 620, y: 270 }, { x: 400, y: 400 }, { x: 700, y: 290 },
+    { x: 120, y: 330 }, { x: 330, y: 290 }, { x: 390, y: 90 }, { x: 90, y: 400 },
+    { x: 620, y: 270 }, { x: 400, y: 400 }, { x: 700, y: 290 }, { x: 560, y: 480 },
   ],
 };
 
@@ -38,9 +42,11 @@ const LAYOUT_PINCER: MapDef = {
     { waypoints: [{ x: -20, y: 150 }, { x: 300, y: 150 }, { x: 300, y: 300 }, { x: 560, y: 300 }, { x: 560, y: 430 }, { x: 820, y: 430 }] },
     { waypoints: [{ x: -20, y: 470 }, { x: 300, y: 470 }, { x: 300, y: 300 }, { x: 560, y: 300 }, { x: 560, y: 430 }, { x: 820, y: 430 }] },
   ],
+  // 8 emplacements, même raison que « Faille » : deux d'entre eux ne couvrent qu'une
+  // seule branche, ce qui donne un vrai choix d'implantation selon la voie à tenir.
   slots: [
-    { x: 200, y: 310 }, { x: 390, y: 210 }, { x: 390, y: 400 },
-    { x: 620, y: 300 }, { x: 480, y: 480 }, { x: 700, y: 320 },
+    { x: 200, y: 310 }, { x: 390, y: 210 }, { x: 390, y: 400 }, { x: 180, y: 220 },
+    { x: 620, y: 300 }, { x: 480, y: 480 }, { x: 700, y: 320 }, { x: 180, y: 390 },
   ],
 };
 
@@ -53,23 +59,29 @@ function makeWaves(d: number, secondPath: boolean): WaveDef[] {
   const waveCount = d >= 9 ? 12 : 10;
   const waves: WaveDef[] = [];
   for (let w = 0; w < waveCount; w++) {
-    const k = 1 + d * 0.25 + w * 0.15; // facteur de volume
+    // Facteur de volume. Abaissé avec la densification (ADR-020) : des vagues plus
+    // SERRÉES à effectif égal pèsent bien plus lourd — c'est le resserrement, pas le
+    // nombre, qui donne son rôle aux tours à zone.
+    const k = 1 + d * 0.2 + w * 0.12;
     const spawns: WaveSpawn[] = [];
     switch (w % 5) {
-      case 0: spawns.push({ enemyId: "goblin", count: Math.round(6 * k), intervalS: 1.0, delayS: 1 }); break;
-      case 1: spawns.push({ enemyId: "orc", count: Math.round(4 * k), intervalS: 1.8, delayS: 1 }, { enemyId: "goblin", count: Math.round(4 * k), intervalS: 0.9, delayS: 5 }); break;
-      case 2: spawns.push({ enemyId: "bat", count: Math.round(5 * k), intervalS: 0.9, delayS: 1 }, { enemyId: "orc", count: Math.round(3 * k), intervalS: 2, delayS: 4 }); break;
-      case 3: spawns.push({ enemyId: "brute", count: Math.max(1, Math.round(k)), intervalS: 5, delayS: 1 }, { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.7, delayS: 3 }); break;
-      default: spawns.push({ enemyId: "orc", count: Math.round(5 * k), intervalS: 1.4, delayS: 1 }, { enemyId: "bat", count: Math.round(4 * k), intervalS: 1, delayS: 5 });
+      case 0: spawns.push({ enemyId: "goblin", count: Math.round(6 * k), intervalS: 0.7, delayS: 1 }); break;
+      case 1: spawns.push({ enemyId: "orc", count: Math.round(4 * k), intervalS: 1.25, delayS: 1 }, { enemyId: "goblin", count: Math.round(4 * k), intervalS: 0.65, delayS: 5 }); break;
+      case 2: spawns.push({ enemyId: "bat", count: Math.round(5 * k), intervalS: 0.65, delayS: 1 }, { enemyId: "orc", count: Math.round(3 * k), intervalS: 1.4, delayS: 4 }); break;
+      case 3: spawns.push({ enemyId: "brute", count: Math.max(1, Math.round(k)), intervalS: 3.5, delayS: 1 }, { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.5, delayS: 3 }); break;
+      default: spawns.push({ enemyId: "orc", count: Math.round(5 * k), intervalS: 1.0, delayS: 1 }, { enemyId: "bat", count: Math.round(4 * k), intervalS: 0.7, delayS: 5 });
     }
     if (secondPath && w >= 3 && w % 2 === 1) {
-      spawns.push({ enemyId: w % 4 === 1 ? "goblin" : "orc", count: Math.round(3 * k), intervalS: 1.2, delayS: 2, pathIndex: 1 });
+      spawns.push({ enemyId: w % 4 === 1 ? "goblin" : "orc", count: Math.round(3 * k), intervalS: 0.85, delayS: 2, pathIndex: 1 });
     }
     const wave: WaveDef = { spawns };
-    if (w === 4) wave.miniBoss = { enemyId: "brute", hpMult: 2.5 + 0.4 * d };
+    if (w === 4) wave.miniBoss = { enemyId: "brute", hpMult: 2 + 0.25 * d };
     // Dernière vague : gros mini-boss. Ch.10 : placeholder du Roi-Charogne
     // en attendant le vrai boss multi-phases (GDD §Boss final).
-    if (w === waveCount - 1) wave.miniBoss = { enemyId: "brute", hpMult: d >= 9 ? 12 : 4 + 0.6 * d };
+    // Multiplicateurs abaissés (ADR-020) : un boss est une cible ISOLÉE, donc les
+    // tours à zone n'y peuvent rien. Un ×12 n'était soutenable que par une archerie
+    // dominante — celle-là même qui rendait le choix de tour inutile.
+    if (w === waveCount - 1) wave.miniBoss = { enemyId: "brute", hpMult: d >= 9 ? 7 : 3 + 0.35 * d };
     waves.push(wave);
   }
   return waves;
@@ -90,11 +102,15 @@ export const CONTENT: ContentPack = {
     tower_archer: {
       id: "tower_archer", name: "Archerie",
       lore: "L'épine du Bastion. Une flèche, une cible — y compris ce qui vole.\nPolyvalente et bon marché : le socle de toute défense.",
+      // Socle POLYVALENT : elle touche tout, donc elle paie sa polyvalence en
+      // rendement. Quand elle était la meilleure en dégâts par pièce d'or ET la
+      // seule anti-aérienne, il n'y avait aucune raison de construire autre chose
+      // (mesuré : archerie seule 9 victoires sur 10, mélange 1 — ADR-020).
       costs: [70, 90, 130],
       levels: [
-        { range: 130, damage: 12, fireRate: 1.4 },
-        { range: 145, damage: 20, fireRate: 1.6 },
-        { range: 160, damage: 32, fireRate: 1.8 },
+        { range: 130, damage: 11, fireRate: 1.4 },
+        { range: 145, damage: 18, fireRate: 1.5 },
+        { range: 160, damage: 28, fireRate: 1.7 },
       ],
       groundOnly: false, splashRadius: 0, requiresUnlock: null,
       // Niveau 4 : multi-cibles OU portée extrême (GDD §Spécialisations)
@@ -112,13 +128,17 @@ export const CONTENT: ContentPack = {
     tower_catapult: {
       id: "tower_catapult", name: "Catapulte",
       lore: "Des rochers rendus à l'envoyeur, par-dessus les rangs.\nDévastatrice contre les groupes au sol — mais aveugle au ciel.",
-      costs: [110, 140, 190],
+      // Reine des GROUPES : lente et médiocre sur une cible isolée, dévastatrice
+      // dès qu'il y a du monde. Son rayon décide de tout — à 55 il ne couvrait que
+      // l'espacement d'un seul ennemi (~75 px entre deux spawns), donc elle payait
+      // son coût de tour à zone en ne touchant qu'une cible (ADR-020).
+      costs: [100, 120, 160],
       levels: [
-        { range: 150, damage: 26, fireRate: 0.45 },
-        { range: 160, damage: 42, fireRate: 0.5 },
-        { range: 175, damage: 65, fireRate: 0.55 },
+        { range: 150, damage: 28, fireRate: 0.5 },
+        { range: 165, damage: 45, fireRate: 0.55 },
+        { range: 180, damage: 70, fireRate: 0.6 },
       ],
-      groundOnly: true, splashRadius: 55, requiresUnlock: null,
+      groundOnly: true, splashRadius: 85, requiresUnlock: null,
       // Niveau 4 : frappe lourde lointaine OU zone incendiaire
       specs: [
         {
@@ -135,14 +155,18 @@ export const CONTENT: ContentPack = {
     tower_frost: {
       id: "tower_frost", name: "Tour de givre",
       lore: "Un éclat de faille scellé dans la pierre.\nNe tue presque rien, mais le froid gagne toutes les batailles.",
-      costs: [80, 100, 140],
+      // MULTIPLICATEUR : elle ne tue presque rien, elle allonge le temps que les
+      // autres ont pour tuer. Son ralentissement ne valait rien tant qu'il visait
+      // UNE cible à la fois — sur une vague de 50 ennemis, en freiner un seul ne
+      // change aucune issue. Il s'applique désormais en zone (ADR-020).
+      costs: [70, 90, 120],
       levels: [
-        { range: 120, damage: 5, fireRate: 1.0 },
-        { range: 130, damage: 8, fireRate: 1.1 },
-        { range: 140, damage: 12, fireRate: 1.2 },
+        { range: 125, damage: 5, fireRate: 1.0 },
+        { range: 135, damage: 8, fireRate: 1.1 },
+        { range: 145, damage: 12, fireRate: 1.2 },
       ],
-      groundOnly: false, splashRadius: 0,
-      slow: { factor: 0.55, duration: 1.6 },
+      groundOnly: false, splashRadius: 70,
+      slow: { factor: 0.45, duration: 2.2 },
       requiresUnlock: "tower_frost", // GDD : débloquée à la méta après ~2 runs
       // Niveau 4 : aura de zone OU givre qui brûle
       specs: [
@@ -208,16 +232,18 @@ export const CONTENT: ContentPack = {
       },
       // 10 vagues. Mini-boss vagues 5 et 10 (GDD).
       waves: [
-        { spawns: [{ enemyId: "goblin", count: 6, intervalS: 1.2, delayS: 1 }] },
-        { spawns: [{ enemyId: "goblin", count: 8, intervalS: 1.0, delayS: 1 }, { enemyId: "orc", count: 2, intervalS: 3, delayS: 4 }] },
-        { spawns: [{ enemyId: "orc", count: 5, intervalS: 2.0, delayS: 1 }, { enemyId: "bat", count: 4, intervalS: 1.0, delayS: 6 }] },
-        { spawns: [{ enemyId: "goblin", count: 10, intervalS: 0.8, delayS: 1 }, { enemyId: "bat", count: 5, intervalS: 1.0, delayS: 5 }] },
-        { spawns: [{ enemyId: "orc", count: 6, intervalS: 1.5, delayS: 1 }], miniBoss: { enemyId: "brute", hpMult: 2.5 } },
-        { spawns: [{ enemyId: "goblin", count: 12, intervalS: 0.7, delayS: 1 }, { enemyId: "orc", count: 4, intervalS: 2, delayS: 6 }] },
-        { spawns: [{ enemyId: "bat", count: 10, intervalS: 0.8, delayS: 1 }, { enemyId: "orc", count: 4, intervalS: 2, delayS: 4 }] },
-        { spawns: [{ enemyId: "brute", count: 3, intervalS: 5, delayS: 1 }, { enemyId: "goblin", count: 10, intervalS: 0.8, delayS: 3 }] },
-        { spawns: [{ enemyId: "orc", count: 8, intervalS: 1.2, delayS: 1 }, { enemyId: "bat", count: 8, intervalS: 0.9, delayS: 5 }] },
-        { spawns: [{ enemyId: "goblin", count: 14, intervalS: 0.6, delayS: 1 }, { enemyId: "brute", count: 2, intervalS: 6, delayS: 4 }], miniBoss: { enemyId: "brute", hpMult: 4 } },
+        // Les quatre premières vagues restent aérées : le chapitre 1 est la seule
+        // école du joueur, et il n'y a pas encore la Tour de givre pour l'aider.
+        { spawns: [{ enemyId: "goblin", count: 6, intervalS: 1.1, delayS: 1 }] },
+        { spawns: [{ enemyId: "goblin", count: 8, intervalS: 0.95, delayS: 1 }, { enemyId: "orc", count: 2, intervalS: 2.5, delayS: 4 }] },
+        { spawns: [{ enemyId: "orc", count: 5, intervalS: 1.7, delayS: 1 }, { enemyId: "bat", count: 4, intervalS: 0.9, delayS: 6 }] },
+        { spawns: [{ enemyId: "goblin", count: 9, intervalS: 0.7, delayS: 1 }, { enemyId: "bat", count: 4, intervalS: 0.9, delayS: 5 }] },
+        { spawns: [{ enemyId: "orc", count: 6, intervalS: 1.05, delayS: 1 }], miniBoss: { enemyId: "brute", hpMult: 2.5 } },
+        { spawns: [{ enemyId: "goblin", count: 12, intervalS: 0.5, delayS: 1 }, { enemyId: "orc", count: 4, intervalS: 1.4, delayS: 6 }] },
+        { spawns: [{ enemyId: "bat", count: 10, intervalS: 0.55, delayS: 1 }, { enemyId: "orc", count: 4, intervalS: 1.4, delayS: 4 }] },
+        { spawns: [{ enemyId: "brute", count: 3, intervalS: 3.5, delayS: 1 }, { enemyId: "goblin", count: 10, intervalS: 0.55, delayS: 3 }] },
+        { spawns: [{ enemyId: "orc", count: 8, intervalS: 0.85, delayS: 1 }, { enemyId: "bat", count: 8, intervalS: 0.65, delayS: 5 }] },
+        { spawns: [{ enemyId: "goblin", count: 14, intervalS: 0.4, delayS: 1 }, { enemyId: "brute", count: 2, intervalS: 4.0, delayS: 4 }], miniBoss: { enemyId: "brute", hpMult: 4 } },
       ],
     },
     // Ch.2-10 : contenu généré provisoire, noms placeholders (à remplacer via docs/LORE.md).
