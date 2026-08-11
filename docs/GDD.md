@@ -125,7 +125,7 @@ La brûlure (% des **PV max**) est le contre aux sacs à PV ; le blizzard est un
 
 **Vente** : une tour se revend à **65% de l'investissement total** (construction + upgrades) — taux dans le content, fourchette cible 60-70% à affiner au playtest. Assez punitif pour que poser une tour reste un engagement, assez généreux pour autoriser la correction d'erreur et le repositionnement tactique en fin de partie.
 
-**Lisibilité des coûts** : dans le menu de construction/amélioration, une option inabordable est visible mais désactivée — coût en rouge, cadre grisé. Le joueur voit *ce qui existe* et *ce qui lui manque*, il ne devine pas.
+**Lisibilité des coûts** : dans le menu de construction/amélioration, une option inabordable est visible mais désactivée — coût en rouge, cadre grisé. Le joueur voit *ce qui existe* et *ce qui lui manque*, il ne devine pas. Appliqué aussi à l'**Armurerie** (Arsenal, Forge, Héros) depuis la migration sur `uiListRow` (ADR-013) : la règle vaut partout où un prix est affiché, pas seulement en run.
 
 **Lisibilité des améliorations** : chaque entrée du menu affiche ses chiffres — à la construction, les stats de base et le rôle (« zone · ignore les volants ») ; à l'amélioration, les **deltas** (`⚔ 12→20 · ⊙ 130→145 · 1.4→1.6/s`). Sur la carte, sélectionner une tour montre sa portée actuelle (cercle blanc) **et la portée du niveau suivant en pointillés dorés** — l'achat se décide en voyant le gain.
 

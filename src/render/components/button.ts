@@ -54,11 +54,26 @@ export function uiButton(
   const hoverTint = opts.gold ? 0xfff2cf : 0xa68c64;
   img.on("pointerover", () => { c.setScale(1.04); img.setTint(hoverTint); });
   img.on("pointerout", () => { c.setScale(1); img.setTint(opts.gold ? 0xffffff : UI_TINT.btn); });
-  img.on("pointerup", () => c.setScale(1.04));
-  img.on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
+
+  // L'action part au RELÂCHEMENT, pas à l'appui : dans une liste défilante, un
+  // glissement commencé sur un bouton déclencherait sinon son action avant même
+  // que le doigt ait bougé. Au-delà de DRAG_SLOP, le geste est lu comme un
+  // défilement et le clic est abandonné.
+  const DRAG_SLOP = 10;
+  let downAt: { x: number; y: number } | null = null;
+  img.on("pointerdown", (p: Phaser.Input.Pointer, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
     ev?.stopPropagation?.();
+    downAt = { x: p.x, y: p.y };
     c.setScale(0.96);
+  });
+  img.on("pointerup", (p: Phaser.Input.Pointer, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
+    ev?.stopPropagation?.();
+    c.setScale(1.04);
+    const from = downAt;
+    downAt = null;
+    if (!from || Math.hypot(p.x - from.x, p.y - from.y) > DRAG_SLOP) return;
     cb();
   });
+  img.on("pointerout", () => { downAt = null; });
   return { container: c, img, txt, w, h };
 }
