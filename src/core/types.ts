@@ -96,8 +96,15 @@ export interface HeroDef {
   };
 }
 
+/** Champ de bataille en coordonnées logiques : l'espace où vivent cartes, tours,
+ *  ennemis et héros. Source unique — `render/viewport.ts` et `GameScene` s'y réfèrent
+ *  au lieu de redéclarer 800×600 chacun de leur côté. Ce n'est pas de l'équilibrage
+ *  (ADR-003) mais la définition du repère : les waypoints et slots du content y sont
+ *  exprimés. Toute entité pilotée par le joueur y est confinée. */
+export const BATTLEFIELD = { w: 800, h: 600 } as const;
+
 export interface PathDef {
-  /** Waypoints (coordonnées logiques 800x600). Convention : tous les chemins finissent au château. */
+  /** Waypoints (coordonnées logiques, cf. `BATTLEFIELD`). Convention : tous les chemins finissent au château. */
   waypoints: Vec2[];
   /** Portail de Faille : visible/actif uniquement pendant les vagues qui l'utilisent,
    *  annoncé au joueur pendant la phase building précédente (GDD §Portails). */

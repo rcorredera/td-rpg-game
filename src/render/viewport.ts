@@ -12,11 +12,12 @@
 // ============================================================
 
 import type Phaser from "phaser";
+import { BATTLEFIELD } from "../core/types";
 
-/** Zone de jeu garantie visible, en unités logiques. Les cartes, slots et
- *  chemins vivent dans ce rectangle — inchangé depuis l'origine du projet. */
-export const WORLD_W = 800;
-export const WORLD_H = 600;
+/** Zone de jeu garantie visible, en unités logiques : c'est le champ de bataille
+ *  du core (source unique), pas une constante de rendu parallèle. */
+export const WORLD_W = BATTLEFIELD.w;
+export const WORLD_H = BATTLEFIELD.h;
 
 /** Plafond de densité : au-delà, le framebuffer coûte plus qu'il n'apporte. */
 export const MAX_DPR = 2;

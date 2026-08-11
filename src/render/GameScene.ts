@@ -11,6 +11,7 @@ import {
   buildTower, castAccountSpell, castRally, castWhirlwind, computeResult,
   createRun, moveHero, sellRefundFor, sellTower, specializeTower, specOf, startNextWave, tick, upgradeTower,
 } from "../core/sim";
+import { BATTLEFIELD } from "../core/types";
 import type { EnemyState, PlayableChapter, RunState, SimEvent, TowerState } from "../core/types";
 import type { ProfileService } from "../meta/profile";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
@@ -31,7 +32,8 @@ const C = {
   hpBack: 0x222222, hpFront: 0xc0392b, gold: 0xe8c252, ui: 0x2b2118, uiText: "#f0e6d2",
 };
 
-const GAME_W = 800, GAME_H = 600;
+// Champ de bataille : défini par le core (source unique), pas redéclaré ici.
+const GAME_W = BATTLEFIELD.w, GAME_H = BATTLEFIELD.h;
 /** Voile des modales : volontairement plus grand que tout écran plausible, pour
  *  couvrir la vue quelle que soit sa taille sans avoir à le redimensionner. */
 const VEIL = 4000;
@@ -158,10 +160,30 @@ export class GameScene extends Phaser.Scene {
       this.stampPath(cont, p.waypoints);
     }
 
+    this.buildBattlefieldFrame(cont);
+
     // Marqueurs de slot vide : plateforme de tour (sous les entités, masquée si tour posée).
     this.slotMarkers = this.ch.map.slots.map(s =>
       this.add.image(s.x, s.y, TEX.td, tileFor("pad").frame).setScale(0.85).setDepth(50),
     );
+  }
+
+  /** Délimite le champ de bataille. L'écran déborde de la zone de jeu (ADR-010) :
+   *  sans repère, la carte a l'air de flotter au milieu d'un terrain jouable qui ne
+   *  l'est pas. Le débord est donc assombri et la zone cernée d'un liseré — cohérent
+   *  avec le fait que le héros ne peut pas en sortir (`moveHero`).
+   *  Ajouté au container de terrain : détruit et reconstruit avec lui au resize. */
+  private buildBattlefieldFrame(cont: Phaser.GameObjects.Container) {
+    const v = viewport();
+    const g = this.add.graphics();
+    g.fillStyle(0x0d0906, 0.55);
+    if (v.top < 0) g.fillRect(v.left, v.top, v.width, -v.top);
+    if (v.bottom > GAME_H) g.fillRect(v.left, GAME_H, v.width, v.bottom - GAME_H);
+    if (v.left < 0) g.fillRect(v.left, 0, -v.left, GAME_H);
+    if (v.right > GAME_W) g.fillRect(GAME_W, 0, v.right - GAME_W, GAME_H);
+    g.lineStyle(3, 0xc9a227, 0.45);
+    g.strokeRect(0, 0, GAME_W, GAME_H);
+    cont.add(g);
   }
 
   /** Base/QG en bout de chemin : plateforme renforcée + tourelle de commandement. */

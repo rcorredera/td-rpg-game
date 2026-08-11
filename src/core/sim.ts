@@ -4,6 +4,7 @@
 // Toutes les valeurs d'équilibrage viennent de ContentPack (ADR-003).
 // ============================================================
 
+import { BATTLEFIELD } from "./types";
 import type {
   ContentPack, EnemyState, PlayableChapter, Profile, RunResult, RunState, SimEvent,
   TowerSpecDef, TowerState, Vec2,
@@ -134,8 +135,15 @@ export function sellTower(s: RunState, c: ContentPack, slotIndex: number): boole
   return true;
 }
 
+/** Ordonne un déplacement au héros. La cible est ramenée DANS le champ de bataille :
+ *  l'écran déborde de la zone de jeu depuis ADR-010, donc un tap peut viser du hors-champ —
+ *  sans ce garde-fou, le héros quitterait la carte et déserterait le combat. */
 export function moveHero(s: RunState, target: Vec2): void {
-  if (s.hero.alive) s.hero.target = { ...target };
+  if (!s.hero.alive) return;
+  s.hero.target = {
+    x: Math.min(Math.max(target.x, 0), BATTLEFIELD.w),
+    y: Math.min(Math.max(target.y, 0), BATTLEFIELD.h),
+  };
 }
 
 export function castWhirlwind(s: RunState, c: ContentPack, events: SimEvent[]): boolean {
