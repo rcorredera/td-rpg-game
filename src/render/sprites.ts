@@ -45,11 +45,34 @@ const ENEMIES: Record<string, SpriteRef> = {
 };
 
 // ---- Tours --------------------------------------------------------------
-const TOWERS: Record<string, TowerView> = {
-  tower_archer:   { base: { key: "spr_tower_archer" } },
-  tower_catapult: { base: { key: "spr_tower_catapult" } },
-  tower_frost:    { base: { key: "spr_tower_frost" } },
+// Une entrée par PALIER visuel : l'amélioration doit se voir sur la carte, pas
+// seulement dans le menu (ADR-017). `tiers[0]` = niveaux 1-2, `tiers[1]` =
+// niveau 3 et spécialisations. Ajouter un palier = ajouter une entrée ici.
+interface TowerSkin {
+  tiers: SpriteRef[];
+  /** Teinte appliquée par spécialisation, pour distinguer deux branches d'un même palier. */
+  specTint?: Record<string, number>;
+}
+
+const TOWERS: Record<string, TowerSkin> = {
+  tower_archer: {
+    tiers: [{ key: "spr_tower_archer" }, { key: "spr_tower_archer_3" }],
+    specTint: { spec_longbow: 0xd8c9a0 },
+  },
+  tower_catapult: {
+    tiers: [{ key: "spr_tower_catapult" }, { key: "spr_tower_catapult_3" }],
+    specTint: { spec_greekfire: 0xffb887 },
+  },
+  tower_frost: {
+    tiers: [{ key: "spr_tower_frost" }, { key: "spr_tower_frost_3" }],
+    specTint: { spec_frostfire: 0xffc9a8 },
+  },
 };
+
+/** Palier visuel d'une tour : niveau 3 ou spécialisée = rang supérieur. */
+export function towerTier(level: number, specId?: string | null): number {
+  return specId || level >= 3 ? 1 : 0;
+}
 
 // ---- Héros, base & tuiles ----------------------------------------------
 const HERO: SpriteRef = { key: "spr_hero" };
@@ -69,10 +92,13 @@ export function enemyView(defId: string): SpriteRef {
   return v;
 }
 
-export function towerView(defId: string, _level?: number, _specId?: string | null): TowerView {
-  const v = TOWERS[defId];
-  if (!v) throw new Error(`sprites: tour non mappée « ${defId} »`);
-  return v;
+export function towerView(defId: string, level = 1, specId?: string | null): TowerView {
+  const skin = TOWERS[defId];
+  if (!skin) throw new Error(`sprites: tour non mappée « ${defId} »`);
+  const tier = Math.min(towerTier(level, specId), skin.tiers.length - 1);
+  const base = skin.tiers[tier]!;
+  const tint = specId ? skin.specTint?.[specId] : undefined;
+  return { base: tint ? { ...base, tint } : base };
 }
 
 export function heroView(): SpriteRef {

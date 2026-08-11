@@ -24,6 +24,7 @@ import { enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
 import { drawDirtPath, ensureTerrainTextures, TEX_GRASS } from "./terrain";
 import { GROUND, HERO_C, SIGNAL } from "./palette";
 import { projectileFor, projectilePoint, type ProjectileStyle } from "./projectiles";
+import { flyPose, idlePose, walkPose } from "./animation";
 import { SpriteLayer } from "./EntityLayer";
 import { STATUS } from "./theme";
 
@@ -778,7 +779,7 @@ export class GameScene extends Phaser.Scene {
     // Tours : le skin médiéval dessine la tour ENTIÈRE (plus de composition
     // socle + emblème, qui n'existait que pour recycler des tourelles sci-fi).
     this.towerBaseLayer.sync(
-      this.run.towers, t => t.slotIndex, t => towerView(t.defId).base, (s, t) => this.placeTowerPart(s, t, -12, 84),
+      this.run.towers, t => t.slotIndex, t => towerView(t.defId, t.level, t.specId).base, (s, t) => this.placeTowerPart(s, t, -12, 84),
     );
     this.towerEmblemLayer.sync(
       this.run.towers.filter(t => towerView(t.defId).emblem),
@@ -982,14 +983,23 @@ export class GameScene extends Phaser.Scene {
   /** Position/scale/flip/teinte du sprite d'ennemi (appelé chaque frame par SpriteLayer). */
   private placeEnemy(s: Phaser.GameObjects.Sprite, e: EnemyState) {
     const def = CONTENT.enemies[e.defId]!;
-    // Volants : flottement ; terrestres : petits bonds de marche (stoppés quand bloqués)
-    const bob = def.flying
-      ? Math.sin(this.time.now / 180 + e.uid) * 2
-      : e.blocked ? 0 : -Math.abs(Math.sin(this.time.now / 130 + e.uid * 1.7)) * 2.5;
-    const y = (def.flying ? e.pos.y - 14 : e.pos.y) + bob;
+    // Animation procédurale (ADR-017) : marche, vol ou respiration selon l'état.
+    // Le déphasage par uid évite qu'une horde entière bouge au même rythme.
+    const phase = (e.uid % 17) / 17;
+    const weight = Math.min(1, def.hp / 260);   // la brute pèse, le gobelin sautille
+    const pose = def.flying
+      ? flyPose(this.time.now, phase)
+      : e.blocked
+        ? idlePose(this.time.now, phase)
+        : walkPose(this.time.now, phase, def.speed / 55, weight);
+
+    const y = (def.flying ? e.pos.y - 14 : e.pos.y) + pose.dy;
     const face = this.facingOf(e.uid, e.pos.x);
     const size = this.enemySize(e);
-    s.setOrigin(0.5, 0.62).setDisplaySize(size, size).setFlipX(face < 0);
+    s.setOrigin(0.5, 0.62)
+      .setDisplaySize(size * pose.scaleX, size * pose.scaleY)
+      .setRotation(pose.tilt * face)
+      .setFlipX(face < 0);
     s.setPosition(Math.round(e.pos.x), Math.round(y));
     s.setDepth(100 + e.pos.y); // tri en profondeur par position verticale
     // Boss : reteinté or chaud (le registre n'a pas de sprite dédié).
