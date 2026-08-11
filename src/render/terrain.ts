@@ -12,6 +12,7 @@
 
 import type Phaser from "phaser";
 import { GROUND } from "./palette";
+import { PATH_WIDTH } from "./path";
 
 export const TEX_GRASS = "terrain_grass";
 
@@ -92,7 +93,7 @@ export function ensureTerrainTextures(scene: Phaser.Scene): void {
  * d'une tuile tous les 16 px produisait des bosses régulières visibles.
  */
 export function drawDirtPath(
-  g: Phaser.GameObjects.Graphics, pts: readonly { x: number; y: number }[], width = 46,
+  g: Phaser.GameObjects.Graphics, pts: readonly { x: number; y: number }[], width = PATH_WIDTH,
 ): void {
   if (pts.length < 2) return;
   const stroke = (w: number, color: number, alpha = 1) => {

@@ -115,6 +115,33 @@ export function traversalSeconds(c: ContentPack, chapterIndex: number, pathIndex
   return pathLength(path.waypoints) / def.speed;
 }
 
+/** Distance d'un emplacement au chemin le plus proche de lui. */
+export function distanceToPath(slot: Vec2, waypoints: readonly Vec2[]): number {
+  let best = Infinity;
+  for (let i = 1; i < waypoints.length; i++) {
+    const a = waypoints[i - 1]!, b = waypoints[i]!;
+    const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
+    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((slot.x - a.x) * dx + (slot.y - a.y) * dy) / len2));
+    best = Math.min(best, Math.hypot(slot.x - (a.x + t * dx), slot.y - (a.y + t * dy)));
+  }
+  return best;
+}
+
+/**
+ * Nombre d'emplacements capables d'atteindre chaque voie, à la portée donnée.
+ *
+ * Une voie mal couverte n'est pas « plus difficile », elle est **injouable** : le
+ * joueur n'a nulle part où poser une tour qui la défende. C'est une propriété de
+ * la CARTE, indépendante de l'équilibrage — et elle explique une fuite récurrente
+ * mieux que n'importe quel réglage de vague.
+ */
+export function slotCoverage(c: ContentPack, chapterIndex: number, range?: number): number[] {
+  const ch = playableChapter(c, chapterIndex);
+  // Portée de référence : la tour de base au niveau 1, le pire cas du joueur.
+  const r = range ?? c.towers.tower_archer?.levels[0]?.range ?? 130;
+  return ch.map.paths.map(p => ch.map.slots.filter(s => distanceToPath(s, p.waypoints) <= r).length);
+}
+
 // ---------- Vagues ----------
 
 export interface WaveStats {
