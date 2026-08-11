@@ -5,6 +5,7 @@
 import Phaser from "phaser";
 import { UI_TINT } from "../theme";
 import { CURSOR_POINT, FONT_DISPLAY } from "../ui";
+import { touchSize } from "../viewport";
 
 export interface UiButtonOpts {
   w: number;
@@ -20,6 +21,10 @@ export interface UiButton {
   container: Phaser.GameObjects.Container;
   img: Phaser.GameObjects.NineSlice;
   txt: Phaser.GameObjects.Text;
+  /** Dimensions EFFECTIVES après application du plancher tactile — les écrans doivent
+   *  espacer leurs éléments d'après ces valeurs, jamais d'après celles demandées. */
+  w: number;
+  h: number;
 }
 
 /** Bouton nine-slice avec hover (desktop) et stopPropagation (ne déclenche pas le tap de scène). */
@@ -27,9 +32,13 @@ export function uiButton(
   scene: Phaser.Scene, x: number, y: number, label: string,
   opts: UiButtonOpts, cb?: () => void,
 ): UiButton {
-  const h = opts.h ?? 36;
+  // Plancher tactile appliqué ici, une fois pour tous les appelants : une hauteur
+  // écrite à la main reste confortable sur grand écran mais devient inatteignable
+  // au doigt sur mobile (cf. `touchSize`, ADR-011).
+  const h = touchSize(opts.h ?? 36);
+  const w = touchSize(opts.w);
   const c = scene.add.container(x, y);
-  const img = scene.add.nineslice(0, 0, opts.gold ? "ui_btn_gold" : "ui_btn", undefined, opts.w, h, 14, 14, 14, 16);
+  const img = scene.add.nineslice(0, 0, opts.gold ? "ui_btn_gold" : "ui_btn", undefined, w, h, 14, 14, 14, 16);
   if (!opts.gold) img.setTint(UI_TINT.btn);
   const txt = scene.add.text(0, -2, label, {
     fontSize: `${opts.fontSize ?? 15}px`,
@@ -39,7 +48,7 @@ export function uiButton(
   c.add([img, txt]);
   if (opts.disabled || !cb) {
     c.setAlpha(0.55);
-    return { container: c, img, txt };
+    return { container: c, img, txt, w, h };
   }
   img.setInteractive({ cursor: CURSOR_POINT });
   const hoverTint = opts.gold ? 0xfff2cf : 0xa68c64;
@@ -51,5 +60,5 @@ export function uiButton(
     c.setScale(0.96);
     cb();
   });
-  return { container: c, img, txt };
+  return { container: c, img, txt, w, h };
 }

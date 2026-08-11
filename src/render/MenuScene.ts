@@ -9,7 +9,7 @@ import Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
 import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
-import { viewport } from "./viewport";
+import { touchSize, viewport } from "./viewport";
 import { ACCENT, TEXT } from "./theme";
 import {
   layoutCursor, uiButton, uiChip, uiListRow, uiModal, uiNavCard, uiPanel, uiSectionHeader,
@@ -152,14 +152,18 @@ export class MenuScene extends Phaser.Scene {
       { icon: "📖", title: "Bestiaire", sub: `Connaître l'ennemi, c'est déjà le vaincre — ${this.profileSvc.get().bestiary.length}/${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
       { icon: "📯", title: "Chroniques", sub: "Vos hauts faits de guerre", view: "chronicles" },
     ];
-    entries.forEach((e, i) => {
-      const y = 192 + i * 80;
+    // Empilement d'après la hauteur EFFECTIVE des cartes : sur mobile elles grandissent
+    // pour rester tapables, un pas en dur les ferait se chevaucher (ADR-011).
+    const cardH = touchSize(68);
+    const cursor = layoutCursor(192 - cardH / 2);
+    entries.forEach((e) => {
+      const y = cursor.next(cardH, 12);
       p.add(uiNavCard(this, 400, y, {
         icon: e.icon, title: e.title, sub: e.sub,
         titleColor: e.rift ? TEXT.rift : TEXT.gold,
         accent: e.rift ? ACCENT.dimBorder : ACCENT.gold,
         onSelect: () => this.showView(e.view),
-      }));
+      }).container);
     });
   }
 
@@ -244,8 +248,8 @@ export class MenuScene extends Phaser.Scene {
     // Déblocage séquentiel : conquérir le chapitre précédent pour ouvrir le suivant
     const isUnlocked = (i: number) => CONTENT.chapters[i]!.playable && (i === 0 || this.profileSvc.chapterWon(i - 1));
 
+    const rowsCursor = layoutCursor(202 - touchSize(38) / 2);
     CONTENT.chapters.forEach((ch, i) => {
-      const y = 202 + i * 42;
       const won = this.profileSvc.chapterWon(i);
       const unlocked = isUnlocked(i);
       const state: RowState = won ? "done" : unlocked ? "normal" : "locked";
@@ -253,18 +257,19 @@ export class MenuScene extends Phaser.Scene {
       const trailing = unlocked
         ? { label: won ? "Rejouer" : "⚔ Se battre", onClick: () => this.scene.start("game", { profileSvc: this.profileSvc, chapterIndex: i }) }
         : { label: ch.playable ? "🔒 Verrouillé" : "Bientôt" };
-      const row = uiListRow(this, 400, y, { w: 640, h: 38, title, trailing, state });
+      const probe = uiListRow(this, 400, 0, { w: 640, h: 38, title, trailing, state });
+      probe.container.setY(rowsCursor.next(probe.h, 4));
       if (won) {
         const stars = this.profileSvc.chapterStarsOf(i);
-        row.add(this.add.text(160, 0, "★".repeat(stars) + "☆".repeat(3 - stars), { fontSize: "15px", color: TEXT.gold, ...TXT }).setOrigin(0.5));
+        probe.container.add(this.add.text(160, 0, "★".repeat(stars) + "☆".repeat(3 - stars), { fontSize: "15px", color: TEXT.gold, ...TXT }).setOrigin(0.5));
       }
-      p.add(row);
+      p.add(probe.container);
     });
 
     // Lore du prochain objectif (premier chapitre débloqué non conquis)
     const next = CONTENT.chapters.findIndex((_ch, i) => isUnlocked(i) && !this.profileSvc.chapterWon(i));
     const lore = next >= 0 ? CONTENT.chapters[next]!.lore : "La vallée respire. Pour l'instant.";
-    p.add(this.add.text(400, 202 + CONTENT.chapters.length * 42 + 8, lore.replace("\n", " "),
+    p.add(this.add.text(400, rowsCursor.y + 8, lore.replace("\n", " "),
       { fontSize: "12px", color: TEXT.dim, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0));
   }
 
