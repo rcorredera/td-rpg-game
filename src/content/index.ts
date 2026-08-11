@@ -164,9 +164,9 @@ function makeWaves(num: number, secondPath: boolean): WaveDef[] {
 }
 
 /** Chapitres 2-10 : contenu généré provisoire. Noms/lore = placeholders (docs/LORE.md). */
-function makeChapter(num: number, name: string, lore: string): ChapterDef {
+function makeChapter(num: number, name: string, biome: string, lore: string): ChapterDef {
   const map = num % 2 === 0 ? LAYOUT_RIFT : LAYOUT_PINCER;
-  return { id: `ch${num}`, name, lore, playable: true, map, waves: makeWaves(num, true) };
+  return { id: `ch${num}`, name, lore, biome, playable: true, map, waves: makeWaves(num, true) };
 }
 
 export const CONTENT: ContentPack = {
@@ -331,7 +331,7 @@ export const CONTENT: ContentPack = {
   // Noms et lore = placeholders en attente du fichier de contexte (docs/LORE.md).
   chapters: [
     {
-      id: "ch1", name: "La Route du Bastion", playable: true,
+      id: "ch1", name: "La Route du Bastion", biome: "meadow", playable: true,
       lore: "Les éclaireurs gobelins sondent vos défenses.\nRepoussez les dix premières vagues du Roi-Charogne.",
       map: {
         castleHp: 20,
@@ -367,17 +367,17 @@ export const CONTENT: ContentPack = {
     },
     // Ch.2-10 : contenu généré provisoire, noms placeholders (à remplacer via docs/LORE.md).
     // Déblocage séquentiel : conquérir le chapitre précédent (géré côté UI/profil).
-    makeChapter(2, "Les Faubourgs en cendres", "Les survivants affluent. Les hordes aussi."),
-    makeChapter(3, "Le Gué des Orcs", "Deux routes mènent au Bastion. Les orcs le savent."),
-    makeChapter(4, "La Forêt Murmurante", "Quelque chose déchire le voile entre les mondes."),
-    makeChapter(5, "Les Carrières", "La pierre du Bastion vient d'ici. Elle est rouge, désormais."),
-    makeChapter(6, "Le Col du Gel", "Le froid ne les arrête pas. Rien ne les arrête."),
-    makeChapter(7, "Les Tertres", "Les morts d'hier grossissent les rangs d'aujourd'hui."),
-    makeChapter(8, "La Herse Brisée", "La première muraille est tombée. Reste la vôtre."),
-    makeChapter(9, "Les Portes du Nord", "Au-delà : son royaume. Il vous attend."),
+    makeChapter(2, "Les Faubourgs en cendres", "ash", "Les survivants affluent. Les hordes aussi."),
+    makeChapter(3, "Le Gué des Orcs", "marsh", "Deux routes mènent au Bastion. Les orcs le savent."),
+    makeChapter(4, "La Forêt Murmurante", "forest", "Quelque chose déchire le voile entre les mondes."),
+    makeChapter(5, "Les Carrières", "quarry", "La pierre du Bastion vient d'ici. Elle est rouge, désormais."),
+    makeChapter(6, "Le Col du Gel", "frost", "Le froid ne les arrête pas. Rien ne les arrête."),
+    makeChapter(7, "Les Tertres", "barrow", "Les morts d'hier grossissent les rangs d'aujourd'hui."),
+    makeChapter(8, "La Herse Brisée", "ruins", "La première muraille est tombée. Reste la vôtre."),
+    makeChapter(9, "Les Portes du Nord", "tundra", "Au-delà : son royaume. Il vous attend."),
     // Final : boss multi-phases prévu (à chaque mort, il revient plus fort — GDD §Boss final).
     // En attendant : mini-boss x12 en 12e vague.
-    makeChapter(10, "Le Roi-Charogne", "Le maître des hordes en personne."),
+    makeChapter(10, "Le Roi-Charogne", "blight", "Le maître des hordes en personne."),
   ],
 
   hero: {

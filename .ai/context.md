@@ -20,6 +20,14 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
+- **Biomes de chapitre (ADR-023) — FAIT** : chaque chapitre a son identité visuelle (prairie, cendres,
+  marécage, forêt, carrières, glace, tertres, ruines, toundra, terre gâtée). « Le Col du Gel » s'affichait
+  sur la même prairie verte que tous les autres. Le content NOMME un biome, `render/biomes.ts` décide de
+  son apparence (ADR-005). Un biome porte la FORME de son motif (`grass`/`rock`/`flake`/`reed`) et sa
+  ROUTE, pas seulement une teinte — teinter ne suffit pas, `setTint` assombrit sans désaturer. Tests :
+  biome connu par chapitre, jamais deux décors identiques consécutifs, sol+route distincts, repli sûr,
+  et saturation < 0,55 (le décor ne doit pas concurrencer les unités).
+  ⚠ RESTE : les 10 chapitres partagent toujours DEUX tracés — le décor les distingue, pas la topologie.
 - **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups

@@ -266,6 +266,28 @@ Réponse au mur de progression méta : une **page Équipement** dans l'Armurerie
 
 **Chroniques** — top 5 des runs (vagues, kills, victoire, date), persisté dans le profil. Base du futur leaderboard des Failles : le jour où un serveur existe, ces entrées remontent telles quelles.
 
+## Failles infinies — design v1 (intention du PO, non implémenté)
+
+Mode d'**endgame**, débloqué une fois l'Histoire terminée. Difficulté croissante sans
+fin : chaque palier franchi durcit le suivant.
+
+- **Troisième monnaie**, gagnée uniquement en Faille. Elle alimente un puits que
+  l'Histoire n'atteint pas : amélioration des **dégâts de base** des tours au-delà des
+  quatre niveaux de Forge, et surtout amélioration des **spécialisations** elles-mêmes
+  — quitte à en ajouter de nouvelles réservées à ce mode.
+- **Beaucoup de cartes** : un mode sans fin consomme les parcours bien plus vite qu'une
+  campagne de dix chapitres. À prévoir comme une contrainte de production, pas comme un
+  détail — c'est probablement là que se justifiera une génération procédurale de
+  tracés, contrainte par les garanties de carte de l'ADR-019 (couverture ≥ 2/3 des
+  emplacements par voie, écart de longueur entre voies < 25 %).
+- Le socle existe déjà : historique des runs persisté (Chroniques), scaling paramétré
+  (`scaling.hpExponent`), et le banc d'essai (ADR-018) sait mesurer un chapitre
+  arbitraire — donc calibrer une courbe infinie.
+
+**Point de vigilance** : la méta de l'Histoire vient d'être remise sous tension
+(ADR-021). Une troisième monnaie qui améliore les tours doit être réglée *après* la
+campagne, sans quoi elle rendra les chapitres 1-10 triviaux au rejeu.
+
 ## Hors scope v0 (mémo pour v1+)
 
 Failles infinies, arbre de talents héros, équipement/loot, **roster de héros** (plusieurs héros aux archétypes et capacités distincts, sélection avant run — côté code : `ContentPack.hero` deviendra `heroes: Record<id, HeroDef>` avec des skills par héros, + choix persisté dans le profil), spécialisations de tours, plusieurs maps, cloud save, leaderboards, monétisation, sons/musique.

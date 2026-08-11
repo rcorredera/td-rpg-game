@@ -134,6 +134,13 @@ export interface ChapterBase {
   name: string;
   /** 1-3 lignes de lore — alimentées par docs/LORE.md (fichier de contexte fourni à part). */
   lore: string;
+  /**
+   * Identité visuelle du lieu (ADR-023). Le content nomme un biome, il ne choisit
+   * aucune couleur : c'est `render/biomes.ts` qui décide à quoi il ressemble, donc
+   * un futur skin peut tout redéfinir sans toucher au contenu.
+   * Absent = prairie.
+   */
+  biome?: string;
 }
 
 export type ChapterDef =
