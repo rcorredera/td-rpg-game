@@ -1,9 +1,9 @@
 // Tests unitaires du core — la sim doit tourner sans navigateur (ADR-001).
 import { describe, expect, it } from "vitest";
-import type { ContentPack, Profile } from "./types";
+import type { ContentPack, Profile, SimEvent, Vec2 } from "./types";
 import { BATTLEFIELD } from "./types";
 import { CONTENT } from "../content/index";
-import { buildTower, castWhirlwind, computeResult, createRun, moveHero, sellRefundFor, sellTower, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
+import { buildTower, castAccountSpell, castWhirlwind, clampToBattlefield, computeResult, createRun, moveHero, sellRefundFor, sellTower, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
 
 const FRESH_PROFILE: Profile = {
   shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
@@ -333,27 +333,48 @@ describe("sim core", () => {
     }
   });
 
-  it("le héros ne peut pas quitter le champ de bataille", () => {
+  /** Points de tap hors carte : l'écran déborde du champ de bataille (ADR-010),
+   *  chaque bord et chaque coin doit être couvert — un clamp partiel (2 bords sur 4)
+   *  passerait un test moins complet. */
+  const OUT_OF_BOUNDS: Vec2[] = [
+    { x: -500, y: 300 }, { x: 9999, y: 300 }, { x: 400, y: -500 }, { x: 400, y: 9999 },
+    { x: -500, y: -500 }, { x: 9999, y: 9999 }, { x: -0.5, y: 600.5 },
+  ];
+
+  const inBattlefield = (p: Vec2) =>
+    p.x >= 0 && p.x <= BATTLEFIELD.w && p.y >= 0 && p.y <= BATTLEFIELD.h;
+
+  it("clampToBattlefield ramène tout point dans la carte et laisse les autres intacts", () => {
+    for (const p of OUT_OF_BOUNDS) expect(inBattlefield(clampToBattlefield(p))).toBe(true);
+    // Les points légitimes, bords compris, passent inchangés.
+    for (const p of [{ x: 0, y: 0 }, { x: 321, y: 123 }, { x: BATTLEFIELD.w, y: BATTLEFIELD.h }]) {
+      expect(clampToBattlefield(p)).toEqual(p);
+    }
+  });
+
+  // Filet anti-régression : TOUTE commande de sim ciblée par un tap doit borner son
+  // point. Ajouter ici chaque nouvelle commande ciblée (pose d'entité, sort visé…) —
+  // sans quoi le hors-champ tapable réintroduit le bug « le héros sort de la carte ».
+  it("toute commande ciblée au tap agit dans le champ de bataille", () => {
     const c = mkContent({});
-    const s = createRun(c, FRESH_PROFILE);
 
-    // L'écran déborde de la zone de jeu (ADR-010) : un tap dans le hors-champ
-    // ne doit pas envoyer le héros hors carte.
-    moveHero(s, { x: -400, y: -250 });
-    expect(s.hero.target).toEqual({ x: 0, y: 0 });
+    for (const p of OUT_OF_BOUNDS) {
+      // moveHero : la cible ET la position atteinte restent dans la carte.
+      const s = createRun(c, FRESH_PROFILE);
+      moveHero(s, p);
+      expect(inBattlefield(s.hero.target)).toBe(true);
+      tick(s, c, 30); // laisse largement le temps d'atteindre la cible
+      expect(inBattlefield(s.hero.pos)).toBe(true);
 
-    moveHero(s, { x: 9999, y: 9999 });
-    expect(s.hero.target).toEqual({ x: BATTLEFIELD.w, y: BATTLEFIELD.h });
-
-    // Une cible légitime passe inchangée.
-    moveHero(s, { x: 321, y: 123 });
-    expect(s.hero.target).toEqual({ x: 321, y: 123 });
-
-    // Et le déplacement effectif reste borné, quel que soit le temps écoulé.
-    moveHero(s, { x: 5000, y: -5000 });
-    tick(s, c, 30);
-    expect(s.hero.pos.x).toBeLessThanOrEqual(BATTLEFIELD.w);
-    expect(s.hero.pos.y).toBeGreaterThanOrEqual(0);
+      // castAccountSpell : la déflagration est recentrée dans la carte au lieu
+      // de brûler le cooldown dans le vide.
+      const s2 = createRun(c, FRESH_PROFILE);
+      s2.hasAccountSpell = true;
+      const events: SimEvent[] = [];
+      expect(castAccountSpell(s2, c, p, events)).toBe(true);
+      const boom = events.find(e => e.type === "explosion");
+      expect(boom && boom.type === "explosion" && inBattlefield(boom.pos)).toBe(true);
+    }
   });
 
   it("le givre ralentit : un ennemi gelé parcourt moins de distance", () => {

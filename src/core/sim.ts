@@ -135,15 +135,26 @@ export function sellTower(s: RunState, c: ContentPack, slotIndex: number): boole
   return true;
 }
 
-/** Ordonne un déplacement au héros. La cible est ramenée DANS le champ de bataille :
- *  l'écran déborde de la zone de jeu depuis ADR-010, donc un tap peut viser du hors-champ —
- *  sans ce garde-fou, le héros quitterait la carte et déserterait le combat. */
+/**
+ * Ramène un point dans le champ de bataille.
+ *
+ * **Toute commande ciblée par un tap DOIT y passer.** Depuis ADR-010 l'écran déborde
+ * de la carte et ce hors-champ est tapable : une commande qui prend les coordonnées
+ * brutes agit hors de la zone de jeu (le héros la quittait, un sort s'y gaspillait).
+ * Point d'entrée unique et non des clamps recopiés : c'est ce qui rend la garantie
+ * vérifiable d'un seul endroit — `sim.test.ts` teste chaque commande ciblée.
+ */
+export function clampToBattlefield(p: Vec2): Vec2 {
+  return {
+    x: Math.min(Math.max(p.x, 0), BATTLEFIELD.w),
+    y: Math.min(Math.max(p.y, 0), BATTLEFIELD.h),
+  };
+}
+
+/** Ordonne un déplacement au héros (cible bornée, cf. `clampToBattlefield`). */
 export function moveHero(s: RunState, target: Vec2): void {
   if (!s.hero.alive) return;
-  s.hero.target = {
-    x: Math.min(Math.max(target.x, 0), BATTLEFIELD.w),
-    y: Math.min(Math.max(target.y, 0), BATTLEFIELD.h),
-  };
+  s.hero.target = clampToBattlefield(target);
 }
 
 export function castWhirlwind(s: RunState, c: ContentPack, events: SimEvent[]): boolean {
@@ -170,10 +181,13 @@ export function castRally(s: RunState, c: ContentPack): boolean {
 
 export function castAccountSpell(s: RunState, c: ContentPack, at: Vec2, events: SimEvent[]): boolean {
   if (!s.hasAccountSpell || s.time < s.accountSpellReady) return false;
+  // Cible bornée : un tap dans le hors-champ (ADR-010) gaspillait le sort — le
+  // cooldown était posé alors que la zone d'effet ne pouvait toucher personne.
+  const target = clampToBattlefield(at);
   s.accountSpellReady = s.time + c.accountSpell.cooldownS;
-  events.push({ type: "explosion", pos: { ...at }, radius: c.accountSpell.radius });
+  events.push({ type: "explosion", pos: { ...target }, radius: c.accountSpell.radius });
   for (const e of s.enemies) {
-    if (e.alive && dist(e.pos, at) <= c.accountSpell.radius) damageEnemy(s, c, e, c.accountSpell.damage, events);
+    if (e.alive && dist(e.pos, target) <= c.accountSpell.radius) damageEnemy(s, c, e, c.accountSpell.damage, events);
   }
   return true;
 }
