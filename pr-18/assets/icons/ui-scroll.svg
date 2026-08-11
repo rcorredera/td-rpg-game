@@ -1,7 +1,0 @@
-<!-- Histoire — parchemin roulé.
-     Blanc pur et silhouette PLEINE : la couleur vient de setTint au rendu, qui
-     multiplie — un détail sombre resterait sombre après teinture. Les trous se
-     font donc par fill-rule="evenodd", jamais par une seconde couleur. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path fill="#fff" fill-rule="evenodd" d="M8 13.5A4.5 4.5 0 0 1 12.5 9h39a4.5 4.5 0 0 1 0 9h-39A4.5 4.5 0 0 1 8 13.5zM13 20h38v24H13V20zm7 4v3h24v-3H20zm0 8v3h24v-3H20zm0 8v3h16v-3H20zM8 50.5A4.5 4.5 0 0 1 12.5 46h39a4.5 4.5 0 0 1 0 9h-39A4.5 4.5 0 0 1 8 50.5z"/>
-</svg>
