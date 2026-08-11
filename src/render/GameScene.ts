@@ -13,7 +13,8 @@ import {
 } from "../core/sim";
 import type { EnemyState, PlayableChapter, RunState, SimEvent, TowerState } from "../core/types";
 import type { ProfileService } from "../meta/profile";
-import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, UI_TINT } from "./ui";
+import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
+import { viewport } from "./viewport";
 import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
 import { DECOR_FRAMES, enemyView, heroView, tileFor, towerView } from "./sprites";
@@ -31,6 +32,9 @@ const C = {
 };
 
 const GAME_W = 800, GAME_H = 600;
+/** Voile des modales : volontairement plus grand que tout écran plausible, pour
+ *  couvrir la vue quelle que soit sa taille sans avoir à le redimensionner. */
+const VEIL = 4000;
 
 /** Distance d'un point à un segment [a,b] (pour éviter de poser du décor sur la route). */
 function distToSeg(px: number, py: number, a: { x: number; y: number }, b: { x: number; y: number }): number {
@@ -74,6 +78,12 @@ export class GameScene extends Phaser.Scene {
   private heroSprite!: Phaser.GameObjects.Sprite;
   /** Marqueurs de slot vide (sprites statiques, masqués quand une tour occupe le slot). */
   private slotMarkers: Phaser.GameObjects.Image[] = [];
+  /** Décor statique (herbe, routes, château) — reconstruit tel quel au resize. */
+  private terrain: Phaser.GameObjects.Container | null = null;
+  /** Bouton « quitter » : hors du container HUD (ancré au coin haut), détruit à part. */
+  private quitBtn: Phaser.GameObjects.Container | null = null;
+  /** Haut de la barre de HUD en unités logiques — les taps au-dessous sont ignorés. */
+  private hudTop = GAME_H - 70;
 
   constructor() { super("game"); }
 
@@ -97,6 +107,9 @@ export class GameScene extends Phaser.Scene {
     setupCamera(this);
     this.buildTerrain();
     this.buildCastle();
+    // Un run ne se rejoue pas : au resize/rotation on ne redémarre PAS la scène,
+    // on se contente de réancrer ce qui dépend des bords (décor étendu, HUD).
+    onSceneResize(this, () => this.relayout());
     this.enemyLayer = new SpriteLayer<EnemyState>(this, 100);
     this.towerBaseLayer = new SpriteLayer<TowerState>(this, 100);
     this.towerEmblemLayer = new SpriteLayer<TowerState>(this, 100);
@@ -112,8 +125,11 @@ export class GameScene extends Phaser.Scene {
   /** Fond d'herbe + routes estampées en tuiles. Reconstruit par chapitre (create). */
   private buildTerrain() {
     const cont = this.add.container(0, 0).setDepth(-10);
-    // Herbe : TileSprite répétant une frame 64×64.
-    const grass = this.add.tileSprite(0, 0, GAME_W, GAME_H, TEX.td, tileFor("grass").frame).setOrigin(0, 0);
+    this.terrain = cont;
+    // Herbe : TileSprite répétant une frame 64×64, étalé sur la vue entière —
+    // le débord hors zone de jeu reste du terrain, jamais du noir (ADR-010).
+    const v = viewport();
+    const grass = this.add.tileSprite(v.left, v.top, v.width, v.height, TEX.td, tileFor("grass").frame).setOrigin(0, 0);
     cont.add(grass);
 
     // Décor : buissons/plantes dispersés (déterministe par chapitre), évite routes (segments) et slots.
@@ -157,6 +173,23 @@ export class GameScene extends Phaser.Scene {
     cont.add(this.add.image(end.x - 18, end.y - 14, TEX.td, 227).setScale(1.1));   // tourelle (mortier)
   }
 
+  /** Réancre ce qui dépend des bords de l'écran (décor étendu, HUD) après un
+   *  resize ou une rotation. Le run lui-même n'est jamais touché : les entités
+   *  et la sim vivent en coordonnées logiques, indépendantes de l'écran. */
+  private relayout() {
+    this.closeMenu();
+    this.terrain?.destroy(true);
+    this.terrain = null;
+    this.slotMarkers.forEach(m => m.destroy());
+    this.slotMarkers = [];
+    this.buildTerrain();
+    this.hud?.destroy(true);
+    this.quitBtn?.destroy();
+    this.quitBtn = null;
+    this.hudTexts = {}; this.hudPlates = {}; this.hudIcons = {};
+    this.buildHud();
+  }
+
   /** Tracé VISUEL lissé (spline Catmull-Rom à travers les waypoints) — purement
    *  cosmétique : la sim suit toujours les segments linéaires (ADR-001). */
   private stampPath(cont: Phaser.GameObjects.Container, wps: readonly { x: number; y: number }[]) {
@@ -172,7 +205,7 @@ export class GameScene extends Phaser.Scene {
 
   private onTap(x: number, y: number) {
     if (this.ended || this.confirmQuit) return;
-    if (y > GAME_H - 70) return; // zone HUD bas
+    if (y > this.hudTop) return; // zone HUD bas (suit les bords réels de l'écran)
 
     if (this.spellMode) {
       const evs: SimEvent[] = [];
@@ -196,7 +229,12 @@ export class GameScene extends Phaser.Scene {
     this.selectedSlot = slotIdx;
     const slot = this.ch.map.slots[slotIdx]!;
     const existing = this.run.towers.find(t => t.slotIndex === slotIdx);
-    const menu = this.add.container(Phaser.Math.Clamp(slot.x, 125, GAME_W - 125), Math.max(70, slot.y - 70));
+    // Le menu reste dans les bords sûrs de l'écran courant, pas du cadre 800×600.
+    const v = viewport();
+    const menu = this.add.container(
+      Phaser.Math.Clamp(slot.x, v.safeLeft + 125, v.safeRight - 125),
+      Math.max(v.safeTop + 70, slot.y - 70),
+    );
     const unlocks = this.profileSvc.get().unlocks;
 
     // cb null = entrée désactivée (or insuffisant) : grisée, coût en rouge.
@@ -308,68 +346,87 @@ export class GameScene extends Phaser.Scene {
 
   private buildHud() {
     this.hud = this.add.container(0, 0);
+    const v = viewport();
+    // Le HUD s'ancre aux bords RÉELS de l'écran, pas au cadre 800×600 : ressources
+    // à gauche, actions et sorts à droite (sous le pouce). Sur un écran large, la
+    // barre s'étale au lieu de laisser du vide sur les côtés (ADR-010).
+    const barH = 70;
+    const cy = v.safeBottom - barH / 2;   // axe des contrôles
+    this.hudTop = v.safeBottom - barH;
+    const xL = v.safeLeft, xR = v.safeRight;
+
     const bar = this.add.graphics();
-    bar.fillStyle(C.ui, 0.97); bar.fillRect(0, GAME_H - 70, GAME_W, 70);
-    bar.lineStyle(2, 0xc9a227, 0.35); bar.lineBetween(0, GAME_H - 70, GAME_W, GAME_H - 70);
-    // Séparateurs de groupes (ressources | vagues | sorts)
-    bar.lineStyle(1, 0xc9a227, 0.15);
-    bar.lineBetween(292, GAME_H - 58, 292, GAME_H - 12);
-    bar.lineBetween(540, GAME_H - 58, 540, GAME_H - 12);
+    bar.fillStyle(C.ui, 0.97); bar.fillRect(v.left, this.hudTop, v.width, v.bottom - this.hudTop);
+    bar.lineStyle(2, 0xc9a227, 0.35); bar.lineBetween(v.left, this.hudTop, v.right, this.hudTop);
     this.hud.add(bar);
 
     // Libellé passif (sans plaque)
     const mk = (key: string, x: number, label: string, size = 16) => {
-      const t = this.add.text(x, GAME_H - 35, label, { fontSize: `${size}px`, color: C.uiText, fontFamily: FONT_DISPLAY }).setOrigin(0.5);
+      const t = this.add.text(x, cy, label, { fontSize: `${size}px`, color: C.uiText, fontFamily: FONT_DISPLAY }).setOrigin(0.5);
       this.hudTexts[key] = t; this.hud.add(t);
     };
     // Bouton Kenney nine-slice (gold = action principale)
     const mkBtn = (key: string, x: number, w: number, label: string, cb: () => void, size = 14, gold = false) => {
-      const plate = this.add.nineslice(x, GAME_H - 35, gold ? "ui_btn_gold" : "ui_btn", undefined, w, 32, 14, 14, 14, 16);
+      const plate = this.add.nineslice(x, cy, gold ? "ui_btn_gold" : "ui_btn", undefined, w, 40, 14, 14, 14, 16);
       if (!gold) plate.setTint(UI_TINT.btn);
       plate.setInteractive({ cursor: CURSOR_POINT })
         .on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); cb(); });
       this.hudPlates[key] = plate; this.hud.add(plate);
-      const t = this.add.text(x, GAME_H - 37, label, {
+      const t = this.add.text(x, cy - 2, label, {
         fontSize: `${size}px`, color: gold ? "#3a2c12" : C.uiText, fontFamily: FONT_DISPLAY,
       }).setOrigin(0.5);
       this.hudTexts[key] = t; this.hud.add(t);
     };
-
-    mk("gold", 50, "");
-    mk("castle", 140, "");
-    mk("wave", 235, "", 15);
-    mkBtn("nextWave", 352, 92, "▶ Vague", () => { startNextWave(this.run, CONTENT); }, 14, true);
-    mkBtn("auto", 442, 72, "Auto ✗", () => { this.autoWave = !this.autoWave; this.autoWaveAt = null; });
-    mkBtn("speed", 508, 46, "x1", () => { this.run.speed = this.run.speed === 1 ? 2 : 1; });
     // Sorts : boutons-icônes carrés (cooldown affiché sous l'icône)
     const mkIconBtn = (key: string, x: number, icon: string, cb: () => void) => {
-      const plate = this.add.nineslice(x, GAME_H - 35, "ui_btn", undefined, 44, 44, 14, 14, 14, 16);
+      const plate = this.add.nineslice(x, cy, "ui_btn", undefined, 48, 48, 14, 14, 14, 16);
       plate.setTint(UI_TINT.btn);
       plate.setInteractive({ cursor: CURSOR_POINT })
         .on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); cb(); });
       this.hudPlates[key] = plate; this.hud.add(plate);
-      const img = this.add.image(x, GAME_H - 39, icon).setDisplaySize(26, 26).setTint(0xf0e6d2);
+      const img = this.add.image(x, cy - 4, icon).setDisplaySize(26, 26).setTint(0xf0e6d2);
       this.hudIcons[key] = img; this.hud.add(img);
-      const cd = this.add.text(x, GAME_H - 19, "", { fontSize: "10px", color: "#e8c252", fontFamily: FONT_DISPLAY }).setOrigin(0.5);
+      const cd = this.add.text(x, cy + 16, "", { fontSize: "10px", color: "#e8c252", fontFamily: FONT_DISPLAY }).setOrigin(0.5);
       this.hudTexts[key] = cd; this.hud.add(cd);
     };
-    mkIconBtn("ww", 580, "icon_ww", () => { const evs: SimEvent[] = []; castWhirlwind(this.run, CONTENT, evs); this.consumeEvents(evs); });
-    mkIconBtn("rally", 632, "icon_rally", () => {
+
+    // --- Groupe gauche : état du run (lecture seule) ---
+    mk("gold", xL + 50, "");
+    mk("castle", xL + 140, "");
+    mk("wave", xL + 235, "", 15);
+
+    // --- Groupe droit : actions, posées de droite à gauche ---
+    // Les sorts occupent l'extrémité (les plus utilisés en combat), puis les
+    // contrôles de vague. `▶ Vague` reste en or : c'est l'action principale.
+    let x = xR - 32;
+    if (this.run.hasAccountSpell) { mkIconBtn("spell", x, "icon_spell", () => { this.spellMode = true; }); x -= 56; }
+    mkIconBtn("rally", x, "icon_rally", () => {
       if (castRally(this.run, CONTENT)) {
         // Onde de portée au lancement : montre la zone d'effet du cri de ralliement
         const sk = CONTENT.hero.skills.rally.levels[this.run.skillLevels.rally - 1]!;
         this.fx.push({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 650, life: 650 });
       }
     });
-    if (this.run.hasAccountSpell) mkIconBtn("spell", 684, "icon_spell", () => { this.spellMode = true; });
+    x -= 56;
+    mkIconBtn("ww", x, "icon_ww", () => { const evs: SimEvent[] = []; castWhirlwind(this.run, CONTENT, evs); this.consumeEvents(evs); });
+    x -= 48;
+    mkBtn("speed", x, 48, "x1", () => { this.run.speed = this.run.speed === 1 ? 2 : 1; });
+    x -= 68;
+    mkBtn("auto", x, 76, "Auto ✗", () => { this.autoWave = !this.autoWave; this.autoWaveAt = null; });
+    x -= 98;
+    mkBtn("nextWave", x, 100, "▶ Vague", () => { startNextWave(this.run, CONTENT); }, 15, true);
+
+    // Séparateur entre le bloc d'état et le bloc d'actions
+    bar.lineStyle(1, 0xc9a227, 0.15);
+    bar.lineBetween(x - 62, this.hudTop + 12, x - 62, v.safeBottom - 12);
     this.hud.setDepth(1000);
 
-    // Bouton quitter (haut gauche) → confirmation, retour campement
-    uiButton(this, 55, 24, "⟵ Camp", { w: 86, h: 30, fontSize: 13 }, () => this.openQuitConfirm())
-      .container.setDepth(1000);
+    // Bouton quitter : coin haut-gauche sûr (sous l'encoche éventuelle)
+    this.quitBtn = uiButton(this, v.safeLeft + 55, v.safeTop + 26, "⟵ Camp", { w: 86, h: 32, fontSize: 13 },
+      () => this.openQuitConfirm()).container.setDepth(1000);
 
     // Annonce de Faille (portails) — haut de l'écran, visible uniquement quand pertinent
-    this.hudTexts["portalWarn"] = this.add.text(GAME_W / 2, 12, "", {
+    this.hudTexts["portalWarn"] = this.add.text(GAME_W / 2, v.safeTop + 10, "", {
       fontSize: "16px", color: "#c9a2e8", fontFamily: FONT_BODY,
       backgroundColor: "#2b2118", padding: { x: 12, y: 5 },
     }).setOrigin(0.5, 0).setDepth(1000).setVisible(false);
@@ -379,7 +436,7 @@ export class GameScene extends Phaser.Scene {
     if (this.confirmQuit || this.ended) return;
     this.closeMenu();
     const c = this.add.container(GAME_W / 2, GAME_H / 2).setDepth(3000);
-    c.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.5));
+    c.add(this.add.rectangle(0, 0, VEIL, VEIL, 0x000000, 0.5));
     c.add(uiPanel(this, 0, 0, 420, 190));
     const edge = this.add.graphics();
     edge.lineStyle(2, 0xc9a227, 1); edge.strokeRoundedRect(-210, -95, 420, 190, 14);
@@ -469,7 +526,7 @@ export class GameScene extends Phaser.Scene {
     const result = computeResult(this.run, CONTENT);
     this.profileSvc.applyRunResult(result, this.chapterIdx);
     const overlay = this.add.container(GAME_W / 2, GAME_H / 2).setDepth(4000);
-    overlay.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.45));
+    overlay.add(this.add.rectangle(0, 0, VEIL, VEIL, 0x000000, 0.45));
     overlay.add(uiPanel(this, 0, 0, 420, 240));
     const edge = this.add.graphics();
     edge.lineStyle(2, 0xc9a227, 1); edge.strokeRoundedRect(-210, -120, 420, 240, 14);

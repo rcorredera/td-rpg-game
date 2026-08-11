@@ -21,18 +21,28 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   ⚠ Couche payante future = éditer `sprites.ts`/`assets.ts`, rien d'autre.
 - **Wording** : passe sci-fi faite sur les noms in-game (Éclaireur/Blindé/Char lourd/Drone ;
   Tourelle/Mortier/Canon cryo + specs). **Saga/chapitres/lore profond = en attente du fichier lore du PO.**
-- **Tests** : 40 (sim + profil + save + registre de sprites). Le test de déterminisme protège ADR-001 ;
-  `sprites.test.ts` garantit que tout ennemi/tour de CONTENT a un sprite.
+- **Tests** : 60 (sim + profil + save + registre de sprites + thème + composants UI purs + viewport).
+  Le test de déterminisme protège ADR-001 ; `sprites.test.ts` garantit que tout ennemi/tour de
+  CONTENT a un sprite ; `viewport.test.ts` garantit que la zone de jeu reste visible sur tout écran.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
-  auto sur `main` (project page, `base` réglé dans `vite.config.ts`). Reste à faire côté GitHub :
-  activer Pages (Settings → Pages → Source: GitHub Actions).
+  auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
+  et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
 - **Équilibrage** : passe nº1 faite (hpExponent 1.12, or +30%, départ 160, specs boostées) — calibrée
   au **bot de simulation** (stratégies scriptées sur la sim headless, méthode décrite au GDD §Décisions).
 - **UI** : rendu HiDPI (texte net), polices embarquées **Cinzel** (titres/boutons) + **Alegreya**
   (textes) chargées avant le boot Phaser, curseurs **dessinés sur canvas** (flèche + main dorées,
   image-set 2x — les PNG Kenney 30px étaient flous), boutons avec hover/pressed, sorts en
   boutons-icônes (game-icons, CC-BY → crédit obligatoire, voir public/assets/README.md),
-  deltas chiffrés sur upgrades et specs.
+  deltas chiffrés sur upgrades et specs. Socle de widgets dans `render/components/` (ADR-007)
+  + `layoutCursor` pour l'empilement vertical.
+- **Viewport (ADR-010)** : cible **paysage**, le jeu remplit l'écran entier (avant : 35 % de la
+  surface sur mobile portrait, le reste en bandes noires). `render/viewport.ts` = source unique
+  (framebuffer, zoom, rectangle visible, encoches), réactif au resize/rotation ; invite « tournez
+  votre appareil » en CSS sur mobile portrait.
+- **Chantier UI/UX en cours** : socle format posé (ADR-010). Reste au plan validé — cibles tactiles
+  garanties par les composants + liste défilante ; puis identité visuelle (remplacer les icônes
+  emoji système par un vrai set, fond texturé, hiérarchie, passe sur le terrain de combat) ; puis
+  transitions/feedback et migration des écrans restants (Boutique, Chroniques, Bestiaire) sur le kit.
 
 ## Prochaine grosse feature actée (design au GDD, à implémenter)
 **Équipement du héros + loot** : 3 slots (arme/armure/relique), butin en fin de run victorieux

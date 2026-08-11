@@ -40,9 +40,22 @@ qu'un écran empile des rangées/cartes sous un en-tête ou des onglets (évite 
 (`TEXT` couleurs de texte, `ACCENT` teintes de bordure, en plus des tokens existants). `render/ui.ts`
 ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, préchargement).
 
-## Mobile
+## Mobile / viewport (ADR-010)
 
-Viewport logique 800×600, `Phaser.Scale.FIT`. Inputs uniquement tap/pointer (le hover du campement est un bonus desktop, jamais requis). Capacitor prévu en v1 — ne pas introduire d'API desktop-only d'ici là. Le framebuffer est dimensionné à la taille réellement affichée (`RENDER_SCALE`, `render/ui.ts`) pour éviter le flou d'étirement CSS de `Scale.FIT` sur les grands écrans (ADR-009).
+Cible **paysage**. `render/viewport.ts` est la source unique de vérité sur l'écran :
+`computeViewport()` (pure, testée) renvoie la taille du framebuffer, le zoom caméra, le rectangle
+visible en unités logiques et les bords amputés des encoches (`env(safe-area-inset-*)`).
+
+Le framebuffer couvre la fenêtre **entière** à la densité réelle (`Scale.NONE`, piloté par
+`attachViewport()`), et la zone de jeu 800×600 reste toujours entièrement visible : le surplus
+d'écran est un **débord** que le fond habille et auquel le HUD s'ancre. Les coordonnées restent
+logiques (800×600) — `core/` ignore l'écran.
+
+Règles pour tout nouvel écran : dimensionner les fonds sur `viewport().width/height` (jamais
+800×600 en dur), ancrer l'UI de bord sur `safeLeft/safeTop/safeRight/safeBottom`, et s'abonner via
+`onSceneResize()` (`render/ui.ts`) pour se réancrer au resize/rotation. Inputs uniquement
+tap/pointer (le hover du campement est un bonus desktop, jamais requis). Capacitor prévu en v1 —
+ne pas introduire d'API desktop-only d'ici là.
 
 ## Debug
 
