@@ -75,6 +75,33 @@ describe("autoplay — étalon reproductible", () => {
   });
 });
 
+describe("autoplay — compositions de défense", () => {
+  it("respecte la composition imposée", () => {
+    // Sans ça, la mesure « une tour seule contre un mélange » ne mesurerait rien :
+    // le bot retomberait sur son cycle par défaut et toutes les lignes seraient égales.
+    const r = autoplayChapter(CONTENT, 0, { policy: "spread", towers: ["tower_archer"] });
+    expect(r.waves[r.waves.length - 1]!.towers).toBeGreaterThan(1);
+  });
+
+  it("distingue une défense mono-tour d'un mélange", () => {
+    // Deux compositions qui donnent le même résultat signaleraient que l'option est
+    // ignorée — le rapport conclurait « pas de décision tactique » à tort.
+    const solo = autoplayChapter(CONTENT, 0, { policy: "spread", towers: ["tower_archer"] });
+    const mix = autoplayChapter(CONTENT, 0, {
+      policy: "spread", towers: ["tower_archer", "tower_catapult"],
+    });
+    expect(mix.result.castleHpLeft).not.toBe(solo.result.castleHpLeft);
+  });
+
+  it("ignore une tour non débloquée sans planter", () => {
+    // `tower_frost` exige un unlock : imposée sans lui, le bot doit se rabattre,
+    // pas boucler à vide ni construire une tour interdite.
+    const r = autoplayChapter(CONTENT, 0, { policy: "spread", towers: ["tower_frost"] });
+    expect(r.waves.length).toBeGreaterThan(0);
+    expect(r.waves[r.waves.length - 1]!.towers).toBe(0);
+  });
+});
+
 describe("report — mise en forme", () => {
   it("aligne les colonnes sur le contenu le plus large", () => {
     const out = table(["A", "B"], [["très-long", "1"]]).split("\n");

@@ -166,6 +166,22 @@ jamais commité — d'où des mesures invérifiables et une méthode réinventé
 | Difficulté non monotone | ch.3 perdu, ch.4-9 gagnés | Plus tardif = plus d'or = plus facile |
 | L'or cesse de contraindre | 1 800-3 800 pièces inutilisées au ch.10 | 6 emplacements partout : plus de décision |
 | Sceaux mal indexés | Héros posté au fond : moins de kills, plus de victoires | La monnaie paie le mauvais placement |
+| **Pas de triangle de rôles** | Archerie seule **9/10** victoires, mélange **5/10**, catapulte seule et givre seul **0/10** | **Une tour domine, diversifier est puni** |
+
+**Le triangle de rôles annoncé plus haut n'existe que dans l'intention.** Mesuré à
+`npm run balance -- --compo` : l'archerie rend 0,20 DPS/or et touche le ciel, la
+catapulte 0,08 (sol seulement), le givre 0,045. Aucune raison de construire autre
+chose — et le mélange fait *moins bien* que l'archerie pure.
+
+Conséquence directe sur le contenu à venir : **un ennemi « anti-X » ne crée de la
+stratégie que si la tour censée le contrer vaut la peine d'être construite.** Un
+essaim censé favoriser les dégâts de zone ne changera rien tant que la catapulte
+coûte 2,5× plus cher par point de dégâts. Réparer les rôles précède l'ajout
+d'ennemis, sinon les nouveaux types ajoutent de la difficulté, pas de la décision.
+
+Matière disponible côté ennemis : les vagues montent déjà à **56 ennemis simultanés**
+(la densité qu'exige l'AoE existe), mais les volants ne pèsent que **9 % des PV** —
+l'anti-aérien n'est jamais une contrainte.
 
 **Fenêtre de tir** — la métrique reine d'un TD : le DPS installé × le temps de traversée
 borne les dégâts infligeables. Une vague dont les PV dépassent ce produit passe quelle

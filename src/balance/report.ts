@@ -5,7 +5,7 @@
 
 import type { ContentPack } from "../core/types";
 import type { UnlockDef } from "../content/index";
-import type { AutoplayReport } from "./autoplay";
+import { autoplayAll, type AutoplayReport } from "./autoplay";
 import {
   allChapterStats, dpsPerGold, enemyHpAtWave, towerBurstDps,
   towerDps, towerInvestment, traversalSeconds,
@@ -190,6 +190,39 @@ export function autoplayReport(reports: AutoplayReport[]): string {
   return [
     section("AUTOPLAY (joueur artificiel — étalon reproductible, pas un joueur optimal)"),
     table(["Ch.", "Politique", "Issue", "Vagues", "PV châ.", "1re fuite", "★", "Kills", "Éclats", "Or restant", ""], rows),
+  ].join("\n");
+}
+
+/**
+ * Y a-t-il une DÉCISION à prendre en choisissant ses tours ? Chaque composition
+ * rejoue tous les chapitres ; si une défense mono-tour égale ou dépasse un mélange,
+ * il n'y a pas de triangle de rôles — seulement une tour dominante et deux pièges.
+ *
+ * C'est le préalable à tout ajout d'ennemi « anti-X » : un ennemi ne crée de la
+ * stratégie que si la tour censée le contrer vaut la peine d'être construite.
+ */
+export function compositionReport(c: ContentPack, useHero = true): string {
+  const unlocked = { unlocks: Object.values(c.towers).flatMap(t => (t.requiresUnlock ? [t.requiresUnlock] : [])) };
+  const ids = Object.keys(c.towers);
+  const compos: { name: string; towers: string[] }[] = [
+    ...ids.map(id => ({ name: `${c.towers[id]!.name} seule`, towers: [id] })),
+    { name: "toutes (mélange)", towers: ids },
+  ];
+  const rows = compos.map(({ name, towers }) => {
+    const rs = autoplayAll(c, { policy: "spread", towers, useHero, profile: unlocked });
+    return [
+      name,
+      `${rs.filter(r => r.result.victory).length}/${rs.length}`,
+      String(rs.reduce((a, r) => a + r.result.castleHpLeft, 0)),
+      String(rs.reduce((a, r) => a + r.result.stars, 0)),
+      String(rs.reduce((a, r) => a + r.result.shards, 0)),
+    ];
+  });
+  return [
+    section("COMPOSITIONS — le choix de tour change-t-il quelque chose ?"),
+    "  Une tour seule qui égale le mélange = pas de triangle de rôles, juste une tour dominante.",
+    "",
+    table(["Composition", "Victoires", "PV château cumulés", "Étoiles", "Éclats"], rows),
   ].join("\n");
 }
 

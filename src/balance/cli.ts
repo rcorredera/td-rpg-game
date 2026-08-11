@@ -4,6 +4,7 @@
 //   npm run balance                 rapport complet
 //   npm run balance -- --chapter 3  pression + trace détaillée d'un chapitre
 //   npm run balance -- --autoplay   les 3 politiques sur tous les chapitres
+//   npm run balance -- --compo      chaque tour seule contre le mélange
 //   npm run balance -- --no-hero    autoplay défense seule
 //
 // Seul fichier du dossier autorisé à écrire sur la sortie standard : tout le
@@ -13,7 +14,7 @@
 import { CONTENT, UNLOCKS } from "../content/index";
 import { autoplayAll, autoplayChapter, type Policy } from "./autoplay";
 import {
-  autoplayReport, chaptersReport, economyReport, enemiesReport,
+  autoplayReport, chaptersReport, compositionReport, economyReport, enemiesReport,
   pressureReport, towersReport, waveTraceReport,
 } from "./report";
 
@@ -47,6 +48,8 @@ if (chapterArg !== undefined) {
   for (const policy of ["spread", "mixed", "focus"] as Policy[]) {
     out.push(waveTraceReport(autoplayChapter(CONTENT, index, { policy, useHero })));
   }
+} else if (has("--compo")) {
+  out.push(compositionReport(CONTENT, useHero));
 } else if (has("--autoplay")) {
   for (const policy of ["spread", "mixed", "focus"] as Policy[]) {
     out.push(autoplayReport(autoplayAll(CONTENT, { policy, useHero })));
