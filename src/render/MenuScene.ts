@@ -11,6 +11,7 @@ import type { ProfileService, SkillId } from "../meta/profile";
 import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
 import { touchSize, viewport } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
+import { addBackdrop } from "./backdrop";
 import { ACCENT, TEXT } from "./theme";
 import {
   layoutCursor, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiNavCard, uiPanel,
@@ -50,20 +51,48 @@ export class MenuScene extends Phaser.Scene {
     setupCamera(this);
     this.panel = null;
     // Le fond couvre la vue entière, pas seulement la zone de jeu : sur un écran
-    // large, le débord doit rester habillé plutôt que noir (ADR-010).
+    // large, le débord doit rester habillé plutôt que noir (ADR-010). Grain +
+    // vignette générés sur canvas plutôt qu'un aplat (ADR-014).
     const v = viewport();
-    this.add.rectangle(400, 300, v.width, v.height, 0x1a140e);
+    addBackdrop(this, v);
     // Le campement n'a pas d'état volatil : au resize/rotation, on rebâtit l'écran
     // à neuf plutôt que de repositionner chaque élément un par un.
     onSceneResize(this, () => this.scene.restart({ profileSvc: this.profileSvc }));
-    this.add.text(400, 48, "⚔ Bastion", { fontSize: "40px", color: TEXT.gold, ...TITLE }).setOrigin(0.5);
-    this.add.text(400, 88, "Le campement", { fontSize: "16px", color: TEXT.dim, ...TXT }).setOrigin(0.5);
+    this.buildMasthead(v);
     this.chipShards = uiChip(this, 330, 122, { icon: "◆", text: "Éclats : 0", fontSize: 19, color: TEXT.light });
     this.chipSceaux = uiChip(this, 470, 122, { icon: "⚜", text: "Sceaux : 0", fontSize: 19, color: TEXT.light });
     this.refreshCurrencies();
 
     if (!this.profileSvc.get().introSeen) this.showIntro();
     else this.showView(this.currentView);
+  }
+
+  /** Bandeau de titre : le seul point de l'écran qui doit crier, donc traité comme
+   *  tel — halo derrière le titre, filets à filerets et non un simple trait, et un
+   *  écart net avec le sous-titre. Avant, tout le texte avait le même poids. */
+  private buildMasthead(v: { left: number; width: number }) {
+    const cx = 400;
+    const g = this.add.graphics().setDepth(-50);
+
+    // Bandeau sombre derrière l'en-tête : détache le titre du grain du fond.
+    g.fillStyle(0x0d0906, 0.45);
+    g.fillRect(v.left, 0, v.width, 108);
+    g.lineStyle(1, ACCENT.gold, 0.28);
+    g.lineBetween(v.left, 108, v.left + v.width, 108);
+
+    this.add.text(cx, 46, "⚔ Bastion", { fontSize: "42px", color: TEXT.gold, ...TITLE }).setOrigin(0.5);
+    this.add.text(cx, 82, "LE CAMPEMENT", {
+      fontSize: "12px", color: TEXT.dim, ...TITLE, letterSpacing: 4,
+    }).setOrigin(0.5);
+
+    // Filets latéraux, effilés vers l'extérieur : encadrent le sous-titre.
+    for (const dir of [-1, 1]) {
+      const x0 = cx + dir * 74, x1 = cx + dir * 168;
+      g.lineStyle(1, ACCENT.gold, 0.5);
+      g.lineBetween(x0, 82, x1, 82);
+      g.fillStyle(ACCENT.goldSoft, 0.75);
+      g.fillCircle(x1 + dir * 5, 82, 2);
+    }
   }
 
   private refreshCurrencies() {

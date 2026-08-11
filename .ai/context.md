@@ -43,9 +43,11 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   registre d'icônes maison, fin des emoji (ADR-012) + grille de niveaux et listes défilantes
   (ADR-013). Tous les sous-écrans du campement sont passés sur le kit ; `backButton()`/`row()`
   positionnelles supprimées. L'état « inabordable » du GDD est enfin rendu (coût rouge, cadre
-  atténué). **Reste** : identité visuelle (fond des écrans encore uni `#1a140e`, hiérarchie
-  typographique, passe sur le terrain de combat — herbe trop saturée, décor peu visible) ; puis
-  transitions d'écran et retours visuels (gain de monnaie, achat).
+  atténué) + fonds générés sur canvas, bandeau de titre et harmonisation du terrain (ADR-014,
+  `render/backdrop.ts` — l'herbe fluo du pack est lavée par un voile chaud, `setTint` ne désature
+  pas). **Reste** : transitions d'écran et retours visuels (pulsation sur gain de monnaie, retour
+  d'achat), et le fond du campement pourrait gagner un élément de décor (bannière, silhouette de
+  remparts) — pour l'instant c'est matière + vignette, sans motif identifiable.
 
 ## Prochaine grosse feature actée (design au GDD, à implémenter)
 **Équipement du héros + loot** : 3 slots (arme/armure/relique), butin en fin de run victorieux
