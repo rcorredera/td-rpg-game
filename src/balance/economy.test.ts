@@ -25,7 +25,7 @@ describe("economy — miroir fidèle du barème de fin de run", () => {
 
   it("projette les mêmes Sceaux qu'un run réellement joué", () => {
     const run = autoplayChapter(CONTENT, 0, { policy: "focus" });
-    expect(sceauxForRun(CONTENT, run.result.heroKills, run.result.victory))
+    expect(sceauxForRun(CONTENT, run.result.heroBlockSeconds, run.result.victory, run.result.heroDeaths))
       .toBe(run.result.sceaux);
   });
 
@@ -37,12 +37,30 @@ describe("economy — miroir fidèle du barème de fin de run", () => {
   });
 
   it("applique le multiplicateur de chapitre quand il existe", () => {
-    // Le levier prévu contre le farm du premier chapitre : sans effet mesurable ici,
-    // il serait déclaré dans les types mais ignoré par la sim.
-    const mult = CONTENT.chapters.map((_, i) => 1 + i);
-    const scaled = { ...CONTENT, rewards: { ...CONTENT.rewards, shardsChapterMult: mult } };
-    expect(shardsForRun(scaled, 0)).toBe(shardsForRun(CONTENT, 0));
-    expect(shardsForRun(scaled, 2)).toBe(shardsForRun(CONTENT, 2) * 3);
+    // Le levier contre le farm du premier chapitre : sans effet mesurable ici, il
+    // serait déclaré dans les types mais ignoré par la sim. Comparé à un barème PLAT
+    // et non au content courant, qui porte désormais sa propre courbe.
+    const flat = { ...CONTENT, rewards: { ...CONTENT.rewards, shardsChapterMult: undefined } };
+    const scaled = {
+      ...CONTENT,
+      rewards: { ...CONTENT.rewards, shardsChapterMult: CONTENT.chapters.map((_, i) => 1 + i) },
+    };
+    expect(shardsForRun(scaled, 0)).toBe(shardsForRun(flat, 0));
+    expect(shardsForRun(scaled, 2)).toBe(shardsForRun(flat, 2) * 3);
+  });
+
+  it("fait payer les chapitres tardifs nettement plus que le premier", () => {
+    // GARANTIE : tant que le ratio reste proche de 1, farmer la carte la plus facile
+    // est strictement optimal — c'était le cas (×1,11 entre le ch.1 et le ch.10).
+    const h = economyHealth(CONTENT, UNLOCKS);
+    expect(h.lastVsFirstRatio).toBeGreaterThanOrEqual(2);
+  });
+
+  it("garde l'armurerie ouverte sur toute la campagne", () => {
+    // Elle se vidait en 2 runs pour 10 chapitres. Le seuil se compare au nombre de
+    // chapitres, il n'est pas arbitraire.
+    const h = economyHealth(CONTENT, UNLOCKS);
+    expect(h.runsToBuyUnlocks).toBeGreaterThanOrEqual(4);
   });
 });
 

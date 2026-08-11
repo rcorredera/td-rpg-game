@@ -36,6 +36,7 @@ function mkContent(over: {
     economy: { sellRefundRate: 0.65, startingGold: 120 },
     rating: { heavyDamagePct: 0.5 },
     rewards: CONTENT.rewards,
+    unlocks: [],
   };
 }
 
@@ -119,14 +120,40 @@ describe("sim core", () => {
     }
   });
 
-  it("les Sceaux récompensent les kills du héros (+2 si victoire)", () => {
+  it("les Sceaux récompensent le TEMPS passé à retenir la horde, pas les kills", () => {
+    // Indexer sur les kills payait le mauvais placement : un héros posté à l'entrée
+    // en tue beaucoup et laisse le château tomber, un héros en dernier rempart en
+    // tue moins et fait gagner (mesuré au banc d'essai — ADR-021).
+    const r = CONTENT.rewards;
     const s = createRun(CONTENT, FRESH_PROFILE);
     startNextWave(s, CONTENT);
-    s.heroKills = 9;
+    s.heroKills = 99;                      // ne doit RIEN rapporter à lui seul
+    s.heroBlockSeconds = r.heroBlockSecondsPerSceau * 3;
     s.phase = "defeat";
-    expect(computeResult(s, CONTENT).sceaux).toBe(2); // floor(9/4)
+    expect(computeResult(s, CONTENT).sceaux).toBe(3);
     s.phase = "victory";
-    expect(computeResult(s, CONTENT).sceaux).toBe(4); // floor(9/4) + 2
+    expect(computeResult(s, CONTENT).sceaux).toBe(3 + r.sceauxVictoryBonus);
+  });
+
+  it("retire des Sceaux à chaque mort du héros", () => {
+    // Sans contrepartie, se jeter dans la horde pour mourir aussitôt serait rentable :
+    // le blocage doit récompenser l'engagement, pas le sacrifice répété.
+    const r = CONTENT.rewards;
+    const s = createRun(CONTENT, FRESH_PROFILE);
+    startNextWave(s, CONTENT);
+    s.heroBlockSeconds = r.heroBlockSecondsPerSceau * 4;
+    s.phase = "defeat";
+    const intact = computeResult(s, CONTENT).sceaux;
+    s.heroDeaths = 2;
+    expect(computeResult(s, CONTENT).sceaux).toBe(intact - 2 * r.sceauxPerHeroDeath);
+  });
+
+  it("ne rend jamais de Sceaux négatifs", () => {
+    const s = createRun(CONTENT, FRESH_PROFILE);
+    startNextWave(s, CONTENT);
+    s.heroDeaths = 50;
+    s.phase = "defeat";
+    expect(computeResult(s, CONTENT).sceaux).toBe(0);
   });
 
   it("le niveau de sort du profil change les stats du Tournoiement", () => {
@@ -292,6 +319,7 @@ describe("sim core", () => {
       economy: { sellRefundRate: 0.65, startingGold: 120 },
       rating: { heavyDamagePct: 0.5 },
       rewards: CONTENT.rewards,
+      unlocks: [],
     };
     const s = createRun(MINI, FRESH_PROFILE);
     s.hero.pos = { x: -999, y: -999 }; s.hero.target = { x: -999, y: -999 }; // hors de portée

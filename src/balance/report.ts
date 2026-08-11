@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { ContentPack } from "../core/types";
-import type { UnlockDef } from "../content/index";
+import type { UnlockDef } from "../core/types";
 import { autoplayAll, type AutoplayReport } from "./autoplay";
 import {
   allChapterStats, dpsPerGold, enemyHpAtWave, towerBurstDps,
@@ -140,8 +140,8 @@ export function pressureReport(c: ContentPack, chapterIndex: number): string {
 
 // ---------- Méta ----------
 
-export function economyReport(c: ContentPack, unlocks: UnlockDef[], heroKillsPerRun = 40): string {
-  const h = economyHealth(c, unlocks, heroKillsPerRun);
+export function economyReport(c: ContentPack, unlocks: UnlockDef[], blockSecondsPerRun = 35): string {
+  const h = economyHealth(c, unlocks, blockSecondsPerRun);
   const rows = h.shardsPerChapter.map((s, i) => [
     `${i + 1}. ${c.chapters[i]?.name ?? "?"}`,
     String(s),
@@ -166,7 +166,7 @@ export function economyReport(c: ContentPack, unlocks: UnlockDef[], heroKillsPer
     "",
     `  Runs (ch.1 parfait) pour vider l'armurerie : ${h.runsToBuyUnlocks}`,
     `  Runs pour épuiser TOUT le puits d'Éclats : ${h.runsToDrainShards}`,
-    `  Runs pour maxer les sorts (${heroKillsPerRun} kills héros/run) : ${h.runsToMaxSkills}`,
+    `  Runs pour maxer les sorts (${blockSecondsPerRun}s de blocage/run) : ${h.runsToMaxSkills}`,
     ...(verdict.length ? ["", ...verdict] : ["", "  ✓ Aucune saturation détectée."]),
   ].join("\n");
 }
@@ -184,12 +184,13 @@ export function autoplayReport(reports: AutoplayReport[]): string {
     String(r.result.stars),
     String(r.result.kills),
     String(r.result.shards),
+    `${r.result.sceaux} (${Math.round(r.result.heroBlockSeconds)}s)`,
     String(r.goldLeftover),
     r.waves.some(w => w.stalled) ? "BLOQUÉ" : "",
   ]);
   return [
     section("AUTOPLAY (joueur artificiel — étalon reproductible, pas un joueur optimal)"),
-    table(["Ch.", "Politique", "Issue", "Vagues", "PV châ.", "1re fuite", "★", "Kills", "Éclats", "Or restant", ""], rows),
+    table(["Ch.", "Politique", "Issue", "Vagues", "PV châ.", "1re fuite", "★", "Kills", "Éclats", "Sceaux", "Or restant", ""], rows),
   ].join("\n");
 }
 
