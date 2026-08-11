@@ -20,7 +20,10 @@ import { ICON, preloadIcons } from "./icons";
 import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
-import { DECOR_FRAMES, enemyView, heroView, tileFor, towerView } from "./sprites";
+import { enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
+import { drawDirtPath, ensureTerrainTextures, TEX_GRASS } from "./terrain";
+import { GROUND, HERO_C, SIGNAL } from "./palette";
+import { projectileFor, projectilePoint, type ProjectileStyle } from "./projectiles";
 import { SpriteLayer } from "./EntityLayer";
 import { STATUS } from "./theme";
 
@@ -63,8 +66,20 @@ export class GameScene extends Phaser.Scene {
   /** Or au moment où le menu de slot a été construit — pour le rafraîchir si l'or change (kills async). */
   private menuGold = -1;
   private spellMode = false;
-  private fx: { pos: { x: number; y: number }; radius: number; until: number; life?: number; color?: number }[] = [];
-  private shots: { from: { x: number; y: number }; to: { x: number; y: number }; until: number; color: number }[] = [];
+  /** Effets transitoires. `kind` choisit le rendu : chaque sort doit être
+   *  reconnaissable à sa forme, pas seulement à sa couleur (ADR-016). */
+  private fx: {
+    pos: { x: number; y: number }; radius: number; until: number;
+    life?: number; color?: number; kind?: "whirl" | "rally" | "arrows";
+  }[] = [];
+  /** Projectiles en vol : chacun porte son style (ADR-016) et l'instant de départ,
+   *  pour être interpolé le long de sa trajectoire au lieu d'être un trait fixe. */
+  private shots: {
+    from: { x: number; y: number }; to: { x: number; y: number };
+    start: number; until: number; style: ProjectileStyle;
+  }[] = [];
+  /** Recul des tours au tir : slotIndex → instant du tir. */
+  private towerRecoil = new Map<number, number>();
   private ended = false;
   private autoWave = false;
   private autoWaveAt: number | null = null;
@@ -119,7 +134,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyLayer = new SpriteLayer<EnemyState>(this, 100);
     this.towerBaseLayer = new SpriteLayer<TowerState>(this, 100);
     this.towerEmblemLayer = new SpriteLayer<TowerState>(this, 100);
-    this.heroSprite = this.add.sprite(0, 0, TEX.td, heroView().frame).setOrigin(0.5, 0.55);
+    this.heroSprite = this.add.sprite(0, 0, heroView().key).setOrigin(0.5, 0.62);
     // Overlay monde (barres de PV, portées, FX, sélection) : au-dessus des entités, sous le HUD.
     this.gfx = this.add.graphics().setDepth(900);
     this.buildHud();
@@ -128,63 +143,45 @@ export class GameScene extends Phaser.Scene {
 
   // ---------- Terrain (tuiles Kenney TD, statique) ----------
 
-  /** Fond d'herbe + routes estampées en tuiles. Reconstruit par chapitre (create). */
+  /** Prairie dessinée + chemins de terre. Reconstruit par chapitre (create). */
   private buildTerrain() {
     const cont = this.add.container(0, 0).setDepth(-10);
     this.terrain = cont;
-    // Herbe : TileSprite répétant une frame 64×64, étalé sur la vue entière —
-    // le débord hors zone de jeu reste du terrain, jamais du noir (ADR-010).
     const v = viewport();
-    const grass = this.add.tileSprite(v.left, v.top, v.width, v.height, TEX.td, tileFor("grass").frame).setOrigin(0, 0);
-    // La tuile Kenney est d'un vert vif quasi fluo qui écrase tout et jure avec la
-    // palette parchemin/or. `setTint` seul ne suffit pas : il MULTIPLIE, donc il
-    // assombrit sans désaturer (mesuré à l'écran). Il est complété plus bas par un
-    // voile chaud posé sur TOUT le terrain (ADR-014).
-    grass.setTint(0xc7d8a8);
-    cont.add(grass);
 
-    // Décor : buissons/plantes dispersés (déterministe par chapitre), évite routes (segments) et slots.
-    const nearPath = (x: number, y: number, d: number) =>
-      this.ch.map.paths.some(p => {
-        for (let i = 0; i < p.waypoints.length - 1; i++) {
-          if (distToSeg(x, y, p.waypoints[i]!, p.waypoints[i + 1]!) < d) return true;
-        }
-        return false;
-      });
-    const blocked = (x: number, y: number) =>
-      this.ch.map.slots.some(s => Math.hypot(x - s.x, y - s.y) < 48) || nearPath(x, y, 36);
-    for (let i = 0; i < 20; i++) {
-      const a = Math.sin(i * 127.1 + this.chapterIdx * 311.7) * 0.5 + 0.5;
-      const b = Math.sin(i * 269.5 + this.chapterIdx * 183.3) * 0.5 + 0.5;
-      const x = 30 + a * 740, y = 30 + b * 500;
-      if (blocked(x, y)) continue;
-      // Surtout des buissons ronds discrets (131) ; plante moyenne (132) ; grande (134) rare.
-      const fr = i % 5 < 3 ? DECOR_FRAMES[0]! : i % 5 === 3 ? DECOR_FRAMES[1]! : DECOR_FRAMES[2]!;
-      // Le décor se perdait dans l'herbe. C'est l'OMBRE PORTÉE qui le détache, pas
-      // une teinte sombre — teinté, il virait à la tache noire (essayé, rejeté).
-      const sc = 0.38 + (i % 3) * 0.12;
-      cont.add(this.add.ellipse(Math.round(x), Math.round(y) + 6, 30 * sc, 11 * sc, 0x24301c, 0.3));
-      cont.add(this.add.image(Math.round(x), Math.round(y), TEX.td, fr).setScale(sc));
+    // Sol généré (ADR-016) : nuances, touffes et grain, dans une gamme désaturée
+    // qui laisse les unités ressortir. Remplace la tuile d'herbe fluo du pack.
+    ensureTerrainTextures(this);
+    if (this.textures.exists(TEX_GRASS)) {
+      cont.add(this.add.tileSprite(v.left, v.top, v.width, v.height, TEX_GRASS).setOrigin(0, 0));
+    } else {
+      cont.add(this.add.rectangle(v.left, v.top, v.width, v.height, GROUND.grass).setOrigin(0, 0));
     }
 
-    // Routes non-portail : bande de terre continue (tuiles estampées le long de la polyligne).
+    // Chemins : un seul tracé continu, bordé. L'ancien estampage d'une tuile tous
+    // les 16 px laissait des bosses régulières bien visibles.
+    const roads = this.add.graphics();
     for (const p of this.ch.map.paths) {
       if (p.portal) continue; // les Failles n'apparaissent que lorsqu'elles sont actives (draw())
-      this.stampPath(cont, p.waypoints);
+      drawDirtPath(roads, this.smoothPath(p.waypoints));
     }
-
-    // Voile d'harmonisation, posé SUR l'herbe, le décor et les routes : lavés
-    // ensemble, ils forment une prairie cohérente. Appliqué à l'herbe seule, il
-    // laissait le décor et les pads en vert fluo par-dessus un sol assourdi.
-    cont.add(this.add.rectangle(v.left, v.top, v.width, v.height, 0x7a6b44, 0.42).setOrigin(0, 0));
+    cont.add(roads);
 
     this.buildBattlefieldFrame(cont);
 
-    // Marqueurs de slot vide : plateforme de tour (sous les entités, masquée si tour posée).
-    // Teintés pour rester dans la même gamme que le sol voilé.
+    // Emplacements de tour : dalle de pierre, bien plus grande qu'avant — les
+    // unités et les tours ont grandi, les repères de construction devaient suivre.
     this.slotMarkers = this.ch.map.slots.map(s =>
-      this.add.image(s.x, s.y, TEX.td, tileFor("pad").frame).setScale(0.85).setDepth(50).setTint(0xbfc8a0),
+      this.add.image(s.x, s.y, tileFor("pad").key).setDisplaySize(64, 64).setDepth(50),
     );
+  }
+
+  /** Polyligne lissée (spline) utilisée pour le tracé VISUEL des chemins — la sim
+   *  suit toujours les segments linéaires (ADR-001). */
+  private smoothPath(wps: readonly { x: number; y: number }[]): { x: number; y: number }[] {
+    const spline = new Phaser.Curves.Spline(wps.map(w => new Phaser.Math.Vector2(w.x, w.y)));
+    const n = Math.max(8, Math.round(spline.getLength() / 12));
+    return spline.getSpacedPoints(n).map(p => ({ x: p.x, y: p.y }));
   }
 
   /** Délimite le champ de bataille. L'écran déborde de la zone de jeu (ADR-010) :
@@ -214,13 +211,17 @@ export class GameScene extends Phaser.Scene {
     cont.add(g);
   }
 
-  /** Base/QG en bout de chemin : plateforme renforcée + tourelle de commandement. */
+  /** Le Bastion en bout de chemin : l'objectif à défendre, volontairement le plus
+   *  gros élément de la carte (ADR-016). */
   private buildCastle() {
     const main = this.ch.map.paths[0]!.waypoints;
     const end = main[main.length - 1]!;
     const cont = this.add.container(0, 0).setDepth(100 + end.y);
-    cont.add(this.add.image(end.x - 18, end.y, TEX.td, 180).setScale(1.8));        // socle carré renforcé
-    cont.add(this.add.image(end.x - 18, end.y - 14, TEX.td, 227).setScale(1.1));   // tourelle (mortier)
+    // Ramené dans le champ de bataille : les chemins finissent au bord droit, un
+    // Bastion centré sur le waypoint final débordait hors cadre (vu à l'écran).
+    const kx = Math.min(end.x, GAME_W - 62), ky = Math.min(end.y, GAME_H - 70);
+    cont.add(this.add.ellipse(kx, ky + 30, 110, 30, 0x1e2a17, 0.3));
+    cont.add(this.add.image(kx, ky - 6, keepView().key).setDisplaySize(124, 124));
   }
 
   /** Réancre ce qui dépend des bords de l'écran (décor étendu, HUD) après un
@@ -240,16 +241,9 @@ export class GameScene extends Phaser.Scene {
     this.buildHud();
   }
 
-  /** Tracé VISUEL lissé (spline Catmull-Rom à travers les waypoints) — purement
-   *  cosmétique : la sim suit toujours les segments linéaires (ADR-001). */
-  private stampPath(cont: Phaser.GameObjects.Container, wps: readonly { x: number; y: number }[]) {
-    const dirt = tileFor("path").frame;
-    const spline = new Phaser.Curves.Spline(wps.map(w => new Phaser.Math.Vector2(w.x, w.y)));
-    const n = Math.max(2, Math.round(spline.getLength() / 16));
-    for (const pt of spline.getSpacedPoints(n)) {
-      cont.add(this.add.image(Math.round(pt.x), Math.round(pt.y), TEX.td, dirt).setScale(0.62));
-    }
-  }
+  // `stampPath` a disparu avec le skin médiéval : les chemins sont désormais un
+  // tracé continu (`drawDirtPath`, terrain.ts) au lieu d'une tuile estampée tous
+  // les 16 px, qui laissait des bosses régulières visibles (ADR-016).
 
   // ---------- Input ----------
 
@@ -481,11 +475,16 @@ export class GameScene extends Phaser.Scene {
       if (castRally(this.run, CONTENT)) {
         // Onde de portée au lancement : montre la zone d'effet du cri de ralliement
         const sk = CONTENT.hero.skills.rally.levels[this.run.skillLevels.rally - 1]!;
-        this.fx.push({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 650, life: 650 });
+        this.fx.push({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 650, life: 650, kind: "rally" });
       }
     }));
     place(iconS, cx => mkIconBtn("ww", cx, "icon_ww", () => {
-      const evs: SimEvent[] = []; castWhirlwind(this.run, CONTENT, evs); this.consumeEvents(evs);
+      const evs: SimEvent[] = [];
+      if (castWhirlwind(this.run, CONTENT, evs)) {
+        const sk = CONTENT.hero.skills.whirlwind.levels[this.run.skillLevels.whirlwind - 1]!;
+        this.fx.push({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 520, life: 520, kind: "whirl" });
+      }
+      this.consumeEvents(evs);
     }));
     const wSpeed = touchSize(48), wAuto = touchSize(76), wWave = touchSize(100);
     place(wSpeed, cx => mkBtn("speed", cx, wSpeed, "x1", () => { this.run.speed = this.run.speed === 1 ? 2 : 1; }));
@@ -602,11 +601,27 @@ export class GameScene extends Phaser.Scene {
 
   private consumeEvents(evs: SimEvent[]) {
     for (const e of evs) {
-      if (e.type === "explosion") this.spawnFlame(e.pos.x, e.pos.y, 0.4 + e.radius / 90);
+      if (e.type === "explosion") {
+        this.spawnFlame(e.pos.x, e.pos.y, 0.4 + e.radius / 90);
+        // Grosse zone = sort de compte : on ajoute la volée de flèches qui tombe,
+        // au lieu d'une simple déflagration indifférenciée.
+        if (e.radius >= CONTENT.accountSpell.radius * 0.9) {
+          this.fx.push({ pos: { ...e.pos }, radius: e.radius, until: this.time.now + 620, life: 620, kind: "arrows" });
+        }
+      }
       if (e.type === "shot") {
-        const color = e.towerDefId === "tower_frost" ? C.frost : e.towerDefId === "tower_catapult" ? C.catapult : 0xf0e6d2;
-        this.shots.push({ from: e.from, to: e.to, until: this.time.now + 90, color });
-        this.spawnFlame(e.to.x, e.to.y - 6, 0.32); // petit impact à la cible
+        // Le projectile VOYAGE : son style dit ce qui frappe (flèche tendue,
+        // rocher en cloche, éclat de givre) — cf. registre projectiles.ts.
+        const style = projectileFor(e.towerDefId);
+        const now = this.time.now;
+        this.shots.push({ from: e.from, to: e.to, start: now, until: now + style.flightMs, style });
+        // Recul de la tour au départ du coup : l'animation de tir part de l'arme,
+        // pas seulement du projectile.
+        const shooter = this.run.towers.find(t => {
+          const s = this.ch.map.slots[t.slotIndex]!;
+          return Math.hypot(s.x - e.from.x, s.y - e.from.y) < 24;
+        });
+        if (shooter) this.towerRecoil.set(shooter.slotIndex, now);
       }
       if (e.type === "castleHit") {
         const main = this.ch.map.paths[0]!.waypoints;
@@ -614,6 +629,53 @@ export class GameScene extends Phaser.Scene {
         this.spawnFlame(end.x - 18, end.y - 6, 0.8 + e.damage * 0.12);
         this.castleHitAt = this.time.now;
       }
+    }
+  }
+
+  /** Dessine un projectile en vol selon son style (ADR-016). L'impact est produit
+   *  à l'ARRIVÉE, pas au départ : avant, la déflagration apparaissait sur la cible
+   *  au moment du tir, ce qui rendait la trajectoire inutile. */
+  private drawProjectile(
+    g: Phaser.GameObjects.Graphics,
+    s: { from: { x: number; y: number }; to: { x: number; y: number }; start: number; until: number; style: ProjectileStyle },
+    now: number,
+  ) {
+    const st = s.style;
+    const t = (now - s.start) / Math.max(1, s.until - s.start);
+    const from = { x: s.from.x, y: s.from.y - 10 };
+    const p = projectilePoint(from, s.to, t, st.arc);
+
+    if (st.trail > 0) {
+      const back = projectilePoint(from, s.to, Math.max(0, t - st.trail / 200), st.arc);
+      g.lineStyle(2, st.color, 0.45);
+      g.lineBetween(back.x, back.y, p.x, p.y);
+    }
+
+    if (st.kind === "arrow") {
+      const tip = projectilePoint(from, s.to, Math.min(1, t + 0.06), st.arc);
+      g.lineStyle(2.5, st.color, 1);
+      g.lineBetween(p.x, p.y, tip.x, tip.y);
+    } else if (st.kind === "boulder") {
+      g.fillStyle(0x000000, 0.18);
+      g.fillEllipse(p.x, s.from.y + (s.to.y - s.from.y) * t, st.size * 2, st.size * 0.9);
+      g.fillStyle(st.color, 1);
+      g.fillCircle(p.x, p.y, st.size);
+      g.lineStyle(1.5, 0x241a12, 0.8);
+      g.strokeCircle(p.x, p.y, st.size);
+    } else {
+      const a = st.spin ? now / 60 : 0;
+      g.fillStyle(st.color, 1);
+      g.fillTriangle(
+        p.x + Math.cos(a) * st.size, p.y + Math.sin(a) * st.size,
+        p.x + Math.cos(a + 2.1) * st.size, p.y + Math.sin(a + 2.1) * st.size,
+        p.x + Math.cos(a + 4.2) * st.size, p.y + Math.sin(a + 4.2) * st.size,
+      );
+    }
+
+    // Impact : déclenché une seule fois, quand le projectile arrive vraiment.
+    if (t >= 1 && !(s as { hit?: boolean }).hit) {
+      (s as { hit?: boolean }).hit = true;
+      this.spawnFlame(s.to.x, s.to.y - 6, st.kind === "boulder" ? 0.55 : 0.3);
     }
   }
 
@@ -713,13 +775,14 @@ export class GameScene extends Phaser.Scene {
       g.lineBetween(s.x - 6, s.y, s.x + 6, s.y);
       g.lineBetween(s.x, s.y - 6, s.x, s.y + 6);
     }
-    // Tours : socle de pierre (grand) + emblème de type (plus petit, posé dessus), overlays en gfx.
+    // Tours : le skin médiéval dessine la tour ENTIÈRE (plus de composition
+    // socle + emblème, qui n'existait que pour recycler des tourelles sci-fi).
     this.towerBaseLayer.sync(
-      this.run.towers, t => t.slotIndex, t => towerView(t.defId).base, (s, t) => this.placeTowerPart(s, t, 4, 0.9),
+      this.run.towers, t => t.slotIndex, t => towerView(t.defId).base, (s, t) => this.placeTowerPart(s, t, -12, 84),
     );
     this.towerEmblemLayer.sync(
       this.run.towers.filter(t => towerView(t.defId).emblem),
-      t => t.slotIndex, t => towerView(t.defId).emblem!, (s, t) => this.placeTowerPart(s, t, -8, 0.62),
+      t => t.slotIndex, t => towerView(t.defId).emblem!, (s, t) => this.placeTowerPart(s, t, -8, 52),
     );
     for (const t of this.run.towers) this.drawTowerOverlay(g, t);
 
@@ -740,13 +803,71 @@ export class GameScene extends Phaser.Scene {
     // Tirs & FX
     const now = this.time.now;
     this.shots = this.shots.filter(s => s.until > now);
-    for (const s of this.shots) { g.lineStyle(2, s.color); g.lineBetween(s.from.x, s.from.y - 10, s.to.x, s.to.y); }
+    for (const s of this.shots) this.drawProjectile(g, s, now);
     this.fx = this.fx.filter(f => f.until > now);
     for (const f of this.fx) {
       const life = f.life ?? 220;
       const t = 1 - (f.until - now) / life; // 0 → 1
-      g.lineStyle(3, f.color ?? 0xe8c252, 0.7 * (1 - t * 0.6));
-      g.strokeCircle(f.pos.x, f.pos.y, f.radius * t);
+      const fade = 1 - t;
+      if (f.kind === "whirl") {
+        // Tournoiement : trois bras en spirale qui s'ouvrent en tournant, plus
+        // une onde de bord. Un cercle seul ne disait pas « ça tourne ».
+        const spin = t * 7;
+        for (let arm = 0; arm < 3; arm++) {
+          g.lineStyle(4 - arm, HERO_C.gold, 0.85 * fade);
+          g.beginPath();
+          const base = spin + (arm * Math.PI * 2) / 3;
+          for (let s = 0; s <= 12; s++) {
+            const u = s / 12;
+            const rr = f.radius * t * u;
+            const aa = base + u * 2.6;
+            const px = f.pos.x + Math.cos(aa) * rr, py = f.pos.y + Math.sin(aa) * rr * 0.72;
+            if (s === 0) g.moveTo(px, py); else g.lineTo(px, py);
+          }
+          g.strokePath();
+        }
+        g.lineStyle(2.5, 0xffffff, 0.5 * fade);
+        g.strokeEllipse(f.pos.x, f.pos.y, f.radius * t * 2, f.radius * t * 1.44);
+      } else if (f.kind === "rally") {
+        // Ralliement : double onde dorée + éclat central, pour se distinguer
+        // nettement du Tournoiement.
+        g.lineStyle(4, HERO_C.gold, 0.8 * fade);
+        g.strokeEllipse(f.pos.x, f.pos.y, f.radius * t * 2, f.radius * t * 1.3);
+        g.lineStyle(2, 0xfff0c0, 0.6 * fade);
+        g.strokeEllipse(f.pos.x, f.pos.y, f.radius * t * 1.5, f.radius * t * 0.98);
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          const rr = f.radius * t;
+          g.fillStyle(HERO_C.gold, 0.7 * fade);
+          g.fillCircle(f.pos.x + Math.cos(a) * rr, f.pos.y + Math.sin(a) * rr * 0.65, 3 * fade + 1);
+        }
+      } else if (f.kind === "arrows") {
+        // Pluie de flèches : une volée qui TOMBE vraiment dans la zone, puis se
+        // plante. Auparavant, le sort le plus coûteux du jeu ne produisait qu'un
+        // cercle, indiscernable d'un tir de catapulte.
+        g.lineStyle(2, 0xf0e6d2, 0.35 * fade);
+        g.strokeEllipse(f.pos.x, f.pos.y, f.radius * 2, f.radius * 1.15);
+        for (let i = 0; i < 14; i++) {
+          const a = (i / 14) * Math.PI * 2 + i;
+          const rr = f.radius * (0.25 + ((i * 37) % 100) / 130);
+          const tx = f.pos.x + Math.cos(a) * rr, ty = f.pos.y + Math.sin(a) * rr * 0.62;
+          const delay = ((i * 13) % 40) / 100;          // volée échelonnée
+          const p = Math.min(1, Math.max(0, (t - delay) / 0.45));
+          if (p <= 0) continue;
+          const fall = (1 - p) * 90;                    // hauteur de chute restante
+          if (p < 1) {
+            g.lineStyle(2.5, 0xf0e6d2, 0.95);
+            g.lineBetween(tx + 4, ty - fall - 12, tx, ty - fall);
+          } else {
+            // Flèche plantée, qui s'efface avec l'effet.
+            g.lineStyle(2, 0xd8cbb0, 0.8 * fade);
+            g.lineBetween(tx + 4, ty - 11, tx, ty);
+          }
+        }
+      } else {
+        g.lineStyle(3, f.color ?? 0xe8c252, 0.7 * (1 - t * 0.6));
+        g.strokeCircle(f.pos.x, f.pos.y, f.radius * t);
+      }
     }
 
     if (this.spellMode) {
@@ -757,10 +878,21 @@ export class GameScene extends Phaser.Scene {
 
   // ---------- Tours (sprites composés + overlays) ----------
 
-  /** Positionne une pièce de tour (socle ou emblème) sur son slot. dy = décalage vertical, sc = échelle. */
-  private placeTowerPart(s: Phaser.GameObjects.Sprite, t: TowerState, dy: number, sc: number) {
+  /** Positionne une pièce de tour sur son slot. `size` en unités logiques (ADR-016).
+   *  Applique le recul de tir : brève compression verticale qui donne du poids au
+   *  coup, sans jamais toucher la sim. */
+  private placeTowerPart(s: Phaser.GameObjects.Sprite, t: TowerState, dy: number, size: number) {
     const slot = this.ch.map.slots[t.slotIndex]!;
-    s.setOrigin(0.5, 0.9).setScale(sc).setPosition(slot.x, slot.y + dy).setDepth(100 + slot.y + (dy < 0 ? 1 : 0));
+    const firedAt = this.towerRecoil.get(t.slotIndex);
+    const age = firedAt === undefined ? Infinity : this.time.now - firedAt;
+    const RECOIL_MS = 160;
+    // 1 → 0 sur la durée du recul ; squash vertical + léger enfoncement.
+    const k = age < RECOIL_MS ? 1 - age / RECOIL_MS : 0;
+    const squash = 1 - 0.12 * k;
+    s.setOrigin(0.5, 0.86)
+      .setDisplaySize(size * (1 + 0.06 * k), size * squash)
+      .setPosition(slot.x, slot.y + dy + 4 * k)
+      .setDepth(100 + slot.y + (dy < 0 ? 1 : 0));
   }
 
   /** Overlay de tour (gfx) : ralliement, pips de niveau, étoile/aura de spec, portée à la sélection. */
@@ -769,18 +901,29 @@ export class GameScene extends Phaser.Scene {
     const def = CONTENT.towers[t.defId]!;
     const x = s.x, y = s.y;
 
-    // Tour ralliée : anneau doré pulsé + chevrons ascendants pendant toute la durée du buff
+    // Tour ralliée : socle de lumière au sol, étincelles montantes et bannière
+    // qui claque. L'ancien anneau + deux chevrons se lisait à peine (ADR-016).
     if (this.run.time < t.rallyUntil) {
-      const pulse = Math.sin(this.time.now / 120) * 2;
-      g.lineStyle(2, 0xe8c252, 0.85); g.strokeCircle(x, y - 2, 26 + pulse);
-      const rise = (this.time.now / 50) % 14;
-      for (const dy of [0, 7]) {
-        const cy = y - 34 - rise - dy;
-        const a = Math.max(0, 1 - (rise + dy) / 21);
-        g.lineStyle(2, 0xe8c252, a);
-        g.lineBetween(x - 5, cy + 4, x, cy - 2);
-        g.lineBetween(x + 5, cy + 4, x, cy - 2);
+      const pulse = Math.sin(this.time.now / 150);
+      // Halo au sol : ancre l'effet sur la tour plutôt que de flotter autour.
+      g.fillStyle(HERO_C.gold, 0.14 + 0.05 * pulse);
+      g.fillEllipse(x, y + 6, 62 + pulse * 5, 24 + pulse * 2);
+      g.lineStyle(2, HERO_C.gold, 0.75);
+      g.strokeEllipse(x, y + 6, 62 + pulse * 5, 24 + pulse * 2);
+      // Étincelles ascendantes, échelonnées pour un flux continu.
+      for (let i = 0; i < 5; i++) {
+        const ph = ((this.time.now / 620) + i * 0.2 + t.slotIndex * 0.13) % 1;
+        const sx = x + Math.sin(i * 2.3 + ph * 3) * 17;
+        const sy = y + 4 - ph * 52;
+        g.fillStyle(i % 2 ? 0xfff0c0 : HERO_C.gold, 0.9 * (1 - ph));
+        g.fillCircle(sx, sy, 2.6 * (1 - ph) + 0.8);
       }
+      // Chevron unique, plus lisible que deux qui se chevauchaient.
+      const rise = ((this.time.now / 70) % 22);
+      const cy = y - 40 - rise;
+      g.lineStyle(3, HERO_C.gold, Math.max(0, 1 - rise / 22));
+      g.lineBetween(x - 7, cy + 6, x, cy - 3);
+      g.lineBetween(x + 7, cy + 6, x, cy - 3);
     }
 
     // Pips de niveau sur la face avant — étoile dorée si spécialisée
@@ -823,10 +966,13 @@ export class GameScene extends Phaser.Scene {
     return face;
   }
 
-  /** Échelle de sprite par type (sprites TD natifs 64px → fractions), × facteur boss. */
-  private enemyScale(e: EnemyState): number {
-    const base = e.defId === "brute" ? 0.82 : e.defId === "bat" ? 0.6 : e.defId === "orc" ? 0.68 : 0.6;
-    return this.isBoss(e) ? base * 1.4 : base;
+  /** Taille d'affichage d'un ennemi, EN UNITÉS LOGIQUES (ADR-016).
+   *  Exprimée en pixels plutôt qu'en facteur d'échelle : les entités faisaient
+   *  ~15 px à l'écran et étaient indiscernables. La hiérarchie de taille porte
+   *  aussi de l'information — la brute doit se voir grosse au premier regard. */
+  private enemySize(e: EnemyState): number {
+    const base = e.defId === "brute" ? 62 : e.defId === "orc" ? 54 : e.defId === "bat" ? 52 : 46;
+    return this.isBoss(e) ? base * 1.45 : base;
   }
 
   private isBoss(e: EnemyState): boolean {
@@ -842,24 +988,44 @@ export class GameScene extends Phaser.Scene {
       : e.blocked ? 0 : -Math.abs(Math.sin(this.time.now / 130 + e.uid * 1.7)) * 2.5;
     const y = (def.flying ? e.pos.y - 14 : e.pos.y) + bob;
     const face = this.facingOf(e.uid, e.pos.x);
-    const sc = this.enemyScale(e);
-    s.setOrigin(0.5, 0.55).setScale(sc).setFlipX(face < 0);
+    const size = this.enemySize(e);
+    s.setOrigin(0.5, 0.62).setDisplaySize(size, size).setFlipX(face < 0);
     s.setPosition(Math.round(e.pos.x), Math.round(y));
     s.setDepth(100 + e.pos.y); // tri en profondeur par position verticale
-    // Boss : reteinté or chaud par-dessus la frame (le registre n'a pas de frame dédiée).
+    // Boss : reteinté or chaud (le registre n'a pas de sprite dédié).
     if (this.isBoss(e)) s.setTint(0xffd98a);
   }
 
   /** Overlay d'ennemi (gfx) : barre de PV, anneaux de statut, couronne de boss. */
   private drawEnemyOverlay(g: Phaser.GameObjects.Graphics, e: EnemyState) {
     const boss = this.isBoss(e);
-    const sc = this.enemyScale(e);
-    const r = 30 * sc;           // rayon visuel approximatif du sprite (pour caler anneaux/barre)
+    const r = this.enemySize(e) * 0.5;  // rayon visuel du sprite (cale anneaux/barre)
     const x = e.pos.x, y = e.pos.y - r * 0.4;
 
-    if (this.run.time < e.slowUntil) { g.lineStyle(2, STATUS.frostRing); g.strokeCircle(x, y, r + 3); }
+    // Gelé : cristaux de givre qui orbitent lentement + halo froid. Un anneau bleu
+    // seul ne se distinguait pas d'un anneau de brûlure (ADR-016).
+    if (this.run.time < e.slowUntil) {
+      const spin = this.time.now / 900 + e.uid;
+      g.fillStyle(SIGNAL.slow, 0.22);
+      g.fillEllipse(x, y + r * 0.5, r * 1.9, r * 0.7);
+      for (let i = 0; i < 5; i++) {
+        const a = spin + (i / 5) * Math.PI * 2;
+        const px = x + Math.cos(a) * (r + 4), py = y + Math.sin(a) * (r + 4) * 0.55;
+        const s = 3.2 + Math.sin(this.time.now / 260 + i) * 0.8;
+        g.fillStyle(SIGNAL.slow, 0.95);
+        g.fillTriangle(px, py - s, px - s * 0.9, py + s * 0.7, px + s * 0.9, py + s * 0.7);
+      }
+    }
+    // En feu : langues de flamme montantes, jamais un anneau.
     if (this.run.time < e.burnUntil) {
-      g.lineStyle(2, STATUS.burn, 0.9); g.strokeCircle(x, y, r + 5 + Math.sin(this.time.now / 70 + e.uid) * 1.5);
+      for (let i = 0; i < 4; i++) {
+        const ph = (this.time.now / 260 + i * 0.27 + e.uid * 0.11) % 1;
+        const fx2 = x + (i - 1.5) * (r * 0.42);
+        const fy = y + r * 0.35 - ph * (r * 1.5);
+        const s = (1 - ph) * (r * 0.34) + 2;
+        g.fillStyle(i % 2 ? SIGNAL.burn : 0xf5c542, 0.85 * (1 - ph));
+        g.fillTriangle(fx2, fy - s * 1.7, fx2 - s * 0.72, fy + s * 0.6, fx2 + s * 0.72, fy + s * 0.6);
+      }
     }
 
     // Couronne de mini-boss
@@ -874,10 +1040,12 @@ export class GameScene extends Phaser.Scene {
 
     // Barre PV arrondie (verte → rouge selon les PV restants)
     const pct = e.hp / e.maxHp;
-    const barW = 28 * (sc / 2), barY = y - r - (boss ? 16 : 10);
+    // Barre proportionnelle au sprite : les unités ayant grandi, une largeur fixe
+    // aurait paru minuscule au-dessus d'une brute.
+    const barW = r * 1.5, barH = boss ? 6 : 5, barY = y - r - (boss ? 16 : 11);
     const barColor = pct > 0.55 ? STATUS.hpGood : pct > 0.25 ? STATUS.hpWarn : STATUS.hpBad;
-    g.fillStyle(C.hpBack, 0.85); g.fillRoundedRect(x - barW / 2, barY, barW, 4, 2);
-    if (pct > 0.05) { g.fillStyle(barColor); g.fillRoundedRect(x - barW / 2, barY, barW * pct, 4, 2); }
+    g.fillStyle(C.hpBack, 0.85); g.fillRoundedRect(x - barW / 2, barY, barW, barH, 2);
+    if (pct > 0.05) { g.fillStyle(barColor); g.fillRoundedRect(x - barW / 2, barY, barW * pct, barH, 2); }
   }
 
   private drawHero(g: Phaser.GameObjects.Graphics) {
@@ -890,16 +1058,50 @@ export class GameScene extends Phaser.Scene {
     const foe = this.run.enemies.find(e => e.alive && e.blocked);
     const face = foe ? (foe.pos.x >= x ? 1 : -1) : this.facingOf(-1, x);
 
-    // Unité de commandement : petit à-coup rythmé en combat (impression de tir).
-    const lunge = foe ? Math.sin(this.time.now / 80) * 2 : 0;
-    this.heroSprite.setFlipX(face < 0).setScale(0.72)
+    // --- Cycle de frappe -------------------------------------------------
+    // Le combat était un simple cercle blanc clignotant. Ici un vrai cycle :
+    // armé (recul) → frappe (bond en avant) → récupération, avec un arc de lame
+    // qui balaie l'ennemi. Piloté par l'horloge murale, jamais par la sim.
+    const SWING_MS = 520;
+    const k = foe ? (this.time.now % SWING_MS) / SWING_MS : 0; // 0→1
+    // Courbe d'attaque : recul lent (0→0,55) puis détente sèche (0,55→0,75).
+    const wind = k < 0.55 ? -(k / 0.55) * 3.5 : k < 0.75 ? (k - 0.55) / 0.2 * 11 - 3.5 : (1 - (k - 0.75) / 0.25) * 7.5;
+    const lunge = foe ? wind : 0;
+    const tilt = foe ? (k < 0.55 ? -0.12 * (k / 0.55) : 0.22 * (1 - (k - 0.55) / 0.45)) : 0;
+
+    this.heroSprite.setFlipX(face < 0).setDisplaySize(58, 58)
+      .setRotation(tilt * face)
       .setPosition(Math.round(x + face * lunge), Math.round(y))
       .setDepth(100 + h.pos.y);
 
-    // Étincelle d'impact sur l'ennemi bloqué (en combat)
-    if (foe) {
-      g.lineStyle(2, 0xffffff, 0.85);
-      g.strokeCircle(foe.pos.x, foe.pos.y - 6, 7 + Math.sin(this.time.now / 55) * 2.5);
+    // Arc de lame : visible seulement pendant la détente, il balaie de haut en bas
+    // devant le héros. C'est lui qui rend le coup lisible, pas l'étincelle.
+    if (foe && k >= 0.55 && k < 0.82) {
+      const t = (k - 0.55) / 0.27;              // 0→1 sur la frappe
+      const a0 = -1.5, a1 = 0.9;                 // du haut vers le bas
+      const ang = a0 + (a1 - a0) * t;
+      const cxh = x + face * 16, cyh = y - 8;
+      const rad = 26;
+      g.lineStyle(4, 0xffffff, 0.85 * (1 - t));
+      g.beginPath();
+      g.arc(cxh, cyh, rad, face > 0 ? ang - 0.5 : Math.PI - ang + 0.5,
+        face > 0 ? ang : Math.PI - ang, face < 0);
+      g.strokePath();
+      g.lineStyle(2, HERO_C.gold, 0.9 * (1 - t));
+      g.beginPath();
+      g.arc(cxh, cyh, rad - 5, face > 0 ? ang - 0.4 : Math.PI - ang + 0.4,
+        face > 0 ? ang : Math.PI - ang, face < 0);
+      g.strokePath();
+
+      // Impact sur l'ennemi, au moment où la lame arrive.
+      if (t > 0.45) {
+        const ix = foe.pos.x, iy = foe.pos.y - 6;
+        g.fillStyle(0xffffff, 0.85 * (1 - t));
+        for (let i = 0; i < 4; i++) {
+          const sa = i * 1.6 + this.time.now / 200;
+          g.fillCircle(ix + Math.cos(sa) * 9, iy + Math.sin(sa) * 7, 2.2);
+        }
+      }
     }
 
     // Barre PV
