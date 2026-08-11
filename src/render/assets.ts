@@ -33,6 +33,9 @@ const MEDIEVAL: Record<string, [file: string, px: number]> = {
   spr_tower_archer: ["tower-archer.svg", 128],
   spr_tower_catapult: ["tower-catapult.svg", 128],
   spr_tower_frost: ["tower-frost.svg", 128],
+  spr_tower_archer_3: ["tower-archer-3.svg", 128],
+  spr_tower_catapult_3: ["tower-catapult-3.svg", 128],
+  spr_tower_frost_3: ["tower-frost-3.svg", 128],
   spr_keep: ["keep-bastion.svg", 192],
   spr_pad: ["pad-slot.svg", 128],
 };

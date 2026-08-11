@@ -46,3 +46,33 @@ describe("registre de sprites (sprites.ts)", () => {
     expect(() => towerView("inconnu")).toThrow();
   });
 });
+
+describe("paliers visuels de tour (ADR-017)", () => {
+  it("change de sprite au niveau 3 et à la spécialisation", () => {
+    // L'amélioration doit se voir sur la carte : sans ça, le joueur ne distingue
+    // pas une tour de rang 1 d'une tour maximale.
+    for (const defId of Object.keys(CONTENT.towers)) {
+      const lvl1 = towerView(defId, 1).base.key;
+      const lvl3 = towerView(defId, 3).base.key;
+      expect(lvl3).not.toBe(lvl1);
+      // Niveau 2 reste au palier bas : le saut visuel marque le niveau max.
+      expect(towerView(defId, 2).base.key).toBe(lvl1);
+      // Une tour spécialisée est au moins au palier haut.
+      expect(towerView(defId, 3, "spec_x").base.key).toBe(lvl3);
+    }
+  });
+
+  it("distingue deux spécialisations d'un même palier par la teinte", () => {
+    const plain = towerView("tower_catapult", 4, "spec_trebuchet");
+    const fire = towerView("tower_catapult", 4, "spec_greekfire");
+    expect(plain.base.key).toBe(fire.base.key);
+    expect(fire.base.tint).toBeDefined();
+    expect(plain.base.tint).not.toBe(fire.base.tint);
+  });
+
+  it("borne le palier aux sprites réellement disponibles", () => {
+    // Un niveau au-delà des paliers dessinés ne doit pas viser une texture absente.
+    expect(() => towerView("tower_archer", 99, "spec_volley")).not.toThrow();
+    expect(towerView("tower_archer", 99).base.key).toBeTruthy();
+  });
+});
