@@ -177,7 +177,12 @@ export class MenuScene extends Phaser.Scene {
    *  les écrans ne doivent PLUS partir d'une constante, le bouton retour grandissant
    *  avec le plancher tactile (c'est ce qui masquait le titre du Bestiaire sur mobile). */
   private header(title: string): number {
-    const h = uiSectionHeader(this, { title, onBack: () => this.showView("home") });
+    // L'en-tête se place SOUS les chips de monnaie, mesurées : le bouton retour
+    // grandit avec le plancher tactile et la police, et un Y en dur le faisait
+    // remonter par-dessus « Éclats » (constaté sur appareil réel).
+    const chipsBottom = this.chipShards.container.y + this.chipShards.text.height / 2;
+    const y = chipsBottom + 12 + touchSize(30) / 2;
+    const h = uiSectionHeader(this, { title, y, onBack: () => this.showView("home") });
     this.panel!.add(h.container);
     return h.bottom;
   }
@@ -212,6 +217,34 @@ export class MenuScene extends Phaser.Scene {
     const scroll = uiScrollList(this, { x: v.left, y, w: v.width, h: Math.max(80, v.bottom - y - 12) });
     this.panel!.add(scroll.content);
     return scroll;
+  }
+
+  /**
+   * Fiche du Bestiaire : empile des lignes de texte et dimensionne son cadre
+   * D'APRÈS leur hauteur mesurée. Les tailles de police sont remontées sur petit
+   * écran (ADR-015), donc une hauteur de carte fixe faisait déborder le texte
+   * hors du cadre — constaté sur appareil réel.
+   */
+  private lorePage(
+    cursor: LayoutCursor, c: Phaser.GameObjects.Container,
+    lines: { text: string; size: number; color: string; wrap?: number }[],
+    stroke: number, fill: number,
+  ) {
+    const pad = 14, lead = 4;
+    const objs = lines.map(l => this.add.text(0, 0, l.text, {
+      fontSize: `${l.size}px`, color: l.color, ...TXT, lineSpacing: 2,
+      ...(l.wrap ? { wordWrap: { width: l.wrap } } : {}),
+    }));
+    const inner = objs.reduce((s, o, i) => s + o.height + (i ? lead : 0), 0);
+    const h = inner + pad * 2;
+    const y = cursor.next(h, 10);
+    this.box(400, y, 640, h, fill, stroke, 10, c);
+    let ty = y - h / 2 + pad;
+    objs.forEach((o) => {
+      o.setPosition(110, ty);
+      ty += o.height + lead;
+      c.add(o);
+    });
   }
 
   /** Rangée de boutique, empilée dans une zone défilante. Migrée sur `uiListRow`
@@ -283,21 +316,23 @@ export class MenuScene extends Phaser.Scene {
     const seen = this.profileSvc.get().bestiary;
     const enemies = Object.values(CONTENT.enemies);
     enemies.forEach((e) => {
-      const y = cursor.next(76);
       const known = seen.includes(e.id);
-      this.box(400, y, 640, 76, known ? 0x2b2118 : 0x221b12, known ? 0xc9a227 : 0x4a3f2e, 10, c);
       if (!known) {
-        c.add(this.add.text(110, y - 24, "???", { fontSize: "17px", color: DIM, ...TXT }));
-        c.add(this.add.text(110, y + 2, "Croisez cette créature au combat pour compléter sa page.", { fontSize: "12px", color: DIM, ...TXT }));
+        this.lorePage(cursor, c, [
+          { text: "???", size: 17, color: DIM },
+          { text: "Croisez cette créature au combat pour compléter sa page.", size: 12, color: DIM, wrap: 560 },
+        ], 0x4a3f2e, 0x221b12);
         return;
       }
-      c.add(this.add.text(110, y - 26, `${e.name}${e.flying ? "  ·  volant" : ""}`, { fontSize: "17px", color: GOLD, ...TXT }));
-      c.add(this.add.text(110, y - 5, e.lore, { fontSize: "11px", color: DIM, ...TXT, lineSpacing: 2 }));
       const stats = [
         `❤ ${e.hp} PV`, `Vitesse ${e.speed}`, `◆ ${e.goldReward}`,
         `Base -${e.damageToCastle} PV`, e.meleeDps > 0 ? `⚔ ${e.meleeDps}/s` : "⚔ inoffensif au contact",
       ].join("    ");
-      c.add(this.add.text(110, y + 23, stats, { fontSize: "12px", color: LIGHT, ...TXT }));
+      this.lorePage(cursor, c, [
+        { text: `${e.name}${e.flying ? "  ·  volant" : ""}`, size: 17, color: GOLD },
+        { text: e.lore, size: 11, color: DIM, wrap: 560 },
+        { text: stats, size: 12, color: LIGHT, wrap: 560 },
+      ], 0xc9a227, 0x2b2118);
     });
     c.add(this.add.text(400, cursor.next(28) - 6,
       "Les mini-boss sont des variantes renforcées des créatures connues.",
@@ -309,19 +344,18 @@ export class MenuScene extends Phaser.Scene {
   private buildDefensePages(cursor: LayoutCursor, c: Phaser.GameObjects.Container, scroll: UiScrollList) {
     const towers = Object.values(CONTENT.towers);
     towers.forEach((t) => {
-      const y = cursor.next(92);
       const locked = t.requiresUnlock !== null && !this.profileSvc.get().unlocks.includes(t.requiresUnlock);
-      this.box(400, y, 640, 92, 0x2b2118, locked ? 0x6b5a3e : 0xc9a227, 10, c);
-      c.add(this.add.text(110, y - 34, `${t.name}${locked ? "  (verrouillée — Arsenal)" : ""}`, { fontSize: "17px", color: locked ? DIM : GOLD, ...TXT }));
-      c.add(this.add.text(110, y - 13, t.lore, { fontSize: "11px", color: DIM, ...TXT, lineSpacing: 2 }));
       // Rôle tactique : LA ligne qui différencie les tours
       const role = t.splashRadius > 0 ? `Dégâts de zone (rayon ${t.splashRadius})` : "Monocible";
       const target = t.groundOnly ? "⚠ ne touche PAS les volants" : "vise sol et volants";
       const slow = t.slow ? ` · ralentit (vitesse ×${t.slow.factor} pendant ${t.slow.duration}s)` : "";
-      c.add(this.add.text(110, y + 13, `${role} · ${target}${slow}`, { fontSize: "12px", color: t.groundOnly ? "#e8a87c" : LIGHT, ...TXT }));
       const l1 = t.levels[0]!, l3 = t.levels[t.levels.length - 1]!;
-      c.add(this.add.text(110, y + 31, `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`,
-        { fontSize: "12px", color: LIGHT, ...TXT }));
+      this.lorePage(cursor, c, [
+        { text: `${t.name}${locked ? "  (verrouillée — Arsenal)" : ""}`, size: 17, color: locked ? DIM : GOLD },
+        { text: t.lore, size: 11, color: DIM, wrap: 560 },
+        { text: `${role} · ${target}${slow}`, size: 12, color: t.groundOnly ? "#e8a87c" : LIGHT, wrap: 560 },
+        { text: `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`, size: 12, color: LIGHT, wrap: 560 },
+      ], locked ? 0x6b5a3e : 0xc9a227, 0x2b2118);
     });
     c.add(this.add.text(400, cursor.next(30) - 6,
       "Le héros bloque et frappe les ennemis terrestres ; les volants l'ignorent — prévoyez l'Archerie.",

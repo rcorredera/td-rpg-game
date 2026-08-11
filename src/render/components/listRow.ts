@@ -6,7 +6,7 @@
 import Phaser from "phaser";
 import { ACCENT, TEXT, UI_TINT } from "../theme";
 import { FONT_BODY } from "../ui";
-import { touchSize } from "../viewport";
+import { scaleFont, touchSize } from "../viewport";
 import { uiFramedPanel } from "./panel";
 import { uiButton } from "./button";
 
@@ -47,9 +47,11 @@ export interface UiListRow {
 
 export function uiListRow(scene: Phaser.Scene, x: number, y: number, opts: UiListRowOpts): UiListRow {
   const w = opts.w ?? 600;
-  // Le bouton interne impose son propre plancher : la rangée doit pouvoir le loger.
+  // La rangée doit loger son bouton d'action (qui a son propre plancher tactile)
+  // ET son bloc de texte, dont la taille est remontée sur petit écran (ADR-015).
   const btnH = touchSize(34);
-  const h = Math.max(touchSize(opts.h ?? 62), btnH + 14);
+  const textH = opts.desc ? scaleFont(17) + scaleFont(12) + 22 : scaleFont(17) + 18;
+  const h = Math.max(touchSize(opts.h ?? 62), btnH + 14, textH);
   const state = opts.state ?? "normal";
   const colors = rowColors(state);
 
@@ -57,12 +59,20 @@ export function uiListRow(scene: Phaser.Scene, x: number, y: number, opts: UiLis
   const { container: panel } = uiFramedPanel(scene, 0, 0, { w, h, tint: colors.fill, borderColor: colors.border });
   container.add(panel);
 
+  // Bloc de texte centré d'après les hauteurs RÉELLES : les polices sont remontées
+  // sur petit écran (ADR-015), et des Y en dur collaient titre et description.
   const textX = -w / 2 + 40;
-  const title = scene.add.text(textX, opts.desc ? -14 : 0, opts.title, { fontSize: "17px", color: colors.titleColor, fontFamily: FONT_BODY });
-  if (!opts.desc) title.setOrigin(0, 0.5);
-  container.add(title);
-  if (opts.desc) {
-    container.add(scene.add.text(textX, 8, opts.desc, { fontSize: "12px", color: TEXT.dim, fontFamily: FONT_BODY }));
+  const title = scene.add.text(textX, 0, opts.title, { fontSize: "17px", color: colors.titleColor, fontFamily: FONT_BODY });
+  if (!opts.desc) {
+    title.setOrigin(0, 0.5);
+    container.add(title);
+  } else {
+    const desc = scene.add.text(textX, 0, opts.desc, { fontSize: "12px", color: TEXT.dim, fontFamily: FONT_BODY });
+    const lead = 3;
+    const blockH = title.height + lead + desc.height;
+    title.setY(-blockH / 2);
+    desc.setY(-blockH / 2 + title.height + lead);
+    container.add([title, desc]);
   }
 
   const trailX = w / 2 - 70;
