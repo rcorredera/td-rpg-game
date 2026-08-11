@@ -1,8 +1,9 @@
 // Tests unitaires du core — la sim doit tourner sans navigateur (ADR-001).
 import { describe, expect, it } from "vitest";
 import type { ContentPack, Profile } from "./types";
+import { BATTLEFIELD } from "./types";
 import { CONTENT } from "../content/index";
-import { buildTower, castWhirlwind, computeResult, createRun, sellRefundFor, sellTower, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
+import { buildTower, castWhirlwind, computeResult, createRun, moveHero, sellRefundFor, sellTower, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
 
 const FRESH_PROFILE: Profile = {
   shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
@@ -330,6 +331,29 @@ describe("sim core", () => {
       tick(s, c, 5); // l'ennemi atteint le héros (300px à 60px/s)
       expect(s.enemies[0]!.blocked).toBe(blocked);
     }
+  });
+
+  it("le héros ne peut pas quitter le champ de bataille", () => {
+    const c = mkContent({});
+    const s = createRun(c, FRESH_PROFILE);
+
+    // L'écran déborde de la zone de jeu (ADR-010) : un tap dans le hors-champ
+    // ne doit pas envoyer le héros hors carte.
+    moveHero(s, { x: -400, y: -250 });
+    expect(s.hero.target).toEqual({ x: 0, y: 0 });
+
+    moveHero(s, { x: 9999, y: 9999 });
+    expect(s.hero.target).toEqual({ x: BATTLEFIELD.w, y: BATTLEFIELD.h });
+
+    // Une cible légitime passe inchangée.
+    moveHero(s, { x: 321, y: 123 });
+    expect(s.hero.target).toEqual({ x: 321, y: 123 });
+
+    // Et le déplacement effectif reste borné, quel que soit le temps écoulé.
+    moveHero(s, { x: 5000, y: -5000 });
+    tick(s, c, 30);
+    expect(s.hero.pos.x).toBeLessThanOrEqual(BATTLEFIELD.w);
+    expect(s.hero.pos.y).toBeGreaterThanOrEqual(0);
   });
 
   it("le givre ralentit : un ennemi gelé parcourt moins de distance", () => {

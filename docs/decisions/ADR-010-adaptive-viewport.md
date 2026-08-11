@@ -56,6 +56,16 @@ Aucun travail de finition visuelle ne pouvait compenser ça : c'est la fondation
 - Densité plafonnée à `MAX_DPR = 2` : au-delà, le coût mémoire du framebuffer dépasse le gain visuel.
 - Le débord est désormais visible : tout écran doit habiller sa vue entière (`viewport().width/height`)
   et non plus 800×600. Un fond dimensionné en dur laisserait du noir sur les côtés.
+- **Le débord est tapable** : c'est la contrepartie directe du plein écran. Toute commande issue
+  d'un tap doit donc être bornée au champ de bataille. `core/types.ts` expose `BATTLEFIELD`
+  (source unique — `render/viewport.ts` et `GameScene` s'y réfèrent au lieu de redéclarer 800×600
+  chacun), et `moveHero` y ramène sa cible : sans ça, le héros quittait la carte (bug remonté après
+  la première livraison, couvert par un test). `GameScene` délimite visuellement la zone —
+  hors-champ assombri, liseré doré — pour que la limite se lise sans avoir à la découvrir.
+- Limite connue : sur un écran très allongé (mobile paysage ~19,5:9), une carte 4:3 laisse jusqu'à
+  ~40 % de hors-champ. Le cadre rend ça lisible mais n'utilise pas la place. La vraie réponse est
+  du **level design** : concevoir des cartes plus larges — à traiter avec la reprise du gameplay,
+  pas ici.
 - Limite assumée : le décor de `GameScene` est reconstruit à chaque resize (le décor dispersé est
   déterministe, donc identique — pas de saut visuel). Sans impact en jeu, une rotation étant rare.
 - N'affecte ni `core/`, ni `meta/`, ni `content/`.

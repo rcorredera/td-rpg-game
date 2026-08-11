@@ -133,7 +133,7 @@ La brûlure (% des **PV max**) est le contre aux sacs à PV ; le blizzard est un
 
 ## Héros
 
-Unité déplaçable au tap. **Bloque ET attaque en mêlée** (DPS continu) l'ennemi terrestre le plus avancé à portée — c'est le cœur des décisions tactiques de dernière seconde ; l'ennemi bloqué riposte. Le combat doit être lisible à l'écran (lame animée vers la cible + impact). PV, respawn 8s. **Ralliement** est lisible aussi : onde de portée dorée au lancement, et chaque tour boostée porte un anneau pulsé + chevrons ascendants pendant toute la durée du buff. Deux compétences à cooldown : Tournoiement (AoE contact) et Ralliement (buff cadence des tours proches). Talents/équipement : v1.
+Unité déplaçable au tap, **confinée au champ de bataille** (`BATTLEFIELD`, 800×600 logiques) : depuis le viewport adaptatif (ADR-010) l'écran déborde de la carte, et un tap dans ce hors-champ ramène la cible au bord au lieu de faire déserter le héros. **Bloque ET attaque en mêlée** (DPS continu) l'ennemi terrestre le plus avancé à portée — c'est le cœur des décisions tactiques de dernière seconde ; l'ennemi bloqué riposte. Le combat doit être lisible à l'écran (lame animée vers la cible + impact). PV, respawn 8s. **Ralliement** est lisible aussi : onde de portée dorée au lancement, et chaque tour boostée porte un anneau pulsé + chevrons ascendants pendant toute la durée du buff. Deux compétences à cooldown : Tournoiement (AoE contact) et Ralliement (buff cadence des tours proches). Talents/équipement : v1.
 
 ## Ennemis (v0)
 
