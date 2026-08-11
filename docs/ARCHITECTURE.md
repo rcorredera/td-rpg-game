@@ -12,6 +12,9 @@ src/
   meta/      Profil de compte (monnaies, unlocks, forge, sorts, bestiaire, chapitres conquis,
              meilleurs runs), persistence (SaveAdapter). Testée en Vitest.
   render/    Scènes Phaser. Lit l'état du core, ne le mute jamais : passe par les commandes de sim.ts.
+  balance/   Banc d'essai d'équilibrage headless (ADR-018) : fiches analytiques, joueur
+             artificiel, santé de la méta. `npm run balance`. Ne fait PAS partie du jeu —
+             aucun module de core/render ne l'importe, et il n'entre pas dans le bundle.
 public/assets/  Packs Kenney CC0 (TD + UI) — voir README.md du dossier. Re-skin sprites à venir.
 ```
 
@@ -28,6 +31,14 @@ Le profil passe par l'interface `SaveAdapter` (`meta/save.ts`). Implémentation 
 ## Content as data (ADR-003)
 
 Toutes les valeurs d'équilibrage vivent dans `src/content/index.ts`, typées par `ContentPack`. Règle absolue : aucune stat en dur dans `core/` ou `render/`. Rééquilibrer = modifier le content, sans toucher à la logique.
+
+Le barème de fin de run (`rewards`) y a rejoint le reste à l'ADR-018 : il était en dur dans `computeResult`, ce qui l'a laissé dériver pendant deux passes d'équilibrage sans que personne ne le voie. Leçon générale : une valeur d'équilibrage hors du content n'est pas seulement une entorse à la règle, c'est une valeur que plus personne ne rééquilibre.
+
+## Banc d'essai d'équilibrage (ADR-018)
+
+`src/balance/` exécute la simulation sans navigateur : `npm run balance`. Possible uniquement parce que `core/` est pur et déterministe (ADR-001) — c'est le bénéfice concret de cette contrainte.
+
+`datasheet.ts` et `economy.ts` dupliquent nécessairement des formules de `sim.ts` pour les projeter sans jouer. Cette duplication n'est tenable que grâce aux **tests miroirs**, qui confrontent chaque formule à la simulation elle-même plutôt qu'à une valeur écrite à la main. Un banc d'essai qui diverge de la sim ne casse rien : il conseille des ajustements sur des chiffres faux. Toute formule ajoutée ici doit venir avec son test miroir.
 
 ## UI chrome / composants (ADR-007)
 

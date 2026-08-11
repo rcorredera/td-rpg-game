@@ -145,8 +145,31 @@ Gobelin (rapide/fragile), Orc (standard), Brute (lent/tanky), Chauve-souris (vol
 - **Dégâts au château** : un ennemi qui atteint la base **explose** (fx + flash) et inflige `damageToCastle × (PV_max/PV_base)^0.5` — plus le monstre est renforcé (scaling de vague, mini-boss), plus ça fait mal : un mini-boss ×4 PV tape ×2. Exposant dans le content (`scaling.castleDamageExponent`). La base a une **barre de PV toujours visible** sur la carte (vert → jaune → rouge) + compteur `PV/PVmax` au HUD.
 - Or par kill : valeur fixe par archétype (voir `src/content/index.ts`) — +30% à la passe nº1.
 - Or de départ : 160 (dans le content désormais, plus en dur dans la sim).
-- **Éclats fin de run** : `max(plancher, vagues×5 + bonusPV + bonusVictoire)` où bonusPV = `(PV restants / PV max) × 20` si victoire, bonusVictoire = 25, plancher = 3 dès qu'une vague est entamée. Principe : **une défaite paie toujours**, ne jamais punir l'essai.
+- **Éclats fin de run** : `max(plancher, (vagues×5 + bonusPV + bonusVictoire) × multChapitre)` où bonusPV = `(PV restants / PV max) × 20` si victoire, bonusVictoire = 25, plancher = 3 dès qu'une vague est entamée. Principe : **une défaite paie toujours**, ne jamais punir l'essai. Barème dans le content (`rewards`) depuis ADR-018 — il vivait en dur dans `computeResult`, hors de portée d'ADR-003, ce qui explique qu'il n'ait jamais suivi le reste. `shardsChapterMult` (par chapitre, défaut 1) est le levier contre le farm du ch.1, **pas encore réglé**.
 - **Sceaux ⚜ fin de run** (monnaie du héros) : `floor(kills du héros / 4) + 2 si victoire`. Comptent les kills en mêlée et au Tournoiement (pas la Pluie de flèches : sort de compte, pas du héros). Intention : récompenser l'usage **actif** du héros, pas le camping. Deux monnaies séparées pour pouvoir équilibrer les robinets indépendamment — fusion possible plus tard si ça complexifie pour rien (voir Décisions ouvertes).
+
+## Équilibrage — méthode et constats (ADR-018)
+
+`npm run balance` mesure le jeu sans y jouer : fiches d'ennemis et de tours, masse et
+pression de chaque chapitre, santé de la méta, et un joueur artificiel qui rejoue les
+10 chapitres selon trois stratégies. Les passes précédentes utilisaient un bot jetable
+jamais commité — d'où des mesures invérifiables et une méthode réinventée à chaque fois.
+
+`npm run balance -- --chapter 3` détaille un chapitre (pression vague par vague + trace).
+
+**Constats de la première exécution — aucun n'est encore corrigé :**
+
+| Constat | Mesure | Conséquence de design |
+|---|---|---|
+| Récompense indépendante du chapitre | ch.10 = ×1,11 le ch.1 | Farmer le ch.1 est optimal |
+| Puits trop petit | Armurerie vidée en 2 runs, sorts en 2 runs | Méta morte à 20 % du jeu |
+| Difficulté non monotone | ch.3 perdu, ch.4-9 gagnés | Plus tardif = plus d'or = plus facile |
+| L'or cesse de contraindre | 1 800-3 800 pièces inutilisées au ch.10 | 6 emplacements partout : plus de décision |
+| Sceaux mal indexés | Héros posté au fond : moins de kills, plus de victoires | La monnaie paie le mauvais placement |
+
+**Fenêtre de tir** — la métrique reine d'un TD : le DPS installé × le temps de traversée
+borne les dégâts infligeables. Une vague dont les PV dépassent ce produit passe quelle
+que soit la façon de jouer. C'est la colonne « Charge » du rapport de pression.
 
 ## Méta v0
 

@@ -11,6 +11,7 @@ npm install
 npm run dev     # serveur de dev
 npm test        # tests (core + meta)
 npm run build   # typecheck + build de prod
+npm run balance # banc d'essai d'équilibrage, sans navigateur (ADR-018)
 ```
 
 ## Documentation
