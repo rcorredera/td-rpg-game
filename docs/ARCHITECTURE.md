@@ -40,6 +40,11 @@ qu'un écran empile des rangées/cartes sous un en-tête ou des onglets (évite 
 (`TEXT` couleurs de texte, `ACCENT` teintes de bordure, en plus des tokens existants). `render/ui.ts`
 ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, préchargement).
 
+`render/icons.ts` (ADR-012) : registre des icônes d'UI — les écrans nomment un **rôle**
+(`story`, `armory`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
+qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji
+dans l'UI : leur rendu dépend de l'OS et leurs couleurs cassent la palette.
+
 ## Mobile / viewport (ADR-010)
 
 Cible **paysage**. `render/viewport.ts` est la source unique de vérité sur l'écran :
