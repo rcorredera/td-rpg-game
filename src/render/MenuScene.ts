@@ -12,6 +12,8 @@ import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT
 import { touchSize, viewport } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
+import { enemyView, towerView } from "./sprites";
+import { preloadSprites } from "./assets";
 import { ACCENT, TEXT } from "./theme";
 import {
   layoutCursor, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiNavCard, uiPanel,
@@ -46,7 +48,9 @@ export class MenuScene extends Phaser.Scene {
 
   constructor() { super("menu"); }
   init(data: { profileSvc: ProfileService }) { this.profileSvc = data.profileSvc; }
-  preload() { preloadUi(this); preloadIcons(this); }
+  // Le campement charge aussi les sprites du monde : le Bestiaire affiche
+  // désormais les créatures et les tours, pas seulement leur description.
+  preload() { preloadUi(this); preloadIcons(this); preloadSprites(this); }
 
   create() {
     setupCamera(this);
@@ -229,19 +233,35 @@ export class MenuScene extends Phaser.Scene {
     cursor: LayoutCursor, c: Phaser.GameObjects.Container,
     lines: { text: string; size: number; color: string; wrap?: number }[],
     stroke: number, fill: number,
+    /** Portrait affiché à gauche : le Bestiaire montre la créature, il ne la
+     *  décrit pas seulement (ADR-016). `null` = inconnue, silhouette masquée. */
+    portrait?: { key: string; known: boolean },
   ) {
     const pad = 14, lead = 4;
+    const artW = portrait ? 76 : 0;
+    const textX = 110 + artW;
+    const wrapMax = 560 - artW;
     const objs = lines.map(l => this.add.text(0, 0, l.text, {
       fontSize: `${l.size}px`, color: l.color, ...TXT, lineSpacing: 2,
-      ...(l.wrap ? { wordWrap: { width: l.wrap } } : {}),
+      ...(l.wrap ? { wordWrap: { width: Math.min(l.wrap, wrapMax) } } : {}),
     }));
     const inner = objs.reduce((s, o, i) => s + o.height + (i ? lead : 0), 0);
-    const h = inner + pad * 2;
+    const h = Math.max(inner + pad * 2, portrait ? 78 : 0);
     const y = cursor.next(h, 10);
     this.box(400, y, 640, h, fill, stroke, 10, c);
+
+    if (portrait) {
+      const size = Math.min(62, h - 14);
+      const img = this.add.image(110 + artW / 2 - 8, y, portrait.key).setDisplaySize(size, size);
+      // Créature non découverte : silhouette noire, comme un Pokédex — on voit la
+      // forme sans révéler l'unité.
+      if (!portrait.known) img.setTint(0x120d09);
+      c.add(img);
+    }
+
     let ty = y - h / 2 + pad;
     objs.forEach((o) => {
-      o.setPosition(110, ty);
+      o.setPosition(textX, ty);
       ty += o.height + lead;
       c.add(o);
     });
@@ -321,7 +341,7 @@ export class MenuScene extends Phaser.Scene {
         this.lorePage(cursor, c, [
           { text: "???", size: 17, color: DIM },
           { text: "Croisez cette créature au combat pour compléter sa page.", size: 12, color: DIM, wrap: 560 },
-        ], 0x4a3f2e, 0x221b12);
+        ], 0x4a3f2e, 0x221b12, { key: enemyView(e.id).key, known: false });
         return;
       }
       const stats = [
@@ -332,7 +352,7 @@ export class MenuScene extends Phaser.Scene {
         { text: `${e.name}${e.flying ? "  ·  volant" : ""}`, size: 17, color: GOLD },
         { text: e.lore, size: 11, color: DIM, wrap: 560 },
         { text: stats, size: 12, color: LIGHT, wrap: 560 },
-      ], 0xc9a227, 0x2b2118);
+      ], 0xc9a227, 0x2b2118, { key: enemyView(e.id).key, known: true });
     });
     c.add(this.add.text(400, cursor.next(28) - 6,
       "Les mini-boss sont des variantes renforcées des créatures connues.",
@@ -355,7 +375,7 @@ export class MenuScene extends Phaser.Scene {
         { text: t.lore, size: 11, color: DIM, wrap: 560 },
         { text: `${role} · ${target}${slow}`, size: 12, color: t.groundOnly ? "#e8a87c" : LIGHT, wrap: 560 },
         { text: `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`, size: 12, color: LIGHT, wrap: 560 },
-      ], locked ? 0x6b5a3e : 0xc9a227, 0x2b2118);
+      ], locked ? 0x6b5a3e : 0xc9a227, 0x2b2118, { key: towerView(t.id).base.key, known: !locked });
     });
     c.add(this.add.text(400, cursor.next(30) - 6,
       "Le héros bloque et frappe les ennemis terrestres ; les volants l'ignorent — prévoyez l'Archerie.",

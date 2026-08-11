@@ -1,64 +1,65 @@
 // ============================================================
 // render/sprites.ts — LE registre de skin (données pures, zéro Phaser).
-// Associe chaque entité logique (defId d'ennemi/tour, héros, tuile) à une
-// frame du pack Kenney TD (assets.ts). C'est le POINT DE SWAP UNIQUE :
-// changer d'assets (médiéval, peinture…) = éditer ce seul fichier.
+// Associe chaque entité logique (defId d'ennemi/tour, héros, tuile) à sa
+// texture. C'est le POINT DE SWAP UNIQUE : changer d'assets = éditer ce
+// seul fichier (ADR-005).
 //
-// Planche TD 23×13, frame = row*23 + col (cf assets.ts). Frames repérées
-// sur montages annotés en dev. Le boss n'a pas de frame dédiée :
-// EntityLayer applique scale+tint sur la frame de base (ADR-004 §boss).
+// SKIN ACTIF : médiéval maison (ADR-016) — textures autonomes dessinées pour
+// le projet, dans `public/assets/skin-medieval/`. Le skin précédent (Kenney TD)
+// affichait des CHARS D'ASSAUT et des DRONES dans un jeu de chevaliers : une
+// incohérence permanente entre ce que le texte raconte et ce que l'écran montre.
+//
+// Une SpriteRef porte soit une texture autonome (`key` seul), soit une frame de
+// planche (`key` + `frame`) — les deux coexistent le temps de la transition.
 // ============================================================
 
 import { TEX } from "./assets";
 
 export type SheetKey = keyof typeof TEX;
 
-/** Référence vers une frame, avec teinte/échelle optionnelles. */
+/** Référence vers une texture, avec teinte/échelle optionnelles. */
 export interface SpriteRef {
-  sheet: SheetKey;
-  frame: number;
+  /** Clé de texture Phaser. */
+  key: string;
+  /** Index de frame — uniquement pour une planche ; absent = texture autonome. */
+  frame?: number;
   /** Teinte multiplicative (0xRRGGBB). Absent = couleurs natives du sprite. */
   tint?: number;
-  /** Échelle par-dessus l'échelle de base (art vectoriel → échelles fractionnaires OK). */
+  /** Échelle par-dessus l'échelle de base. */
   scale?: number;
 }
 
-/** Vue d'une tour : socle (plateforme) + tête (canon/lanceur) posée dessus. */
+/** Vue d'une tour. Le skin médiéval dessine la tour entière : plus de
+ *  composition socle + emblème, qui n'existait que pour recycler des tourelles. */
 export interface TowerView {
   base: SpriteRef;
   emblem?: SpriteRef;
 }
 
-// ---- Ennemis (véhicules Kenney TD) -------------------------------------
-// defId historiques (goblin/orc/brute/bat) conservés ; seul le visuel change.
+// ---- Ennemis ------------------------------------------------------------
 const ENEMIES: Record<string, SpriteRef> = {
-  goblin: { sheet: "td", frame: 246 }, // éclaireur : petit char rapide (bleu)
-  orc:    { sheet: "td", frame: 249 }, // blindé : char vert standard
-  brute:  { sheet: "td", frame: 250 }, // char lourd (rouge)
-  bat:    { sheet: "td", frame: 270 }, // drone aérien (avion vert) — volant
+  goblin: { key: "spr_goblin" },
+  orc:    { key: "spr_orc" },
+  brute:  { key: "spr_brute" },
+  bat:    { key: "spr_bat" },
 };
 
-// ---- Tours : plateforme + tête de canon, teintées par famille -----------
-const TOWER_BASE: SpriteRef = { sheet: "td", frame: 181 }; // socle octogonal gris
+// ---- Tours --------------------------------------------------------------
 const TOWERS: Record<string, TowerView> = {
-  tower_archer:   { base: TOWER_BASE, emblem: { sheet: "td", frame: 226 } },                 // canon simple
-  tower_catapult: { base: TOWER_BASE, emblem: { sheet: "td", frame: 227 } },                 // mortier (zone)
-  tower_frost:    { base: TOWER_BASE, emblem: { sheet: "td", frame: 203, tint: 0x8fd0ff } }, // canon cryo (bleu)
+  tower_archer:   { base: { key: "spr_tower_archer" } },
+  tower_catapult: { base: { key: "spr_tower_catapult" } },
+  tower_frost:    { base: { key: "spr_tower_frost" } },
 };
 
-// ---- Héros & tuiles -----------------------------------------------------
-const HERO: SpriteRef = { sheet: "td", frame: 247 }; // unité de commandement (char orange)
+// ---- Héros, base & tuiles ----------------------------------------------
+const HERO: SpriteRef = { key: "spr_hero" };
+const KEEP: SpriteRef = { key: "spr_keep" };
 
-export type TileKind = "grass" | "grassAlt" | "path" | "pad";
+export type TileKind = "pad" | "keep";
 const TILES: Record<TileKind, SpriteRef> = {
-  grass:    { sheet: "td", frame: 119 }, // herbe unie
-  grassAlt: { sheet: "td", frame: 124 }, // herbe (variante)
-  path:     { sheet: "td", frame: 50 },  // terre/route
-  pad:      { sheet: "td", frame: 41 },  // plateforme de tour (herbe surélevée + cible)
+  pad: { key: "spr_pad" },
+  keep: KEEP,
 };
-
-/** Décorations dispersées sur l'herbe (buissons / plantes). */
-export const DECOR_FRAMES = [131, 132, 134] as const;
 
 // ---- API ----------------------------------------------------------------
 
@@ -78,9 +79,14 @@ export function heroView(): SpriteRef {
   return HERO;
 }
 
+export function keepView(): SpriteRef {
+  return KEEP;
+}
+
 export function tileFor(kind: TileKind): SpriteRef {
   return TILES[kind];
 }
 
-/** Frames valides sur la planche TD (23×13 = 299). */
+/** Frames valides sur la planche TD (23×13 = 299). Conservé : la planche sert
+ *  encore aux FX (flamme d'explosion) le temps de leur reprise. */
 export const SHEET_FRAME_MAX = 298;

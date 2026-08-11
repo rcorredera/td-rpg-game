@@ -79,8 +79,8 @@ export const CONTENT: ContentPack = {
 
   towers: {
     tower_archer: {
-      id: "tower_archer", name: "Tourelle",
-      lore: "L'épine de la base. Une rafale, une cible — y compris ce qui vole.\nPolyvalente et bon marché : le socle de toute défense.",
+      id: "tower_archer", name: "Archerie",
+      lore: "L'épine du Bastion. Une flèche, une cible — y compris ce qui vole.\nPolyvalente et bon marché : le socle de toute défense.",
       costs: [70, 90, 130],
       levels: [
         { range: 130, damage: 12, fireRate: 1.4 },
@@ -95,14 +95,14 @@ export const CONTENT: ContentPack = {
           cost: 200, stats: { range: 175, damage: 40, fireRate: 1.8 }, multishot: 3,
         },
         {
-          id: "spec_longbow", name: "Canon long", desc: "Portée immense, obus lourds",
+          id: "spec_longbow", name: "Arc long", desc: "Portée immense, flèches lourdes",
           cost: 200, stats: { range: 290, damage: 70, fireRate: 1.5 },
         },
       ],
     },
     tower_catapult: {
-      id: "tower_catapult", name: "Mortier",
-      lore: "Des obus à fragmentation, rendus à l'envoyeur.\nDévastateur contre les groupes au sol — mais aveugle au ciel.",
+      id: "tower_catapult", name: "Catapulte",
+      lore: "Des rochers rendus à l'envoyeur, par-dessus les rangs.\nDévastatrice contre les groupes au sol — mais aveugle au ciel.",
       costs: [110, 140, 190],
       levels: [
         { range: 150, damage: 26, fireRate: 0.45 },
@@ -113,19 +113,19 @@ export const CONTENT: ContentPack = {
       // Niveau 4 : frappe lourde lointaine OU zone incendiaire
       specs: [
         {
-          id: "spec_trebuchet", name: "Artillerie lourde", desc: "Plus loin, plus fort, plus large",
+          id: "spec_trebuchet", name: "Trébuchet", desc: "Plus loin, plus fort, plus large",
           cost: 240, stats: { range: 245, damage: 140, fireRate: 0.4 }, splashRadius: 70,
         },
         {
-          id: "spec_greekfire", name: "Charge incendiaire", desc: "La zone brûle 3% PV max/s (4s)",
+          id: "spec_greekfire", name: "Feu grégeois", desc: "La zone brûle 3% PV max/s (4s)",
           cost: 240, stats: { range: 185, damage: 85, fireRate: 0.5 }, splashRadius: 80,
           burn: { pctMaxHpPerS: 0.03, durationS: 4 },
         },
       ],
     },
     tower_frost: {
-      id: "tower_frost", name: "Canon cryo",
-      lore: "Un fragment de brèche stabilisé dans un canon.\nNe détruit presque rien, mais le froid gagne toutes les batailles.",
+      id: "tower_frost", name: "Tour de givre",
+      lore: "Un éclat de faille scellé dans la pierre.\nNe tue presque rien, mais le froid gagne toutes les batailles.",
       costs: [80, 100, 140],
       levels: [
         { range: 120, damage: 5, fireRate: 1.0 },
@@ -138,12 +138,12 @@ export const CONTENT: ContentPack = {
       // Niveau 4 : aura de zone OU givre qui brûle
       specs: [
         {
-          id: "spec_blizzard", name: "Champ cryogénique", desc: "Aura de givre continue, ne tire plus",
+          id: "spec_blizzard", name: "Blizzard", desc: "Aura de givre continue, ne tire plus",
           cost: 220, stats: { range: 0, damage: 0, fireRate: 0 },
           aura: { radius: 170, slowFactor: 0.35 }, slow: null,
         },
         {
-          id: "spec_frostfire", name: "Cryothermie", desc: "Gèle ET brûle 2.5% PV max/s (4s)",
+          id: "spec_frostfire", name: "Givre ardent", desc: "Gèle ET brûle 2.5% PV max/s (4s)",
           cost: 220, stats: { range: 155, damage: 20, fireRate: 1.2 },
           burn: { pctMaxHpPerS: 0.025, durationS: 4 },
         },
@@ -154,23 +154,23 @@ export const CONTENT: ContentPack = {
   // Lore du Bestiaire : provisoire, à harmoniser avec le fichier de lore (docs/LORE.md).
   enemies: {
     goblin: {
-      id: "goblin", name: "Éclaireur",
-      lore: "Châssis léger, blindage minimal, lancé en nuée.\nUn éclaireur isolé n'est rien ; en essaim, il submerge.",
+      id: "goblin", name: "Gobelin",
+      lore: "Maigre, hurlant, jeté en avant par centaines.\nUn gobelin seul n'est rien ; la horde, elle, submerge.",
       hp: 38, speed: 75, flying: false, goldReward: 8, damageToCastle: 1, meleeDps: 8,
     },
     orc: {
-      id: "orc", name: "Blindé",
-      lore: "Le char de ligne de l'offensive. Avance au pas, encaisse, progresse.\nLà où l'un tombe, deux comblent la brèche.",
+      id: "orc", name: "Orc",
+      lore: "Le fantassin du Roi-Charogne. Avance au pas, encaisse, progresse.\nLà où l'un tombe, deux comblent le rang.",
       hp: 90, speed: 50, flying: false, goldReward: 15, damageToCastle: 2, meleeDps: 14,
     },
     brute: {
-      id: "brute", name: "Char lourd",
-      lore: "On a voulu l'arrêter avec un mur. Le mur a cédé.\nLent, massif, indifférent aux impacts.",
+      id: "brute", name: "Brute",
+      lore: "On a voulu l'arrêter avec un mur. Le mur a cédé.\nLente, massive, indifférente aux flèches.",
       hp: 260, speed: 30, flying: false, goldReward: 36, damageToCastle: 4, meleeDps: 22,
     },
     bat: {
-      id: "bat", name: "Drone",
-      lore: "Sorti des brèches, il ignore routes et barrages au sol.\nLes mortiers ne peuvent rien contre ce qui vole.",
+      id: "bat", name: "Chauve-souris",
+      lore: "Sortie des failles, elle ignore routes et barrages au sol.\nLes catapultes ne peuvent rien contre ce qui vole.",
       hp: 30, speed: 95, flying: true, goldReward: 9, damageToCastle: 1, meleeDps: 0,
     },
   },

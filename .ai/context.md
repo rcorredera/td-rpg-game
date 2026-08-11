@@ -11,14 +11,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **In-run** : 3 tours à 3 niveaux + **spécialisation niv.4** (choix binaire définitif : multishot,
   longue portée, brûlure % PV max, aura de givre) + vente (65%), héros bloqueur à 2 sorts,
   auto-vague, x2, multi-chemins et portails de Faille supportés par la sim. Étoiles 1-3 par chapitre.
-- **Rendu** : **cartoon militaire / sci-fi CC0** (pack **Kenney Tower Defense top-down**, tuiles 64×64,
-  vectoriel lisse → `pixelArt:false`). Terrain en tuiles (herbe + routes), ennemis (tanks/avion)/héros/
-  tours (socle+canon)/base en **sprites retained-mode** via une couche swappable (ADR-005) :
-  `render/sprites.ts` = registre de skin (point de swap unique, testé), `render/EntityLayer.ts` =
-  `SpriteLayer<T>`, `render/assets.ts` = préchargement, `render/theme.ts` = palette. Chrome d'UI sur Kenney UI.
-  Historique : un 1er skin **pixel médiéval Tiny** a été fait puis abandonné (PO : « pas giga beau ») ;
-  le swap complet n'a touché que `sprites.ts`/`assets.ts` (preuve ADR-005). Planches Tiny conservées (skin alt).
-  ⚠ Couche payante future = éditer `sprites.ts`/`assets.ts`, rien d'autre.
+- **Rendu** : **skin médiéval dessiné pour le projet** (ADR-016) — 10 sprites SVG maison dans `public/assets/skin-medieval/` (gobelin, orc, brute, chauve-souris, chevalier, 3 tours, Bastion, dalle), style aplats + contour sombre, silhouettes porteuses de sens. Palette dédiée (`render/palette.ts`), sol et chemins générés sur canvas (`render/terrain.ts`), projectiles typés par tour (`render/projectiles.ts`). Le tout via la couche swappable (ADR-005) : `sprites.ts` = registre, `EntityLayer.ts` = `SpriteLayer<T>`, `assets.ts` = préchargement. Historique : skin **pixel médiéval Tiny** (rejeté « pas giga beau »), puis **Kenney TD sci-fi** — des CHARS et DRONES dans un jeu de chevaliers, remplacé pour incohérence d'univers. ⚠ Tout changement de skin doit s'accompagner du renommage du contenu (noms + lore dans `content/index.ts`).
 - **Wording** : passe sci-fi faite sur les noms in-game (Éclaireur/Blindé/Char lourd/Drone ;
   Tourelle/Mortier/Canon cryo + specs). **Saga/chapitres/lore profond = en attente du fichier lore du PO.**
 - **Tests** : 60 (sim + profil + save + registre de sprites + thème + composants UI purs + viewport).
