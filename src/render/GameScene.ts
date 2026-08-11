@@ -22,6 +22,7 @@ import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
 import { enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
 import { drawDirtPath, ensureTerrainTextures, TEX_GRASS } from "./terrain";
+import { PATH_WIDTH, roundedPath } from "./path";
 import { GROUND, HERO_C, SIGNAL } from "./palette";
 import { projectileFor, projectilePoint, type ProjectileStyle } from "./projectiles";
 import { flyPose, idlePose, walkPose } from "./animation";
@@ -164,7 +165,7 @@ export class GameScene extends Phaser.Scene {
     const roads = this.add.graphics();
     for (const p of this.ch.map.paths) {
       if (p.portal) continue; // les Failles n'apparaissent que lorsqu'elles sont actives (draw())
-      drawDirtPath(roads, this.smoothPath(p.waypoints));
+      drawDirtPath(roads, this.drawPath(p.waypoints));
     }
     cont.add(roads);
 
@@ -177,12 +178,11 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
-  /** Polyligne lissée (spline) utilisée pour le tracé VISUEL des chemins — la sim
-   *  suit toujours les segments linéaires (ADR-001). */
-  private smoothPath(wps: readonly { x: number; y: number }[]): { x: number; y: number }[] {
-    const spline = new Phaser.Curves.Spline(wps.map(w => new Phaser.Math.Vector2(w.x, w.y)));
-    const n = Math.max(8, Math.round(spline.getLength() / 12));
-    return spline.getSpacedPoints(n).map(p => ({ x: p.x, y: p.y }));
+  /** Tracé VISUEL d'un chemin. La sim suit les segments droits (ADR-001) : l'arrondi
+   *  reste donc borné à une demi-largeur de route, pour qu'une unité pile sur son
+   *  chemin logique n'apparaisse jamais à côté de sa route (`render/path.ts`). */
+  private drawPath(wps: readonly { x: number; y: number }[]): { x: number; y: number }[] {
+    return roundedPath(wps, PATH_WIDTH / 2);
   }
 
   /** Délimite le champ de bataille. L'écran déborde de la zone de jeu (ADR-010) :
@@ -723,8 +723,11 @@ export class GameScene extends Phaser.Scene {
       const announced = this.run.phase === "building" && this.nextWaveUsesPath(i);
       if (!active && !announced) return;
       const alpha = active ? 1 : 0.35;
-      g.lineStyle(36, C.portal, 0.25 * alpha); this.strokePath(g, p.waypoints);
-      g.lineStyle(30, C.path, 0.7 * alpha); this.strokePath(g, p.waypoints);
+      // Même tracé que les routes permanentes : une Faille dessinée à angles vifs
+      // au milieu de chemins adoucis se lit comme un élément d'un autre jeu.
+      const lane = this.drawPath(p.waypoints);
+      g.lineStyle(36, C.portal, 0.25 * alpha); this.strokePath(g, lane);
+      g.lineStyle(30, C.path, 0.7 * alpha); this.strokePath(g, lane);
       // Vortex à l'entrée du portail
       const o = p.waypoints[0]!;
       const pulse = 3 * Math.sin(this.time.now / 150);

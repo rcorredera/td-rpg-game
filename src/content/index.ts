@@ -8,30 +8,39 @@ import type { ChapterDef, ContentPack, MapDef, WaveDef, WaveSpawn } from "../cor
 
 // ---------- Cartes des chapitres 2+ (placeholders en attente du lore) ----------
 
-// Layout "Faille" : chemin principal depuis la gauche + portail depuis le haut
-// qui rejoint la route principale (convention : tous les chemins finissent au château).
+// Layout "Faille" : montée depuis le bas-gauche, traversée, descente vers le
+// château + portail plongeant du haut sur la traversée.
+// Le tracé précédent partait à droite jusqu'à x=560 puis REVENAIT à x=180 : un
+// demi-tour complet, illisible sur une carte de 800 de large.
 const LAYOUT_RIFT: MapDef = {
   castleHp: 20,
   paths: [
-    { waypoints: [{ x: -20, y: 120 }, { x: 560, y: 120 }, { x: 560, y: 300 }, { x: 180, y: 300 }, { x: 180, y: 460 }, { x: 820, y: 460 }] },
-    { waypoints: [{ x: 400, y: -20 }, { x: 400, y: 300 }, { x: 180, y: 300 }, { x: 180, y: 460 }, { x: 820, y: 460 }], portal: true },
+    { waypoints: [{ x: -20, y: 470 }, { x: 220, y: 470 }, { x: 220, y: 180 }, { x: 520, y: 180 }, { x: 520, y: 400 }, { x: 820, y: 400 }] },
+    // Raccourci assumé (~29 %) : c'est l'intérêt d'une Faille, elle saute la montée.
+    { waypoints: [{ x: 280, y: -20 }, { x: 280, y: 180 }, { x: 520, y: 180 }, { x: 520, y: 400 }, { x: 820, y: 400 }], portal: true },
   ],
   slots: [
-    { x: 250, y: 210 }, { x: 480, y: 210 }, { x: 660, y: 200 },
-    { x: 300, y: 380 }, { x: 550, y: 380 }, { x: 80, y: 380 },
+    { x: 120, y: 330 }, { x: 330, y: 290 }, { x: 390, y: 90 },
+    { x: 620, y: 270 }, { x: 400, y: 400 }, { x: 700, y: 290 },
   ],
 };
 
-// Layout "Tenailles" : deux sources d'arrivée permanentes (gauche + bas-gauche).
+// Layout "Tenailles" : deux arrivées permanentes (haut-gauche et bas-gauche) qui
+// CONVERGENT à mi-carte avant le château.
+// Le tracé précédent avait une seconde voie 27 % plus courte que la première et
+// couverte par 3 emplacements sur 6 : les ennemis y arrivaient plus vite sur la
+// portion la moins défendable, d'où une fuite systématique dès la vague 4. Les
+// deux voies font désormais la même longueur et partagent un tronc commun, ce qui
+// rend les emplacements centraux utiles contre les deux.
 const LAYOUT_PINCER: MapDef = {
   castleHp: 20,
   paths: [
-    { waypoints: [{ x: -20, y: 300 }, { x: 250, y: 300 }, { x: 250, y: 140 }, { x: 550, y: 140 }, { x: 550, y: 420 }, { x: 820, y: 420 }] },
-    { waypoints: [{ x: -20, y: 520 }, { x: 550, y: 520 }, { x: 550, y: 420 }, { x: 820, y: 420 }] },
+    { waypoints: [{ x: -20, y: 150 }, { x: 300, y: 150 }, { x: 300, y: 300 }, { x: 560, y: 300 }, { x: 560, y: 430 }, { x: 820, y: 430 }] },
+    { waypoints: [{ x: -20, y: 470 }, { x: 300, y: 470 }, { x: 300, y: 300 }, { x: 560, y: 300 }, { x: 560, y: 430 }, { x: 820, y: 430 }] },
   ],
   slots: [
-    { x: 150, y: 220 }, { x: 380, y: 230 }, { x: 450, y: 300 },
-    { x: 660, y: 320 }, { x: 320, y: 420 }, { x: 130, y: 410 },
+    { x: 200, y: 310 }, { x: 390, y: 210 }, { x: 390, y: 400 },
+    { x: 620, y: 300 }, { x: 480, y: 480 }, { x: 700, y: 320 },
   ],
 };
 

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { CONTENT } from "../content/index";
 import { createRun, startNextWave, tick } from "../core/sim";
-import type { Profile, RunState } from "../core/types";
+import type { ContentPack, Profile, RunState } from "../core/types";
 import {
   allChapterStats, chapterStats, castleDamageOf, enemyHpAtWave, pathLength,
-  playableChapter, towerBurstDps, towerDps, towerInvestment, traversalSeconds, waveStats,
+  playableChapter, slotCoverage, towerBurstDps, towerDps, towerInvestment,
+  traversalSeconds, waveStats,
 } from "./datasheet";
 
 function blankProfile(): Profile {
@@ -111,5 +112,58 @@ describe("datasheet — métriques dérivées", () => {
 
   it("refuse un chapitre injouable plutôt que de rendre des zéros", () => {
     expect(() => playableChapter(CONTENT, 999)).toThrow();
+  });
+});
+
+describe("cartes — toute voie doit être défendable", () => {
+  // Une voie que peu d'emplacements atteignent n'est pas « plus difficile », elle
+  // est injouable : le joueur n'a nulle part où poser une tour qui la couvre. Défaut
+  // réel du layout « Tenailles » — 3 emplacements sur 6 atteignaient sa seconde voie,
+  // 27 % plus courte que la principale, d'où une fuite systématique dès la vague 4.
+  const MIN_SHARE = 2 / 3;
+
+  it("laisse au moins deux tiers des emplacements couvrir chaque voie", () => {
+    for (let i = 0; i < CONTENT.chapters.length; i++) {
+      if (!CONTENT.chapters[i]!.playable) continue;
+      const ch = playableChapter(CONTENT, i);
+      const need = Math.ceil(ch.map.slots.length * MIN_SHARE);
+      slotCoverage(CONTENT, i).forEach((n, lane) => {
+        expect(n, `ch${i + 1} voie ${lane + 1} : ${n}/${ch.map.slots.length} emplacements à portée`)
+          .toBeGreaterThanOrEqual(need);
+      });
+    }
+  });
+
+  it("échouerait sur une carte dont une voie est hors de portée", () => {
+    // Contre-épreuve : sans elle, le test précédent pourrait passer parce que
+    // `slotCoverage` compte tout, pas parce que les cartes sont bien dessinées.
+    const far: ContentPack = {
+      ...CONTENT,
+      chapters: [{
+        id: "x", name: "X", lore: "", playable: true,
+        map: {
+          castleHp: 20,
+          paths: [{ waypoints: [{ x: 0, y: 0 }, { x: 800, y: 0 }] }],
+          slots: [{ x: 400, y: 580 }, { x: 200, y: 560 }],
+        },
+        waves: [],
+      }],
+    };
+    expect(slotCoverage(far, 0)).toEqual([0]);
+  });
+
+  it("garde des voies de longueurs comparables sur une même carte", () => {
+    // Deux voies permanentes de longueurs très différentes créent un déséquilibre
+    // invisible : la plus courte laisse moins de temps de tir à défense égale. Un
+    // portail de Faille, lui, est un raccourci ASSUMÉ — exclu de la règle.
+    for (let i = 0; i < CONTENT.chapters.length; i++) {
+      if (!CONTENT.chapters[i]!.playable) continue;
+      const ch = playableChapter(CONTENT, i);
+      const lens = ch.map.paths.filter(p => !p.portal).map(p => pathLength(p.waypoints));
+      if (lens.length < 2) continue;
+      const ratio = Math.max(...lens) / Math.min(...lens);
+      expect(ratio, `ch${i + 1} : voies de ${lens.map(Math.round).join(" et ")} px`)
+        .toBeLessThan(1.25);
+    }
   });
 });
