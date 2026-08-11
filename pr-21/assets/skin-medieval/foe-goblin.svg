@@ -1,0 +1,17 @@
+<!-- Gobelin — petit, vif, vert acide. Grandes oreilles = silhouette
+     reconnaissable même à 30 px, dague pour lire l'intention. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g stroke="#241a12" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M25 47v9M39 47v9" fill="none" stroke-width="6"/>
+    <path d="M45 34l9-9" fill="none" stroke-width="3.5"/>
+    <path d="M52 30l7-7-3-3-7 7z" fill="#cfd6dd"/>
+    <path d="M20 24 11 15l1 13z" fill="#8dc63f"/>
+    <path d="M44 24 53 15l-1 13z" fill="#8dc63f"/>
+    <ellipse cx="32" cy="40" rx="12" ry="10" fill="#5d8f22"/>
+    <circle cx="32" cy="24" r="12" fill="#8dc63f"/>
+  </g>
+  <path d="M23 21a3.2 3.2 0 0 1 6 0 3.2 3.2 0 0 1-6 0zM35 21a3.2 3.2 0 0 1 6 0 3.2 3.2 0 0 1-6 0z" fill="#f5e04a"/>
+  <circle cx="26.4" cy="21.4" r="1.5" fill="#241a12"/>
+  <circle cx="38.4" cy="21.4" r="1.5" fill="#241a12"/>
+  <path d="M27 29h10l-2.5 3h-5z" fill="#241a12"/>
+</svg>
