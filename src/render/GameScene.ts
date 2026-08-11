@@ -21,7 +21,7 @@ import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
 import { ENEMY_SIZE_FALLBACK, enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
-import { drawDirtPath, ensureTerrainTextures, TEX_GRASS } from "./terrain";
+import { drawDirtPath, ensureTerrainTextures, grassTextureKey } from "./terrain";
 import { PATH_WIDTH, roundedPath } from "./path";
 import { GROUND, HERO_C, SIGNAL } from "./palette";
 import { projectileFor, projectilePoint, type ProjectileStyle } from "./projectiles";
@@ -153,9 +153,13 @@ export class GameScene extends Phaser.Scene {
 
     // Sol généré (ADR-016) : nuances, touffes et grain, dans une gamme désaturée
     // qui laisse les unités ressortir. Remplace la tuile d'herbe fluo du pack.
-    ensureTerrainTextures(this);
-    if (this.textures.exists(TEX_GRASS)) {
-      cont.add(this.add.tileSprite(v.left, v.top, v.width, v.height, TEX_GRASS).setOrigin(0, 0));
+    // Sol et route suivent le biome du chapitre (ADR-023) : « Le Col du Gel »
+    // s'affichait sur la même prairie verte que tous les autres.
+    const biome = this.ch.biome;
+    ensureTerrainTextures(this, biome);
+    const grassKey = grassTextureKey(biome);
+    if (this.textures.exists(grassKey)) {
+      cont.add(this.add.tileSprite(v.left, v.top, v.width, v.height, grassKey).setOrigin(0, 0));
     } else {
       cont.add(this.add.rectangle(v.left, v.top, v.width, v.height, GROUND.grass).setOrigin(0, 0));
     }
@@ -165,7 +169,7 @@ export class GameScene extends Phaser.Scene {
     const roads = this.add.graphics();
     for (const p of this.ch.map.paths) {
       if (p.portal) continue; // les Failles n'apparaissent que lorsqu'elles sont actives (draw())
-      drawDirtPath(roads, this.drawPath(p.waypoints));
+      drawDirtPath(roads, this.drawPath(p.waypoints), biome);
     }
     cont.add(roads);
 

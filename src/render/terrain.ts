@@ -11,10 +11,13 @@
 // ============================================================
 
 import type Phaser from "phaser";
-import { GROUND } from "./palette";
+import { biomeFor, type BiomeDef } from "./biomes";
 import { PATH_WIDTH } from "./path";
 
-export const TEX_GRASS = "terrain_grass";
+/** Une texture de sol PAR BIOME : les chapitres n'ont plus le même décor (ADR-023). */
+export function grassTextureKey(biome: string | undefined): string {
+  return `terrain_${biome ?? "meadow"}`;
+}
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
@@ -30,8 +33,8 @@ function noise(x: number, y: number): number {
  * élément qui dépasse un bord est coupé net et la répétition fait apparaître une
  * grille de carrés — défaut bien visible à l'écran lors du premier essai.
  */
-function drawGrass(ctx: CanvasRenderingContext2D, size: number): void {
-  ctx.fillStyle = hex(GROUND.grass);
+function drawGrass(ctx: CanvasRenderingContext2D, size: number, b: BiomeDef): void {
+  ctx.fillStyle = hex(b.ground);
   ctx.fillRect(0, 0, size, size);
 
   /** Rejoue un tracé aux 9 positions du pavage pour qu'il se raccorde aux bords. */
@@ -47,7 +50,7 @@ function drawGrass(ctx: CanvasRenderingContext2D, size: number): void {
     const light = noise(i, 14) > 0.5;
     tiled((dx, dy) => {
       const g = ctx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
-      g.addColorStop(0, light ? "rgba(127,160,90,0.55)" : "rgba(87,116,57,0.5)");
+      g.addColorStop(0, light ? b.patchLight : b.patchDark);
       g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -56,35 +59,65 @@ function drawGrass(ctx: CanvasRenderingContext2D, size: number): void {
     });
   }
 
-  // Touffes : petits traits d'herbe, plus clairs, orientés au hasard.
+  // Motif de surface. Sa FORME porte la matière autant que sa couleur : recolorer
+  // des brins d'herbe en blanc donne une prairie pâle, pas de la neige.
   ctx.lineCap = "round";
-  for (let i = 0; i < 130; i++) {
+  for (let i = 0; i < b.fleckCount; i++) {
     const x = noise(i, 21) * size;
     const y = noise(i, 22) * size;
-    const len = 2.5 + noise(i, 23) * 3.5;
-    const lean = (noise(i, 24) - 0.5) * 2.4;
-    ctx.strokeStyle = noise(i, 25) > 0.45 ? "rgba(140,175,100,0.75)" : "rgba(80,108,52,0.7)";
-    ctx.lineWidth = 1.6;
-    tiled((dx, dy) => {
-      ctx.beginPath();
-      ctx.moveTo(x + dx, y + dy);
-      ctx.lineTo(x + lean + dx, y - len + dy);
-      ctx.stroke();
-    });
+    const tone = noise(i, 25) > 0.45 ? b.fleckLight : b.fleckDark;
+    const v = noise(i, 23);
+
+    if (b.motif === "flake") {
+      // Points épars : neige ou cendre en suspension.
+      ctx.fillStyle = tone;
+      const r = 0.8 + v * 1.6;
+      tiled((dx, dy) => {
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    } else if (b.motif === "rock") {
+      // Éclats anguleux : gravats et pierraille.
+      ctx.fillStyle = tone;
+      const w = 2 + v * 3.5, h = 1.5 + noise(i, 26) * 2.5;
+      tiled((dx, dy) => {
+        ctx.beginPath();
+        ctx.moveTo(x + dx, y + dy);
+        ctx.lineTo(x + w + dx, y + h * 0.4 + dy);
+        ctx.lineTo(x + w * 0.5 + dx, y + h + dy);
+        ctx.closePath();
+        ctx.fill();
+      });
+    } else {
+      // Traits : dressés pour l'herbe, couchés pour les roseaux du marais.
+      const len = 2.5 + v * 3.5;
+      const lean = (noise(i, 24) - 0.5) * (b.motif === "reed" ? 5 : 2.4);
+      const rise = b.motif === "reed" ? len * 0.35 : len;
+      ctx.strokeStyle = tone;
+      ctx.lineWidth = 1.6;
+      tiled((dx, dy) => {
+        ctx.beginPath();
+        ctx.moveTo(x + dx, y + dy);
+        ctx.lineTo(x + lean + dx, y - rise + dy);
+        ctx.stroke();
+      });
+    }
   }
 }
 
-/** Crée la texture de sol si absente. Idempotent ; sans DOM, ne fait rien. */
-export function ensureTerrainTextures(scene: Phaser.Scene): void {
+/** Crée la texture de sol du biome si absente. Idempotent ; sans DOM, ne fait rien. */
+export function ensureTerrainTextures(scene: Phaser.Scene, biome?: string): void {
   if (typeof document === "undefined") return;
-  if (scene.textures.exists(TEX_GRASS)) return;
+  const key = grassTextureKey(biome);
+  if (scene.textures.exists(key)) return;
   const size = 256;
   const cv = document.createElement("canvas");
   cv.width = cv.height = size;
   const ctx = cv.getContext("2d");
   if (!ctx) return;
-  drawGrass(ctx, size);
-  scene.textures.addCanvas(TEX_GRASS, cv);
+  drawGrass(ctx, size, biomeFor(biome));
+  scene.textures.addCanvas(key, cv);
 }
 
 /**
@@ -93,9 +126,11 @@ export function ensureTerrainTextures(scene: Phaser.Scene): void {
  * d'une tuile tous les 16 px produisait des bosses régulières visibles.
  */
 export function drawDirtPath(
-  g: Phaser.GameObjects.Graphics, pts: readonly { x: number; y: number }[], width = PATH_WIDTH,
+  g: Phaser.GameObjects.Graphics, pts: readonly { x: number; y: number }[],
+  biome?: string, width = PATH_WIDTH,
 ): void {
   if (pts.length < 2) return;
+  const b = biomeFor(biome);
   const stroke = (w: number, color: number, alpha = 1) => {
     g.lineStyle(w, color, alpha);
     g.beginPath();
@@ -103,7 +138,9 @@ export function drawDirtPath(
     for (let i = 1; i < pts.length; i++) g.lineTo(pts[i]!.x, pts[i]!.y);
     g.strokePath();
   };
-  stroke(width + 8, GROUND.pathEdge, 0.55);   // bord fondu dans l'herbe
-  stroke(width, GROUND.path, 1);              // cœur du chemin
-  stroke(width - 14, 0xd8bd93, 0.45);         // trace centrale, plus claire
+  // La route suit le biome : un sentier de terre battue au milieu d'un col gelé
+  // trahit tout de suite que le décor n'a pas été pensé pour le lieu.
+  stroke(width + 8, b.pathEdge, 0.55);   // bord fondu dans le sol
+  stroke(width, b.path, 1);              // cœur du chemin
+  stroke(width - 14, b.pathCore, 0.45);  // trace centrale, plus claire
 }
