@@ -7,15 +7,17 @@ import { LocalStorageSaveAdapter } from "./meta/save";
 import { ProfileService } from "./meta/profile";
 import { GameScene } from "./render/GameScene";
 import { MenuScene } from "./render/MenuScene";
-import { RENDER_SCALE } from "./render/ui";
+import { attachViewport, initialViewport, viewport } from "./render/viewport";
 
 const profileSvc = new ProfileService(new LocalStorageSaveAdapter());
 
-// Texte net : les Text sont rasterisés à la densité du device (sinon flou après upscale).
+// Texte net : chaque Text est rasterisé au zoom courant de la caméra, donc à
+// exactement 1 texel par pixel physique. Lu à la création (pas figé au boot) :
+// après une rotation, les écrans reconstruits repartent au bon facteur.
 const origText = Phaser.GameObjects.GameObjectFactory.prototype.text;
 Phaser.GameObjects.GameObjectFactory.prototype.text = function (this: Phaser.GameObjects.GameObjectFactory, ...args: Parameters<typeof origText>) {
   const t = origText.apply(this, args);
-  t.setResolution(RENDER_SCALE * 1.5);
+  t.setResolution(Math.max(1, viewport().zoom));
   return t;
 };
 
@@ -34,19 +36,23 @@ async function loadFonts(): Promise<void> {
 }
 
 void loadFonts().then(() => {
+  const v0 = initialViewport();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
-    // Framebuffer à l'échelle réelle d'affichage — chaque scène recadre via setupCamera()
-    // (coordonnées logiques 800×600). Voir ADR-009 : évite le flou d'étirement CSS de Scale.FIT.
-    width: 800 * RENDER_SCALE,
-    height: 600 * RENDER_SCALE,
+    // Le framebuffer couvre la fenêtre ENTIÈRE, à la densité réelle du device : plus
+    // de cadre 4:3 posé au milieu du noir, et 1 pixel de canvas = 1 pixel physique
+    // (donc aucun étirement flou). Scale.NONE : c'est attachViewport qui pilote la
+    // taille du canvas et son étirement CSS, y compris au resize/rotation (ADR-010).
+    width: v0.canvasW,
+    height: v0.canvasH,
     backgroundColor: "#1a140e",
     // Art Kenney TD = vectoriel lisse → filtrage LINEAR (pixelArt désactivé), échelles fractionnaires OK.
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scale: { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.NO_CENTER },
     scene: [MenuScene, GameScene],
   });
 
+  attachViewport(game);
   game.scene.start("menu", { profileSvc });
 
   // Hook debug : permet de piloter le jeu depuis la console (tests visuels automatisés).

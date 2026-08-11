@@ -5,27 +5,15 @@
 // ============================================================
 
 import Phaser from "phaser";
+import { onViewportChange, viewport, WORLD_H, WORLD_W, type Viewport } from "./viewport";
 
 export { UI_TINT } from "./theme";
 
 const P = "assets/kenney-ui/PNG";
 
-/** Échelle de rendu réelle : le framebuffer Phaser est dimensionné pour correspondre à la taille
- *  physiquement affichée (fenêtre × devicePixelRatio, contenue en 4:3 comme Scale.FIT le fait déjà
- *  en CSS), pas juste au devicePixelRatio brut — sinon Scale.FIT étire un canvas 800×600 par CSS
- *  bien au-delà de sa résolution native sur un grand écran, et tout devient flou (texte compris,
- *  cf ADR-009). Plafonné à 3 pour borner la mémoire sur les très grands/denses écrans.
- *  Les scènes compensent via cameras.main.setZoom(RENDER_SCALE) — les coordonnées restent en 800×600.
- *  Garde `typeof window` : ce module est importé transitivement par les tests unitaires purs
- *  de render/components/ (Vitest tourne en Node, sans DOM) — sans impact en navigateur.
- *  Calculé une fois au boot, pas réactif au resize (limite connue, cf ADR-009). */
-export const RENDER_SCALE = (() => {
-  if (typeof window === "undefined") return 1;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const targetW = window.innerWidth * dpr;
-  const targetH = window.innerHeight * dpr;
-  return Math.min(3, Math.max(1, Math.min(targetW / 800, targetH / 600)));
-})();
+// L'échelle de rendu vit désormais dans render/viewport.ts (ADR-010) : elle est
+// recalculée à chaque resize/rotation au lieu d'être figée au boot, et le
+// framebuffer suit la fenêtre entière — plus seulement un cadre 4:3 (ADR-009).
 
 /** Polices embarquées (public/fonts, OFL) — chargées dans main.ts avant le boot Phaser.
  *  Cinzel : capitales gravées (titres, boutons, chiffres). Alegreya : textes courants. */
@@ -125,9 +113,26 @@ const hasDom = typeof document !== "undefined";
 export const CURSOR_DEFAULT = hasDom ? cursorCss(drawArrowCursor, 5, 3, "auto") : "auto";
 export const CURSOR_POINT = hasDom ? cursorCss(drawHandCursor, 14, 3, "pointer") : "pointer";
 
-/** À appeler dans chaque create() de scène : caméra logique 800×600 + curseur gantelet. */
+/** Abonne une scène aux changements de viewport (resize, rotation) et se désabonne
+ *  automatiquement à son arrêt — sinon une scène morte continuerait à se re-layouter. */
+export function onSceneResize(scene: Phaser.Scene, fn: (v: Viewport) => void): void {
+  const off = onViewportChange(fn);
+  // Noms d'évènements en littéraux, PAS `Phaser.Scenes.Events.*` : y toucher en
+  // tant que valeur force le chargement de Phaser, qui lit `window` à l'import —
+  // et casse les tests unitaires purs de components/ sous Vitest (cf .ai/pitfalls.md).
+  scene.events.once("shutdown", off);
+  scene.events.once("destroy", off);
+}
+
+/** À appeler dans chaque create() de scène : caméra centrée sur la zone de jeu
+ *  800×600 (toujours entièrement visible) + curseur gantelet. Le zoom suit le
+ *  viewport et se remet à jour tout seul au resize (ADR-010). */
 export function setupCamera(scene: Phaser.Scene): void {
-  scene.cameras.main.setZoom(RENDER_SCALE).centerOn(400, 300);
+  const apply = (v: Viewport) => {
+    scene.cameras.main.setZoom(v.zoom).centerOn(WORLD_W / 2, WORLD_H / 2);
+  };
+  apply(viewport());
+  onSceneResize(scene, apply);
   scene.input.setDefaultCursor(CURSOR_DEFAULT);
 }
 

@@ -8,7 +8,8 @@
 import Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
-import { FONT_BODY, FONT_DISPLAY, preloadUi, setupCamera, UI_TINT } from "./ui";
+import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
+import { viewport } from "./viewport";
 import { ACCENT, TEXT } from "./theme";
 import {
   layoutCursor, uiButton, uiChip, uiListRow, uiModal, uiNavCard, uiPanel, uiSectionHeader,
@@ -46,7 +47,13 @@ export class MenuScene extends Phaser.Scene {
   create() {
     setupCamera(this);
     this.panel = null;
-    this.add.rectangle(400, 300, 800, 600, 0x1a140e);
+    // Le fond couvre la vue entière, pas seulement la zone de jeu : sur un écran
+    // large, le débord doit rester habillé plutôt que noir (ADR-010).
+    const v = viewport();
+    this.add.rectangle(400, 300, v.width, v.height, 0x1a140e);
+    // Le campement n'a pas d'état volatil : au resize/rotation, on rebâtit l'écran
+    // à neuf plutôt que de repositionner chaque élément un par un.
+    onSceneResize(this, () => this.scene.restart({ profileSvc: this.profileSvc }));
     this.add.text(400, 48, "⚔ Bastion", { fontSize: "40px", color: TEXT.gold, ...TITLE }).setOrigin(0.5);
     this.add.text(400, 88, "Le campement", { fontSize: "16px", color: TEXT.dim, ...TXT }).setOrigin(0.5);
     this.chipShards = uiChip(this, 330, 122, { icon: "◆", text: "Éclats : 0", fontSize: 19, color: TEXT.light });
