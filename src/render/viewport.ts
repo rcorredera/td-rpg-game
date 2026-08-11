@@ -27,6 +27,12 @@ export const MAX_DPR = 2;
  *  du jeu. `Viewport.touchMin` fait la conversion pour l'écran courant. */
 export const TOUCH_MIN_CSS = 44;
 
+/** Plancher de lisibilité du texte, en pixels CSS RÉELS. Même raisonnement que
+ *  `TOUCH_MIN_CSS` : une taille écrite en unités logiques ne vaut pas cette taille
+ *  à l'écran. Sur un mobile paysage, 1 unité logique ≈ 0,6 px — un texte « 12px »
+ *  y était rendu à ~7 px, illisible (retour utilisateur sur appareil réel). */
+export const TEXT_MIN_CSS = 13;
+
 /** Encoches / barres système, en pixels CSS (env(safe-area-inset-*)). */
 export interface SafeInsets {
   top: number;
@@ -127,6 +133,31 @@ export function touchSize(desired: number): number {
   return Math.max(desired, current.touchMin);
 }
 
+/** Taille de police minimale, en unités logiques, pour rester lisible sur l'écran
+ *  courant. ~8 sur un grand écran (aucune contrainte), ~22 sur un mobile paysage. */
+export function minFontSize(): number {
+  return TEXT_MIN_CSS / Math.max(0.0001, current.cssPerLogical);
+}
+
+/** Taille de corps de référence : l'échelle typographique est calée dessus. */
+const BODY_SIZE = 12;
+
+/**
+ * Adapte une taille de police à l'écran courant.
+ *
+ * Un simple plancher ne suffirait pas : il ramènerait un titre (19) et son
+ * sous-titre (12) à la MÊME taille sur mobile, aplatissant toute la hiérarchie.
+ * On remonte donc l'échelle entière, en compressant les grandes tailles
+ * (exposant < 1) pour qu'un titre ne devienne pas démesuré.
+ *
+ * Sur grand écran, `desired` gagne toujours : aucun effet.
+ */
+export function scaleFont(desired: number): number {
+  const min = minFontSize();
+  const scaled = min * Math.pow(Math.max(0.01, desired) / BODY_SIZE, 0.6);
+  return Math.max(desired, min, scaled);
+}
+
 type Listener = (v: Viewport) => void;
 const listeners = new Set<Listener>();
 
@@ -186,15 +217,32 @@ export function attachViewport(game: Phaser.Game): void {
       cv.style.width = `${v.cssW}px`;
       cv.style.height = `${v.cssH}px`;
     }
+    // INDISPENSABLE : Phaser met en cache la position et la taille écran du canvas
+    // pour convertir les coordonnées de pointeur. Changer son style CSS sans le
+    // prévenir laisse ces bornes périmées — les clics tombent à côté et le jeu
+    // paraît gelé jusqu'à un rechargement. Mesuré : canvas réel 900×420, bornes
+    // Phaser restées à 780×360, displayScale à 1,15 au lieu de 1.
+    game.scale.refresh();
     listeners.forEach((fn) => fn(v));
   };
 
   // Debounce sur une frame : une rotation émet une rafale de `resize`, et
   // reconstruire le HUD à chaque évènement fait clignoter l'écran.
-  let pending = 0;
+  // Repli sur setTimeout : requestAnimationFrame est SUSPENDU quand l'onglet est
+  // en arrière-plan, or une rotation d'écran peut survenir dans cet état — sans
+  // repli, le viewport resterait périmé au retour au premier plan.
+  let pendingRaf = 0;
+  let pendingTimer: ReturnType<typeof setTimeout> | undefined;
   const schedule = () => {
-    if (pending) cancelAnimationFrame(pending);
-    pending = requestAnimationFrame(() => { pending = 0; apply(); });
+    if (pendingRaf) cancelAnimationFrame(pendingRaf);
+    if (pendingTimer !== undefined) clearTimeout(pendingTimer);
+    const run = () => {
+      if (pendingRaf) { cancelAnimationFrame(pendingRaf); pendingRaf = 0; }
+      if (pendingTimer !== undefined) { clearTimeout(pendingTimer); pendingTimer = undefined; }
+      apply();
+    };
+    pendingRaf = requestAnimationFrame(run);
+    pendingTimer = setTimeout(run, 250);
   };
 
   window.addEventListener("resize", schedule);

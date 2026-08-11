@@ -45,9 +45,12 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   positionnelles supprimées. L'état « inabordable » du GDD est enfin rendu (coût rouge, cadre
   atténué) + fonds générés sur canvas, bandeau de titre et harmonisation du terrain (ADR-014,
   `render/backdrop.ts` — l'herbe fluo du pack est lavée par un voile chaud, `setTint` ne désature
-  pas). **Reste** : transitions d'écran et retours visuels (pulsation sur gain de monnaie, retour
-  d'achat), et le fond du campement pourrait gagner un élément de décor (bannière, silhouette de
-  remparts) — pour l'instant c'est matière + vignette, sans motif identifiable.
+  pas) + échelle typographique réelle, plein écran et correction des bornes de pointeur au resize
+  (ADR-015). **Reste** : transitions d'écran et retours visuels (pulsation sur gain de monnaie,
+  retour d'achat), et le fond du campement pourrait gagner un élément de décor (bannière,
+  silhouette de remparts) — pour l'instant c'est matière + vignette, sans motif identifiable.
+  ⚠ Le PO trouve encore la direction artistique datée (« années 80 ») : la palette elle-même
+  (brun sombre + or) est à rediscuter, ce n'est plus un problème d'exécution mais de parti pris.
 
 ## Prochaine grosse feature actée (design au GDD, à implémenter)
 **Équipement du héros + loot** : 3 slots (arme/armure/relique), butin en fin de run victorieux

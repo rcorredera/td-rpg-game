@@ -7,17 +7,30 @@ import { LocalStorageSaveAdapter } from "./meta/save";
 import { ProfileService } from "./meta/profile";
 import { GameScene } from "./render/GameScene";
 import { MenuScene } from "./render/MenuScene";
-import { attachViewport, initialViewport, viewport } from "./render/viewport";
+import { attachViewport, initialViewport, scaleFont, viewport } from "./render/viewport";
 
 const profileSvc = new ProfileService(new LocalStorageSaveAdapter());
 
-// Texte net : chaque Text est rasterisé au zoom courant de la caméra, donc à
-// exactement 1 texel par pixel physique. Lu à la création (pas figé au boot) :
-// après une rotation, les écrans reconstruits repartent au bon facteur.
+// Deux garanties appliquées à CHAQUE Text, au point de création plutôt qu'à
+// chaque appel dispersé dans les scènes :
+//
+// 1. Netteté — rasterisation au zoom courant de la caméra, soit 1 texel par pixel
+//    physique. Lu à la création (pas figé au boot) : après une rotation, les écrans
+//    reconstruits repartent au bon facteur.
+// 2. Lisibilité — l'échelle typographique est recalée en pixels RÉELS. Les tailles
+//    sont écrites en unités logiques, qui ne valent pas la même chose selon l'écran :
+//    sur mobile paysage, un « 12px » tombait à ~7 px réels, illisible. `scaleFont`
+//    remonte l'échelle en préservant la hiérarchie, et ne mord pas sur grand écran
+//    (ADR-015).
 const origText = Phaser.GameObjects.GameObjectFactory.prototype.text;
 Phaser.GameObjects.GameObjectFactory.prototype.text = function (this: Phaser.GameObjects.GameObjectFactory, ...args: Parameters<typeof origText>) {
   const t = origText.apply(this, args);
   t.setResolution(Math.max(1, viewport().zoom));
+  const asked = Number.parseFloat(String(t.style.fontSize));
+  if (Number.isFinite(asked)) {
+    const px = scaleFont(asked);
+    if (px > asked) t.setFontSize(px);
+  }
   return t;
 };
 

@@ -42,6 +42,7 @@ export class MenuScene extends Phaser.Scene {
   private currentView: View = "home";
   private currentShopTab: ShopTab = "arsenal";
   private bestiaryTab: "creatures" | "defenses" = "creatures";
+  private fsBtn: Phaser.GameObjects.Container | null = null;
 
   constructor() { super("menu"); }
   init(data: { profileSvc: ProfileService }) { this.profileSvc = data.profileSvc; }
@@ -62,6 +63,7 @@ export class MenuScene extends Phaser.Scene {
     this.chipShards = uiChip(this, 330, 122, { icon: "◆", text: "Éclats : 0", fontSize: 19, color: TEXT.light });
     this.chipSceaux = uiChip(this, 470, 122, { icon: "⚜", text: "Sceaux : 0", fontSize: 19, color: TEXT.light });
     this.refreshCurrencies();
+    this.spreadCurrencies();
 
     if (!this.profileSvc.get().introSeen) this.showIntro();
     else this.showView(this.currentView);
@@ -93,12 +95,36 @@ export class MenuScene extends Phaser.Scene {
       g.fillStyle(ACCENT.goldSoft, 0.75);
       g.fillCircle(x1 + dir * 5, 82, 2);
     }
+
+    // Bascule plein écran : en onglet mobile, la barre d'URL mange une bonne part
+    // de la hauteur. Le passage en plein écran EXIGE un geste utilisateur, d'où ce
+    // bouton — il ne peut pas être déclenché au chargement.
+    if (this.scale.fullscreen.available) {
+      const s = touchSize(38);
+      this.fsBtn = uiButton(this, viewport().safeRight - s / 2 - 10, s / 2 + 10,
+        this.scale.isFullscreen ? "⤡" : "⛶", { w: s, h: s, fontSize: 17 },
+        () => {
+          if (this.scale.isFullscreen) this.scale.stopFullscreen();
+          else this.scale.startFullscreen();
+        }).container.setDepth(50);
+    }
+  }
+
+  /** Écarte les deux chips d'après leur largeur RÉELLE. Des X en dur les faisaient
+   *  se chevaucher dès que la police est remontée sur petit écran (ADR-015). */
+  private spreadCurrencies() {
+    const gap = 34;
+    const wa = this.chipShards.text.width, wb = this.chipSceaux.text.width;
+    const total = wa + gap + wb;
+    this.chipShards.container.setX(400 - total / 2 + wa / 2);
+    this.chipSceaux.container.setX(400 + total / 2 - wb / 2);
   }
 
   private refreshCurrencies() {
     const p = this.profileSvc.get();
     this.chipShards.setText(`Éclats : ${p.shards}`);
     this.chipSceaux.setText(`Sceaux : ${p.sceaux}`);
+    if (this.chipShards.container.scene) this.spreadCurrencies();
   }
 
   // ---------- Intro lore (première visite) ----------
@@ -162,14 +188,19 @@ export class MenuScene extends Phaser.Scene {
     top: number, defs: { id: T; label: string }[], active: T, onPick: (id: T) => void,
   ): number {
     const h = touchSize(32);
-    const w = touchSize(130);
-    const gap = 12;
-    const totalW = defs.length * w + (defs.length - 1) * gap;
+    const gap = 14;
     const cy = top + 10 + h / 2;
-    defs.forEach((t, i) => {
-      const x = 400 - totalW / 2 + w / 2 + i * (w + gap);
-      this.panel!.add(uiButton(this, x, cy, t.label,
-        { w, h, gold: active === t.id, fontSize: 15 }, () => onPick(t.id)).container);
+    // Les boutons s'élargissent pour contenir leur libellé (ADR-015) : on les crée
+    // d'abord, puis on les positionne d'après leur largeur RÉELLE. Calculer les X
+    // avant les faisait se toucher dès que la police est remontée.
+    const made = defs.map(t => uiButton(this, 0, cy, t.label,
+      { w: touchSize(130), h, gold: active === t.id, fontSize: 15 }, () => onPick(t.id)));
+    const totalW = made.reduce((s, b) => s + b.w, 0) + gap * (made.length - 1);
+    let x = 400 - totalW / 2;
+    made.forEach((b) => {
+      b.container.setX(x + b.w / 2);
+      x += b.w + gap;
+      this.panel!.add(b.container);
     });
     return cy + h / 2;
   }
