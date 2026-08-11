@@ -17,6 +17,7 @@ import type { ProfileService } from "../meta/profile";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
 import { touchSize, viewport } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
+import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
 import { DECOR_FRAMES, enemyView, heroView, tileFor, towerView } from "./sprites";
@@ -133,6 +134,11 @@ export class GameScene extends Phaser.Scene {
     // le débord hors zone de jeu reste du terrain, jamais du noir (ADR-010).
     const v = viewport();
     const grass = this.add.tileSprite(v.left, v.top, v.width, v.height, TEX.td, tileFor("grass").frame).setOrigin(0, 0);
+    // La tuile Kenney est d'un vert vif quasi fluo qui écrase tout et jure avec la
+    // palette parchemin/or. `setTint` seul ne suffit pas : il MULTIPLIE, donc il
+    // assombrit sans désaturer (mesuré à l'écran). Il est complété plus bas par un
+    // voile chaud posé sur TOUT le terrain (ADR-014).
+    grass.setTint(0xc7d8a8);
     cont.add(grass);
 
     // Décor : buissons/plantes dispersés (déterministe par chapitre), évite routes (segments) et slots.
@@ -152,7 +158,11 @@ export class GameScene extends Phaser.Scene {
       if (blocked(x, y)) continue;
       // Surtout des buissons ronds discrets (131) ; plante moyenne (132) ; grande (134) rare.
       const fr = i % 5 < 3 ? DECOR_FRAMES[0]! : i % 5 === 3 ? DECOR_FRAMES[1]! : DECOR_FRAMES[2]!;
-      cont.add(this.add.image(Math.round(x), Math.round(y), TEX.td, fr).setScale(0.38 + (i % 3) * 0.12).setAlpha(0.9));
+      // Le décor se perdait dans l'herbe. C'est l'OMBRE PORTÉE qui le détache, pas
+      // une teinte sombre — teinté, il virait à la tache noire (essayé, rejeté).
+      const sc = 0.38 + (i % 3) * 0.12;
+      cont.add(this.add.ellipse(Math.round(x), Math.round(y) + 6, 30 * sc, 11 * sc, 0x24301c, 0.3));
+      cont.add(this.add.image(Math.round(x), Math.round(y), TEX.td, fr).setScale(sc));
     }
 
     // Routes non-portail : bande de terre continue (tuiles estampées le long de la polyligne).
@@ -161,11 +171,17 @@ export class GameScene extends Phaser.Scene {
       this.stampPath(cont, p.waypoints);
     }
 
+    // Voile d'harmonisation, posé SUR l'herbe, le décor et les routes : lavés
+    // ensemble, ils forment une prairie cohérente. Appliqué à l'herbe seule, il
+    // laissait le décor et les pads en vert fluo par-dessus un sol assourdi.
+    cont.add(this.add.rectangle(v.left, v.top, v.width, v.height, 0x7a6b44, 0.42).setOrigin(0, 0));
+
     this.buildBattlefieldFrame(cont);
 
     // Marqueurs de slot vide : plateforme de tour (sous les entités, masquée si tour posée).
+    // Teintés pour rester dans la même gamme que le sol voilé.
     this.slotMarkers = this.ch.map.slots.map(s =>
-      this.add.image(s.x, s.y, TEX.td, tileFor("pad").frame).setScale(0.85).setDepth(50),
+      this.add.image(s.x, s.y, TEX.td, tileFor("pad").frame).setScale(0.85).setDepth(50).setTint(0xbfc8a0),
     );
   }
 
@@ -176,6 +192,15 @@ export class GameScene extends Phaser.Scene {
    *  Ajouté au container de terrain : détruit et reconstruit avec lui au resize. */
   private buildBattlefieldFrame(cont: Phaser.GameObjects.Container) {
     const v = viewport();
+
+    // Vignette sur la zone de jeu : concentre le regard au centre et évite l'aplat
+    // uniforme d'herbe d'un bord à l'autre (ADR-014).
+    ensureBackdropTextures(this);
+    if (this.textures.exists(TEX_VIGNETTE)) {
+      cont.add(this.add.image(GAME_W / 2, GAME_H / 2, TEX_VIGNETTE)
+        .setDisplaySize(GAME_W, GAME_H).setAlpha(0.55));
+    }
+
     const g = this.add.graphics();
     g.fillStyle(0x0d0906, 0.55);
     if (v.top < 0) g.fillRect(v.left, v.top, v.width, -v.top);
