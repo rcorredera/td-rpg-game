@@ -1,0 +1,5 @@
+<!-- Chroniques — bannière à queue d'aronde frappée d'une étoile.
+     Remplace un cor, qui se lisait comme un poisson une fois agrandi. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path fill="#fff" fill-rule="evenodd" d="M13 6h38v40L32 58 13 46V6zm7 7v29l12 7.6L44 42V13H20zm12 4.5 2.7 5.8 6.3.8-4.6 4.4 1.2 6.3L32 31.8l-5.6 3 1.2-6.3L23 24.1l6.3-.8 2.7-5.8z"/>
+</svg>

@@ -1,0 +1,18 @@
+<!-- Archerie de rang 3 — plus haute, deux étages, créneaux et double bannière.
+     L'amélioration doit se VOIR sur la carte, pas seulement dans le menu. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g stroke="#241a12" stroke-width="2.6" stroke-linejoin="round">
+    <ellipse cx="32" cy="57" rx="21" ry="6" fill="#7d786c"/>
+    <path d="M18 34h28v22H18z" fill="#b9b3a4"/>
+    <path d="M16 30h32v6H16z" fill="#8a8577"/>
+    <path d="M22 20h20v10H22z" fill="#b9b3a4"/>
+    <path d="M32 2 46 20H18z" fill="#3f6fa8"/>
+  </g>
+  <path d="M16 30h4v-5h4v5h4v-5h4v5h4v-5h4v5h4v-5h4v5" fill="#b9b3a4" stroke="#241a12" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M28 40h8v13h-8z" fill="#241a12"/>
+  <path d="M29 22h6v6h-6z" fill="#241a12"/>
+  <path d="M31 0h2v5h-2z" fill="#e8b84b"/>
+  <path d="M33 0h9l-3 3 3 3h-9z" fill="#c4453f" stroke="#241a12" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M14 34h2v9h-2zM48 34h2v9h-2z" fill="#e8b84b"/>
+  <path d="M16 34h6l-2 2.5 2 2.5h-6zM46 34h-6l2 2.5-2 2.5h6z" fill="#c4453f" stroke="#241a12" stroke-width="1.4" stroke-linejoin="round"/>
+</svg>
