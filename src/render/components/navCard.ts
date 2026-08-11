@@ -13,7 +13,12 @@ import { uiFramedPanel } from "./panel";
 export interface UiNavCardOpts {
   w?: number;
   h?: number;
+  /** Clé de texture d'icône (registre `render/icons.ts`) — jamais un emoji :
+   *  le rendu des emoji dépend de l'OS et sort en couleurs qui jurent avec la
+   *  palette (ADR-012). */
   icon: string;
+  /** Teinte de l'icône. Par défaut, celle du titre. */
+  iconColor?: number;
   title: string;
   titleColor?: string;
   sub: string;
@@ -44,9 +49,12 @@ export function uiNavCard(scene: Phaser.Scene, x: number, y: number, opts: UiNav
   highlight.setVisible(false);
   container.add(highlight);
 
-  const iconX = -w / 2 + 30;
+  const iconX = -w / 2 + 34;
   const textX = -w / 2 + 75;
-  container.add(scene.add.text(iconX, 0, opts.icon, { fontSize: "26px" }).setOrigin(0.5));
+  const glyph = Math.min(30, h * 0.44);
+  container.add(
+    scene.add.image(iconX, 0, opts.icon).setDisplaySize(glyph, glyph).setTint(opts.iconColor ?? ACCENT.goldSoft),
+  );
   container.add(scene.add.text(textX, -16, opts.title, { fontSize: "19px", color: opts.titleColor ?? TEXT.gold, fontFamily: FONT_BODY }));
   container.add(scene.add.text(textX, 9, opts.sub, { fontSize: "12px", color: TEXT.dim, fontFamily: FONT_BODY }));
 

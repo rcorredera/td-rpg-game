@@ -16,6 +16,7 @@ import type { EnemyState, PlayableChapter, RunState, SimEvent, TowerState } from
 import type { ProfileService } from "../meta/profile";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
 import { touchSize, viewport } from "./viewport";
+import { ICON, preloadIcons } from "./icons";
 import { uiButton, uiPanel } from "./components";
 import { preloadSprites, TEX } from "./assets";
 import { DECOR_FRAMES, enemyView, heroView, tileFor, towerView } from "./sprites";
@@ -103,7 +104,7 @@ export class GameScene extends Phaser.Scene {
     this.castleHitAt = -9999;
   }
 
-  preload() { preloadUi(this); preloadSprites(this); }
+  preload() { preloadUi(this); preloadSprites(this); preloadIcons(this); }
 
   create() {
     setupCamera(this);
@@ -419,8 +420,12 @@ export class GameScene extends Phaser.Scene {
 
     // --- Groupe gauche : état du run (lecture seule) ---
     mk("gold", xL + 50, "");
-    mk("castle", xL + 140, "");
-    mk("wave", xL + 235, "", 15);
+    // Icône du registre plutôt qu'un emoji 🏰 : rendu identique sur tout OS et
+    // teintable (elle vire au rouge quand la base souffre — cf. update()).
+    this.hudIcons["castle"] = this.add.image(xL + 108, cy, ICON.castle).setDisplaySize(17, 17);
+    this.hud.add(this.hudIcons["castle"]!);
+    mk("castle", xL + 148, "");
+    mk("wave", xL + 243, "", 15);
 
     // --- Groupe droit : actions, posées de droite à gauche ---
     // Les sorts occupent l'extrémité (les plus utilisés en combat), puis les
@@ -505,8 +510,10 @@ export class GameScene extends Phaser.Scene {
     const r = this.run;
     this.hudTexts["gold"]?.setText(`◆ ${r.gold}`).setColor("#e8c252");
     const castlePct = r.castleHp / r.castleHpMax;
-    this.hudTexts["castle"]?.setText(`🏰 ${r.castleHp}/${r.castleHpMax}`)
+    const castleTint = castlePct > 0.55 ? 0xf0e6d2 : castlePct > 0.25 ? 0xe8c252 : 0xc0392b;
+    this.hudTexts["castle"]?.setText(`${r.castleHp}/${r.castleHpMax}`)
       .setColor(castlePct > 0.55 ? C.uiText : castlePct > 0.25 ? "#e8c252" : "#c0392b");
+    this.hudIcons["castle"]?.setTint(castleTint);
     this.hudTexts["wave"]?.setText(`Vague ${Math.max(0, r.waveIndex + 1)}/${this.ch.waves.length}`);
     const waveReady = r.phase === "building";
     this.hudTexts["nextWave"]?.setAlpha(waveReady ? 1 : 0.35);

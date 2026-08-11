@@ -10,6 +10,7 @@ import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
 import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
 import { touchSize, viewport } from "./viewport";
+import { ICON, preloadIcons } from "./icons";
 import { ACCENT, TEXT } from "./theme";
 import {
   layoutCursor, uiButton, uiChip, uiListRow, uiModal, uiNavCard, uiPanel, uiSectionHeader,
@@ -42,7 +43,7 @@ export class MenuScene extends Phaser.Scene {
 
   constructor() { super("menu"); }
   init(data: { profileSvc: ProfileService }) { this.profileSvc = data.profileSvc; }
-  preload() { preloadUi(this); }
+  preload() { preloadUi(this); preloadIcons(this); }
 
   create() {
     setupCamera(this);
@@ -79,7 +80,7 @@ export class MenuScene extends Phaser.Scene {
       body: LORE_INTRO,
       dimAlpha: 0.9,
       buttons: [{
-        label: "🛡 Prendre le commandement", w: 340, gold: true,
+        label: "Prendre le commandement", w: 320, gold: true,
         onClick: () => {
           this.profileSvc.markIntroSeen();
           modal.close();
@@ -142,15 +143,15 @@ export class MenuScene extends Phaser.Scene {
     const total = CONTENT.chapters.length;
     const storyDone = this.profileSvc.storyCompleted();
     const entries: { icon: string; title: string; sub: string; view: View; rift?: boolean }[] = [
-      { icon: "📜", title: "Histoire", sub: wonCount > 0 ? `${wonCount}/${total} chapitres conquis` : "Chapitre 1 : La Route du Bastion", view: "story" },
+      { icon: ICON.story, title: "Histoire", sub: wonCount > 0 ? `${wonCount}/${total} chapitres conquis` : "Chapitre 1 : La Route du Bastion", view: "story" },
       {
-        icon: storyDone ? "🌀" : "🔒", title: "Failles infinies",
+        icon: storyDone ? ICON.rift : ICON.locked, title: "Failles infinies",
         sub: storyDone ? "Vagues sans fin, gloire au plus endurant — bientôt" : "Se débloque en achevant l'Histoire",
         view: "rifts", rift: true,
       },
-      { icon: "🛡", title: "Armurerie", sub: "Arsenal, forge des tours et sorts du héros", view: "shop" },
-      { icon: "📖", title: "Bestiaire", sub: `Connaître l'ennemi, c'est déjà le vaincre — ${this.profileSvc.get().bestiary.length}/${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
-      { icon: "📯", title: "Chroniques", sub: "Vos hauts faits de guerre", view: "chronicles" },
+      { icon: ICON.armory, title: "Armurerie", sub: "Arsenal, forge des tours et sorts du héros", view: "shop" },
+      { icon: ICON.bestiary, title: "Bestiaire", sub: `Connaître l'ennemi, c'est déjà le vaincre — ${this.profileSvc.get().bestiary.length}/${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
+      { icon: ICON.chronicles, title: "Chroniques", sub: "Vos hauts faits de guerre", view: "chronicles" },
     ];
     // Empilement d'après la hauteur EFFECTIVE des cartes : sur mobile elles grandissent
     // pour rester tapables, un pas en dur les ferait se chevaucher (ADR-011).
@@ -161,6 +162,7 @@ export class MenuScene extends Phaser.Scene {
       p.add(uiNavCard(this, 400, y, {
         icon: e.icon, title: e.title, sub: e.sub,
         titleColor: e.rift ? TEXT.rift : TEXT.gold,
+        iconColor: e.rift ? (storyDone ? 0xb07cc6 : ACCENT.locked) : ACCENT.goldSoft,
         accent: e.rift ? ACCENT.dimBorder : ACCENT.gold,
         onSelect: () => this.showView(e.view),
       }).container);
@@ -202,11 +204,11 @@ export class MenuScene extends Phaser.Scene {
         p.add(this.add.text(110, y + 2, "Croisez cette créature au combat pour compléter sa page.", { fontSize: "12px", color: DIM, ...TXT }));
         return;
       }
-      p.add(this.add.text(110, y - 26, `${e.name}${e.flying ? "  🪽" : ""}`, { fontSize: "17px", color: GOLD, ...TXT }));
+      p.add(this.add.text(110, y - 26, `${e.name}${e.flying ? "  ·  volant" : ""}`, { fontSize: "17px", color: GOLD, ...TXT }));
       p.add(this.add.text(110, y - 5, e.lore, { fontSize: "11px", color: DIM, ...TXT, lineSpacing: 2 }));
       const stats = [
-        `❤ ${e.hp} PV`, `🏃 ${e.speed}`, `◆ ${e.goldReward}`,
-        `🏰 -${e.damageToCastle} PV`, e.meleeDps > 0 ? `⚔ ${e.meleeDps}/s` : "⚔ inoffensif au contact",
+        `❤ ${e.hp} PV`, `Vitesse ${e.speed}`, `◆ ${e.goldReward}`,
+        `Base -${e.damageToCastle} PV`, e.meleeDps > 0 ? `⚔ ${e.meleeDps}/s` : "⚔ inoffensif au contact",
       ].join("    ");
       p.add(this.add.text(110, y + 23, stats, { fontSize: "12px", color: LIGHT, ...TXT }));
     });
@@ -256,7 +258,7 @@ export class MenuScene extends Phaser.Scene {
       const title = `${i + 1}. ${unlocked || won ? ch.name : "???"}`;
       const trailing = unlocked
         ? { label: won ? "Rejouer" : "⚔ Se battre", onClick: () => this.scene.start("game", { profileSvc: this.profileSvc, chapterIndex: i }) }
-        : { label: ch.playable ? "🔒 Verrouillé" : "Bientôt" };
+        : { label: ch.playable ? "Verrouillé" : "Bientôt" };
       const probe = uiListRow(this, 400, 0, { w: 640, h: 38, title, trailing, state });
       probe.container.setY(rowsCursor.next(probe.h, 4));
       if (won) {
@@ -282,16 +284,21 @@ export class MenuScene extends Phaser.Scene {
       p.add(this.add.text(400, 290,
         "Les Failles ne s'ouvrent qu'aux vainqueurs.\n\nAchevez l'Histoire — terrassez le Roi-Charogne —\net leur seuil vous sera révélé.",
         { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-      p.add(uiChip(this, 400, 410, {
-        icon: "🔒", text: `${this.profileSvc.get().chaptersWon.length}/${CONTENT.chapters.length} chapitres conquis`,
+      const locked = uiChip(this, 412, 410, {
+        text: `${this.profileSvc.get().chaptersWon.length}/${CONTENT.chapters.length} chapitres conquis`,
         fontSize: 16, color: TEXT.dim, pill: true,
-      }).container);
+      });
+      p.add(locked.container);
+      p.add(this.add.image(412 - locked.text.width / 2 - 18, 410, ICON.locked)
+        .setDisplaySize(17, 17).setTint(ACCENT.dimBorder));
       return;
     }
     p.add(this.add.text(400, 280,
       "Au-delà des terres connues, les Failles déversent\ndes hordes sans fin. Nul n'en est revenu —\nseuls les noms des plus endurants survivent,\ngravés dans les Chroniques.",
       { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-    p.add(uiChip(this, 400, 400, { icon: "🌀", text: "Bientôt", fontSize: 20, color: TEXT.rift, pill: true }).container);
+    const soon = uiChip(this, 408, 400, { text: "Bientôt", fontSize: 20, color: TEXT.rift, pill: true });
+    p.add(soon.container);
+    p.add(this.add.image(408 - soon.text.width / 2 - 20, 400, ICON.rift).setDisplaySize(21, 21).setTint(0xb07cc6));
     p.add(this.add.text(400, 460, "Mode v1 : scaling agressif, modificateurs de Faille, leaderboard.",
       { fontSize: "12px", color: TEXT.dim, ...TXT }).setOrigin(0.5));
   }

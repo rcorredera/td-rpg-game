@@ -8,6 +8,7 @@
 | `kenney-td/` | **Tower Defense (top-down)** — planche `sheet.png` 64×64 (tourelles, tanks, avions, tuiles, FX) — **SKIN ACTIF** | Kenney (kenney.nl) | **CC0** | kenney.nl (zip officiel) |
 | `kenney-tiny/` | Tiny Dungeon + Tiny Town — 16×16 — skin médiéval **alternatif** (inactif) | Kenney (kenney.nl) | **CC0** | kenney.nl (zip officiel) |
 | `icons/` | Icônes de sorts (tornado, flying-flag, arrow-cluster, arrow-flights) | **Lorc** — game-icons.net | **CC BY 3.0** ⚠ crédit obligatoire | raw.githubusercontent.com/game-icons/icons |
+| `icons/ui-*.svg` | Icônes d'UI (parchemin, bouclier, livre, bannière, vortex, cadenas, donjon) | **projet Bastion** | **maison** — aucun crédit tiers | dessinées pour le projet (ADR-012) |
 | `../fonts/` | Cinzel (titres, capitales gravées) + Alegreya (textes) | Natanael Gama / Juan Pablo del Peral | **OFL 1.1** | github.com/google/fonts |
 
 CC0 = domaine public : usage commercial autorisé, crédit non obligatoire (mais sympa : « Kenney.nl »).
