@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover : le canvas occupe l'écran jusque sous l'encoche, et
+         env(safe-area-inset-*) devient lisible (render/viewport.ts, ADR-010). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Bastion — TD RPG (prototype v0)</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #1a140e; height: 100%; overflow: hidden; }
+      #game { width: 100%; height: 100%; }
+
+      /* Invite à tourner l'appareil : Bastion se joue en paysage (ADR-010).
+         Piloté en CSS pur — réagit à la rotation sans passer par Phaser, et le
+         run continue de tourner dessous (rien n'est mis en pause ni détruit). */
+      #rotate {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: max(24px, env(safe-area-inset-top)) 32px max(24px, env(safe-area-inset-bottom));
+        background: #1a140e;
+        color: #e8c252;
+        text-align: center;
+        font-family: "Cinzel", "Times New Roman", serif;
+      }
+      #rotate .glyph { font-size: 56px; line-height: 1; }
+      #rotate .title { font-size: 22px; margin: 0; }
+      #rotate .sub { font-size: 15px; color: #a89878; margin: 0; font-family: "Alegreya", Georgia, serif; }
+      /* `pointer: coarse` limite l'invite aux écrans tactiles : une fenêtre de
+         bureau étroite reste jouable telle quelle. */
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotate { display: flex; }
+      }
+    </style>
+    <script type="module" crossorigin src="/td-rpg-game/pr-16/assets/index-siLXmYKo.js"></script>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="rotate">
+      <div class="glyph">⟳</div>
+      <p class="title">Tournez votre appareil</p>
+      <p class="sub">Le Bastion se défend en paysage.</p>
+    </div>
+  </body>
+</html>
