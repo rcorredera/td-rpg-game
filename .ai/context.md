@@ -20,6 +20,15 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
+- **Banc d'essai (ADR-018)** : `npm run balance` mesure le jeu sans y jouer — fiches ennemis/tours,
+  pression par vague, santé de la méta, et un joueur artificiel (3 politiques) sur les 10 chapitres.
+  `src/balance/`, hors bundle. Les formules qui doublent celles de la sim sont verrouillées par des
+  **tests miroirs** (comparaison à la sim, pas à des valeurs écrites à la main) — sans eux l'outil
+  pourrait mentir sans rien casser. **Constats non encore corrigés** : récompense quasi identique
+  d'un chapitre à l'autre (ch.10 = ×1,11 le ch.1) donc farm du ch.1 optimal ; armurerie et sorts
+  saturés en 2 runs ; difficulté non monotone (ch.3 perdu, ch.4-9 gagnés) ; 1 800-3 800 or inutilisé
+  au ch.10 (6 emplacements partout) ; Sceaux indexés sur les kills du héros alors que son bon
+  placement en fait moins. Détail et chiffres : GDD §Équilibrage.
 - **Équilibrage** : passe nº1 faite (hpExponent 1.12, or +30%, départ 160, specs boostées) — calibrée
   au **bot de simulation** (stratégies scriptées sur la sim headless, méthode décrite au GDD §Décisions).
 - **UI** : rendu HiDPI (texte net), polices embarquées **Cinzel** (titres/boutons) + **Alegreya**

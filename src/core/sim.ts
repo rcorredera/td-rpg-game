@@ -417,12 +417,19 @@ export function computeResult(s: RunState, c: ContentPack): RunResult {
   const ch = chapterOf(s, c);
   const victory = s.phase === "victory";
   const wavesCleared = victory ? ch.waves.length : Math.max(0, s.waveIndex);
-  const base = wavesCleared * 5;
-  const hpBonus = victory ? Math.round((s.castleHp / ch.map.castleHp) * 20) : 0;
-  const victoryBonus = victory ? 25 : 0;
-  const shards = Math.max(s.waveIndex >= 0 ? 3 : 0, base + hpBonus + victoryBonus);
+  const r = c.rewards;
+  const base = wavesCleared * r.shardsPerWave;
+  const hpBonus = victory ? Math.round((s.castleHp / ch.map.castleHp) * r.shardsCastleBonus) : 0;
+  const victoryBonus = victory ? r.shardsVictoryBonus : 0;
+  // Un chapitre tardif doit payer plus qu'un rejeu du premier, sinon la méta se
+  // remplit en farmant la carte la plus facile (GDD §Économie).
+  const chapterMult = r.shardsChapterMult?.[s.chapterIndex] ?? 1;
+  const shards = Math.max(
+    s.waveIndex >= 0 ? r.shardsFloor : 0,
+    Math.round((base + hpBonus + victoryBonus) * chapterMult),
+  );
   // Sceaux (monnaie héros) : récompense l'usage actif du héros (GDD §Économie)
-  const sceaux = Math.floor(s.heroKills / 4) + (victory ? 2 : 0);
+  const sceaux = Math.floor(s.heroKills / r.heroKillsPerSceau) + (victory ? r.sceauxVictoryBonus : 0);
   // Étoiles (GDD §Étoiles) : 3 = sans-faute, 1 = héros mort ET château très entamé, 2 = entre les deux
   let stars = 0;
   if (victory) {
