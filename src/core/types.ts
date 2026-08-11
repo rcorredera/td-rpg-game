@@ -134,6 +134,25 @@ export type ChapterDef =
 
 export type PlayableChapter = Extract<ChapterDef, { playable: true }>;
 
+/** Barème des gains de fin de run, en Éclats (méta défense) et Sceaux (méta héros). */
+export interface RewardRules {
+  /** Éclats par vague nettoyée. */
+  shardsPerWave: number;
+  /** Éclats de victoire, au prorata des PV de château restants (0 si défaite). */
+  shardsCastleBonus: number;
+  /** Éclats forfaitaires de victoire. */
+  shardsVictoryBonus: number;
+  /** Plancher : une défaite après au moins une vague entamée paie toujours ça. */
+  shardsFloor: number;
+  /** Multiplicateur d'Éclats par chapitre (index = chapitre). Absent = 1 :
+   *  sans lui, finir le chapitre 9 rapporte autant que rejouer le chapitre 1. */
+  shardsChapterMult?: number[];
+  /** Kills du héros nécessaires pour 1 Sceau. */
+  heroKillsPerSceau: number;
+  /** Sceaux forfaitaires de victoire. */
+  sceauxVictoryBonus: number;
+}
+
 export interface ContentPack {
   towers: Record<string, TowerDef>;
   enemies: Record<string, EnemyDef>;
@@ -148,6 +167,10 @@ export interface ContentPack {
   forge: { damageMultPerLevel: number; upgradeCosts: number[] };
   /** Économie in-run : taux de remboursement à la vente, or de départ (GDD §Économie). */
   economy: { sellRefundRate: number; startingGold: number };
+  /** Récompenses de fin de run (GDD §Économie). Vivaient en dur dans `computeResult`,
+   *  hors de portée d'ADR-003 : c'est ce qui les a laissées dériver pendant que le
+   *  reste de l'équilibrage bougeait. Toute la méta-progression se règle ici. */
+  rewards: RewardRules;
   /** Notation en étoiles (GDD §Étoiles) : seuil de "château beaucoup touché" (part des PV perdus). */
   rating: { heavyDamagePct: number };
 }

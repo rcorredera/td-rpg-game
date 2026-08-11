@@ -257,6 +257,18 @@ export const CONTENT: ContentPack = {
   // Vente de tour : 65% de l'investissement remboursé (GDD : 60-70%, à affiner au playtest).
   economy: { sellRefundRate: 0.65, startingGold: 160 },
 
+  // Barème de fin de run. Ces valeurs vivaient en dur dans `computeResult` : hors
+  // de portée d'ADR-003, elles n'ont jamais été rééquilibrées avec le reste, d'où
+  // une méta saturée en 2 runs (mesurable via `npm run balance`).
+  rewards: {
+    shardsPerWave: 5,
+    shardsCastleBonus: 20,
+    shardsVictoryBonus: 25,
+    shardsFloor: 3,
+    heroKillsPerSceau: 4,
+    sceauxVictoryBonus: 2,
+  },
+
   // Étoiles : "château beaucoup touché" = plus de 50% des PV perdus (GDD §Étoiles).
   rating: { heavyDamagePct: 0.5 },
 

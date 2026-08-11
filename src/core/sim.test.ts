@@ -35,6 +35,7 @@ function mkContent(over: {
     forge: { damageMultPerLevel: 0.10, upgradeCosts: [20, 45] },
     economy: { sellRefundRate: 0.65, startingGold: 120 },
     rating: { heavyDamagePct: 0.5 },
+    rewards: CONTENT.rewards,
   };
 }
 
@@ -289,7 +290,8 @@ describe("sim core", () => {
       accountSpell: { damage: 0, radius: 1, cooldownS: 1 },
       forge: { damageMultPerLevel: 0, upgradeCosts: [] },
       economy: { sellRefundRate: 0.65, startingGold: 120 },
-    rating: { heavyDamagePct: 0.5 },
+      rating: { heavyDamagePct: 0.5 },
+      rewards: CONTENT.rewards,
     };
     const s = createRun(MINI, FRESH_PROFILE);
     s.hero.pos = { x: -999, y: -999 }; s.hero.target = { x: -999, y: -999 }; // hors de portée
