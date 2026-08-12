@@ -45,9 +45,9 @@ export interface UiTheme {
 const EMBER: UiTheme = {
   id: "ember", name: "Braise",
   backdrop: 0x1a140e, marbleLight: "rgba(74,58,38,0.10)", marbleDark: "rgba(18,13,9,0.14)",
-  panel: 0x3a2f22, panelDim: 0x2c241b, btn: 0x8a7350,
+  panel: 0x6f5c3e, panelDim: 0x50422d, btn: 0x9c8259,
   accent: 0xc9a227, accentSoft: 0xe8c252,
-  locked: 0x4a3f2e, lockedFill: 0x221b12, dimBorder: 0x6b5a3e, won: 0x27ae60,
+  locked: 0x4a3f2e, lockedFill: 0x3b3122, dimBorder: 0x6b5a3e, won: 0x27ae60,
   textAccent: "#e8c252", textDim: "#a89878", textLight: "#f0e6d2",
 };
 
@@ -56,9 +56,9 @@ const EMBER: UiTheme = {
 const NOCTURNE: UiTheme = {
   id: "nocturne", name: "Nocturne",
   backdrop: 0x111726, marbleLight: "rgba(64,84,122,0.12)", marbleDark: "rgba(7,10,18,0.16)",
-  panel: 0x27324a, panelDim: 0x1b2334, btn: 0x51648c,
+  panel: 0x5a6d94, panelDim: 0x3c4a66, btn: 0x6a80ab,
   accent: 0xc9a227, accentSoft: 0xf0cf6a,
-  locked: 0x33405c, lockedFill: 0x151b28, dimBorder: 0x4a5c80, won: 0x2fbf71,
+  locked: 0x33405c, lockedFill: 0x2a3348, dimBorder: 0x4a5c80, won: 0x2fbf71,
   textAccent: "#f0cf6a", textDim: "#93a5c4", textLight: "#e9eff9",
 };
 
@@ -67,9 +67,9 @@ const NOCTURNE: UiTheme = {
 const ARCANE: UiTheme = {
   id: "arcane", name: "Arcane",
   backdrop: 0x181026, marbleLight: "rgba(96,64,132,0.12)", marbleDark: "rgba(10,6,16,0.16)",
-  panel: 0x362a4d, panelDim: 0x241a35, btn: 0x6d5590,
+  panel: 0x7a629e, panelDim: 0x4e3e6b, btn: 0x866bab,
   accent: 0xc79a5e, accentSoft: 0xf0c98a,
-  locked: 0x40325c, lockedFill: 0x1c1429, dimBorder: 0x5c4880, won: 0x3fc08a,
+  locked: 0x40325c, lockedFill: 0x33284a, dimBorder: 0x5c4880, won: 0x3fc08a,
   textAccent: "#f0c98a", textDim: "#ab99c9", textLight: "#efe7fa",
 };
 

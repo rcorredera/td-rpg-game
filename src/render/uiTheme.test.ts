@@ -35,6 +35,16 @@ describe("thèmes d'interface", () => {
       expect(gap, `thème « ${t.id} » : contraste texte/panneau`).toBeGreaterThan(0.45);
       const dimGap = luminance(fromCss(t.textDim)) - luminance(t.panel);
       expect(dimGap, `thème « ${t.id} » : contraste texte secondaire`).toBeGreaterThan(0.15);
+      // L'ACCENT (titres, libellés dorés) n'était pas gardé — seuls `textLight` et
+      // `textDim` l'étaient. En éclaircissant les panneaux pour que la matière du
+      // parchemin ressorte, l'or de « Braise » s'est retrouvé sur un panneau de
+      // même dominante chaude : lisibilité en chute sans qu'aucun test ne bronche.
+      // Un titre doit se détacher PLUS franchement que du texte secondaire.
+      const accentGap = luminance(fromCss(t.textAccent)) - luminance(t.panel);
+      // Seuil calé au-dessus du cas réel qui a motivé ce test (0,348 pour un
+      // panneau « Braise » trop clair) : un seuil qui laisse passer le défaut
+      // qu'on vient de corriger ne garantit rien.
+      expect(accentGap, `thème « ${t.id} » : contraste accent/panneau`).toBeGreaterThan(0.36);
     }
   });
 
