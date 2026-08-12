@@ -239,18 +239,20 @@ que soit la façon de jouer. C'est la colonne « Charge » du rapport de pressio
 
 Organisée dans l'**Armurerie** (+ Chroniques) — voir §Lore & présentation pour la structure :
 
-**Arsenal** — 6 unlocks en Éclats, **420 au total** (ADR-021). À 3 unlocks et 120 Éclats, le catalogue se vidait en 2 runs pour 10 chapitres. Chaque entrée porte **ses propres effets** dans le content : ajouter un palier ne touche plus à la simulation.
+**Arsenal** — 6 paliers en Éclats, **450 au total**. La méta vend des **paliers de puissance**, plus des tours entières (ADR-024) : verrouiller la Tour de givre rendait le chapitre 1 très rude, et **un joueur bloqué ne gagne pas de quoi se débloquer**. Les trois tours sont donc constructibles dès la première partie, ainsi que leurs trois rangs ; c'est le **rang 4** qui s'achète. Chaque entrée porte ses propres effets dans le content : ajouter un palier ne touche plus à la simulation (ADR-021).
 
-| Unlock | Coût | Intention |
+| Palier | Coût | Intention |
 |---|---|---|
-| Tour de givre | 30 | Le joueur joue ~2 runs avec 2 tours, puis débloque le 3e pilier (courbe d'apprentissage) |
 | Remparts renforcés | 40 | +10 PV château, premier palier passif |
 | Pluie de flèches | 55 | Sort de compte castable en run, gros cooldown |
-| Coffre de guerre | 75 | +70 or au départ — ouvre des ouvertures de partie différentes |
+| Doctrines de siège | 60 | Débloque les spécialisations de rang 4 |
+| Coffre de guerre | 75 | +70 or au départ — ouvre d'autres ouvertures de partie |
 | Serment du Chevalier | 90 | Héros de retour 3 s plus tôt : soutient le rôle de bloqueur que paient les Sceaux |
 | Donjon de pierre | 130 | +15 PV château, palier tardif |
 
-**Forge** — amélioration des troupes en Éclats : par tour, **4 niveaux** à +10% de dégâts permanents (20/45/80/130 ◆). Une tour verrouillée à la méta doit d'abord être débloquée. Puits de dépense long terme des Éclats — étendu après constat de playtest : tout était acheté au ch.4.
+**Boss** — un boss de vague doit être **abattu**. S'il atteint le château, la partie est perdue : un ennemi ordinaire coûte des PV, un boss coûte le niveau. Auparavant il en était simplement retiré, la vague se terminait et la victoire tombait quand même. Leurs multiplicateurs ont baissé d'environ 30 % en conséquence — les rendre éliminatoires change leur fonction.
+
+**Forge** — amélioration des troupes en Éclats : par tour, **6 rangs** à +10% de dégâts permanents (20/45/80/130/200/300 ◆), soit **2 325 Éclats** au total. C'est le puits long terme des Éclats ET la **condition du dernier chapitre** : le boss final n'est pas abattable avec des tours jamais forgées, quelle que soit la stratégie (testé, ADR-024). Sans cette contrainte la Forge n'était qu'un puits facultatif — mesuré, elle ne pesait que 5 PV de château cumulés sur les dix chapitres.
 
 ## Équipement du héros — design (implémentation : session dédiée)
 

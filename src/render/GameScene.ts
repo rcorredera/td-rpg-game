@@ -317,6 +317,15 @@ export class GameScene extends Phaser.Scene {
           color: afford ? C.uiText : "#e74c3c",
           cb: afford ? () => { upgradeTower(this.run, CONTENT, slotIdx); this.closeMenu(); } : null,
         });
+      } else if (!existing.specId && def.specs?.length && !this.run.canSpecialize) {
+        // Rang 4 verrouillé à la méta : le dire, plutôt que d'afficher des options
+        // que le clic ignorerait en silence (ADR-024).
+        entries.push({
+          label: "★ Spécialisations verrouillées",
+          sub: "À débloquer à l'Armurerie : « Doctrines de siège ».",
+          color: "#8a8577",
+          cb: null,
+        });
       } else if (!existing.specId && def.specs?.length) {
         // Niveau 4 : choix de spécialisation (exclusif et définitif), avec deltas de stats
         const cur = def.levels[def.levels.length - 1]!;

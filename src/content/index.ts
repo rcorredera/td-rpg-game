@@ -153,10 +153,10 @@ function makeWaves(num: number, secondPath: boolean): WaveDef[] {
     // coup toute défense bâtie sur les catapultes (GDD §Boss final).
     if (w === waveCount - 1) {
       wave.miniBoss = d >= 9
-        ? { enemyId: "wyvern", hpMult: 2.4 }
+        ? { enemyId: "wyvern", hpMult: 2.8 }
         : has("golem")
-          ? { enemyId: "warlord", hpMult: 1.5 + 0.12 * d }
-          : { enemyId: "brute", hpMult: 3 + 0.35 * d };
+          ? { enemyId: "warlord", hpMult: 1.3 + 0.09 * d }
+          : { enemyId: "brute", hpMult: 2.4 + 0.25 * d };
     }
     waves.push(wave);
   }
@@ -243,7 +243,11 @@ export const CONTENT: ContentPack = {
       ],
       groundOnly: false, splashRadius: 70,
       slow: { factor: 0.45, duration: 2.2 },
-      requiresUnlock: "tower_frost", // GDD : débloquée à la méta après ~2 runs
+      // Disponible d'emblée (ADR-024). Elle était verrouillée derrière un achat, ce
+      // qui rendait le chapitre 1 très rude sans elle — et un joueur qui n'y arrive
+      // pas ne gagne pas de quoi la débloquer. Le triangle de rôles n'a de sens que
+      // si ses trois côtés sont posables dès la première partie.
+      requiresUnlock: null,
       // Niveau 4 : aura de zone OU givre qui brûle
       specs: [
         {
@@ -362,7 +366,7 @@ export const CONTENT: ContentPack = {
         { spawns: [{ enemyId: "bat", count: 10, intervalS: 0.55, delayS: 1 }, { enemyId: "orc", count: 4, intervalS: 1.4, delayS: 4 }] },
         { spawns: [{ enemyId: "brute", count: 3, intervalS: 3.5, delayS: 1 }, { enemyId: "goblin", count: 10, intervalS: 0.55, delayS: 3 }] },
         { spawns: [{ enemyId: "orc", count: 8, intervalS: 0.85, delayS: 1 }, { enemyId: "bat", count: 8, intervalS: 0.65, delayS: 5 }] },
-        { spawns: [{ enemyId: "goblin", count: 14, intervalS: 0.4, delayS: 1 }, { enemyId: "brute", count: 2, intervalS: 4.0, delayS: 4 }], miniBoss: { enemyId: "brute", hpMult: 4 } },
+        { spawns: [{ enemyId: "goblin", count: 14, intervalS: 0.4, delayS: 1 }, { enemyId: "brute", count: 2, intervalS: 4.0, delayS: 4 }], miniBoss: { enemyId: "brute", hpMult: 2.6 } },
       ],
     },
     // Ch.2-10 : contenu généré provisoire, noms placeholders (à remplacer via docs/LORE.md).
@@ -411,7 +415,10 @@ export const CONTENT: ContentPack = {
 
   // Forge (méta, Éclats) : +10% de dégâts par niveau, 4 niveaux par tour
   // (puits d'Éclats long terme — coûts agressifs assumés).
-  forge: { damageMultPerLevel: 0.10, upgradeCosts: [20, 45, 80, 130] },
+  // Forge : 6 rangs par tour au lieu de 4, coûts en escalier (2 325 Éclats au total
+  // contre 825). C'est le puits long terme des Éclats, et surtout la condition du
+  // dernier chapitre : sans elle le boss final n'est pas abattable (ADR-024).
+  forge: { damageMultPerLevel: 0.10, upgradeCosts: [20, 45, 80, 130, 200, 300] },
 
   // Vente de tour : 65% de l'investissement remboursé (GDD : 60-70%, à affiner au playtest).
   economy: { sellRefundRate: 0.65, startingGold: 160 },
@@ -419,9 +426,14 @@ export const CONTENT: ContentPack = {
   // Armurerie. Six paliers échelonnés plutôt que trois : à 120 Éclats au total, le
   // catalogue se vidait en 2 runs alors que le jeu compte 10 chapitres (ADR-021).
   // Chaque entrée porte son effet — la simulation les applique sans les connaître.
+  // La méta vend des PALIERS DE PUISSANCE, plus des tours entières. Verrouiller la
+  // Tour de givre rendait le chapitre 1 très rude tant qu'on ne l'avait pas achetée —
+  // et un joueur bloqué ne peut pas gagner de quoi se débloquer. Les trois tours sont
+  // donc disponibles d'emblée, et c'est leur PLAFOND DE NIVEAU qui progresse : rang 2
+  // d'entrée, rang 3 puis spécialisations à l'armurerie (ADR-024).
   unlocks: [
-    { id: "tower_frost", name: "Tour de givre", desc: "Ralentit les ennemis en zone. Le 3e pilier de votre défense.", cost: 30 },
     { id: "castle_hp_1", name: "Remparts renforcés", desc: "+10 PV de château à chaque partie.", cost: 40, castleHp: 10 },
+    { id: "tower_specs", name: "Doctrines de siège", desc: "Débloque les spécialisations de rang 4.", cost: 60, allowSpecialize: true },
     { id: "spell_arrow_rain", name: "Pluie de flèches", desc: "Sort de compte utilisable en partie (longue recharge).", cost: 55, accountSpell: true },
     { id: "war_chest", name: "Coffre de guerre", desc: "+70 pièces d'or au début de chaque bataille.", cost: 75, startingGold: 70 },
     { id: "hero_respawn_1", name: "Serment du Chevalier", desc: "Le héros revient au combat 3 s plus tôt.", cost: 90, heroRespawnS: 3 },
