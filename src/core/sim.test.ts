@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import type { ContentPack, Profile, SimEvent, Vec2 } from "./types";
 import { BATTLEFIELD } from "./types";
-import { CONTENT } from "../content/index";
+import { CONTENT, UNLOCKS } from "../content/index";
 import { buildTower, castAccountSpell, castWhirlwind, clampToBattlefield, computeResult, createRun, moveHero, sellRefundFor, sellTower, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
 
 const FRESH_PROFILE: Profile = {
@@ -10,12 +10,17 @@ const FRESH_PROFILE: Profile = {
   unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
 };
 
+/** Profil doté de tous les paliers d'armurerie : rang 3 et spécialisations ouverts.
+ *  Les tests de rang 4 en ont besoin depuis qu'ils sont derrière un achat (ADR-024). */
+const FULL_PROFILE: Profile = { ...FRESH_PROFILE, unlocks: UNLOCKS.map(u => u.id) };
+
 /** Content minimal paramétrable pour tester un mécanisme isolé. */
 function mkContent(over: {
   towers?: ContentPack["towers"];
   enemies?: ContentPack["enemies"];
   waves?: { enemyId: string; count: number }[];
   slots?: { x: number; y: number }[];
+  miniBoss?: { enemyId: string; hpMult: number };
 }): ContentPack {
   return {
     towers: over.towers ?? {},
@@ -27,7 +32,10 @@ function mkContent(over: {
         paths: [{ waypoints: [{ x: 0, y: 0 }, { x: 600, y: 0 }] }],
         slots: over.slots ?? [],
       },
-      waves: [{ spawns: (over.waves ?? []).map(w => ({ ...w, intervalS: 0.5, delayS: 0 })) }],
+      waves: [{
+        spawns: (over.waves ?? []).map(w => ({ ...w, intervalS: 0.5, delayS: 0 })),
+        ...(over.miniBoss ? { miniBoss: over.miniBoss } : {}),
+      }],
     }],
     hero: CONTENT.hero,
     scaling: { hpExponent: 1, castleDamageExponent: 0.5 },
@@ -36,7 +44,9 @@ function mkContent(over: {
     economy: { sellRefundRate: 0.65, startingGold: 120 },
     rating: { heavyDamagePct: 0.5 },
     rewards: CONTENT.rewards,
-    unlocks: [],
+    // Catalogue réel : c'est lui qui porte les effets des paliers, donc `FULL_PROFILE`
+    // n'ouvre le rang 4 que si le content minimal connaît les mêmes déblocages.
+    unlocks: CONTENT.unlocks,
   };
 }
 
@@ -56,10 +66,89 @@ describe("sim core", () => {
     expect(s.gold).toBeGreaterThan(0);
   });
 
-  it("refuse de construire une tour verrouillée à la méta", () => {
-    const s = createRun(CONTENT, FRESH_PROFILE);
-    expect(buildTower(s, CONTENT, 0, "tower_frost", [])).toBe(false);
-    expect(buildTower(s, CONTENT, 0, "tower_frost", ["tower_frost"])).toBe(true);
+  it("laisse les trois tours constructibles dès la première partie", () => {
+    // La Tour de givre était verrouillée derrière un achat : le chapitre 1 devenait
+    // très rude sans elle, et un joueur bloqué ne gagne pas de quoi se débloquer.
+    // Le triangle de rôles n'a de sens que si ses trois côtés sont posables (ADR-024).
+    for (const [i, id] of Object.keys(CONTENT.towers).entries()) {
+      const s = createRun(CONTENT, FRESH_PROFILE);
+      s.gold = 10000;
+      expect(buildTower(s, CONTENT, i, id, []), `${id} non constructible`).toBe(true);
+    }
+  });
+
+  it("refuse toujours une tour dont le content exige un déblocage", () => {
+    // Le mécanisme reste en place pour de futures tours ; c'est son emploi sur la
+    // Tour de givre qui était mauvais, pas le mécanisme.
+    const locked = mkContent({
+      towers: {
+        secret: { id: "secret", name: "S", lore: "", costs: [10], levels: [{ range: 100, damage: 1, fireRate: 1 }], groundOnly: false, splashRadius: 0, requiresUnlock: "key" },
+      },
+      slots: [{ x: 10, y: 40 }],
+    });
+    const s = createRun(locked, FRESH_PROFILE);
+    expect(buildTower(s, locked, 0, "secret", [])).toBe(false);
+    expect(buildTower(s, locked, 0, "secret", ["key"])).toBe(true);
+  });
+
+  it("ouvre les trois rangs de tour d'emblée, mais pas les spécialisations", () => {
+    // La méta vend des paliers de puissance plutôt que des tours entières. Les trois
+    // rangs du content sont accessibles sans rien acheter — plafonner au rang 2
+    // rendait le chapitre 1 lui-même infranchissable — et c'est le rang 4 que
+    // « Doctrines de siège » débloque (ADR-024).
+    const withSpecs: Profile = { ...FRESH_PROFILE, unlocks: ["tower_specs"] };
+    const maxRank = (p: Profile) => {
+      const s = createRun(CONTENT, p);
+      s.gold = 10000;
+      buildTower(s, CONTENT, 0, "tower_archer", p.unlocks);
+      while (upgradeTower(s, CONTENT, 0)) { /* monte tant que c'est permis */ }
+      return s.towers[0]!.level;
+    };
+    expect(maxRank(FRESH_PROFILE)).toBe(CONTENT.towers.tower_archer!.levels.length);
+
+    const canSpec = (p: Profile) => {
+      const s = createRun(CONTENT, p);
+      s.gold = 10000;
+      buildTower(s, CONTENT, 0, "tower_archer", p.unlocks);
+      while (upgradeTower(s, CONTENT, 0)) { /* rang max */ }
+      return specializeTower(s, CONTENT, 0, "spec_volley");
+    };
+    expect(canSpec(FRESH_PROFILE)).toBe(false);
+    expect(canSpec(withSpecs)).toBe(true);
+  });
+
+  it("fait PERDRE si un boss atteint le château", () => {
+    // Avant, un boss qui touchait le château en était simplement retiré : la vague
+    // se terminait et la victoire tombait quand même. On pouvait donc gagner un
+    // niveau en laissant passer son boss (ADR-024).
+    const c = mkContent({
+      enemies: { walker: WALKER },
+      waves: [{ enemyId: "walker", count: 1 }],
+      miniBoss: { enemyId: "walker", hpMult: 1 },
+    });
+    const s = createRun(c, FRESH_PROFILE);
+    parkHero(s);
+    startNextWave(s, c);
+    for (let i = 0; i < 60 * 40 && s.phase === "wave"; i++) tick(s, c, 1 / 60);
+    expect(s.phase).toBe("defeat");
+    expect(s.castleHp).toBeGreaterThan(0); // ce n'est pas la perte de PV qui tue, c'est le boss
+  });
+
+  it("laisse gagner quand le boss est abattu", () => {
+    // Le pendant : la règle ne doit pas rendre les niveaux infranchissables.
+    const c = mkContent({
+      towers: { bow: { id: "bow", name: "B", lore: "", costs: [10], levels: [SNIPER], groundOnly: false, splashRadius: 0, requiresUnlock: null } },
+      enemies: { walker: WALKER },
+      waves: [{ enemyId: "walker", count: 1 }],
+      slots: [{ x: 300, y: 0 }],
+      miniBoss: { enemyId: "walker", hpMult: 1 },
+    });
+    const s = createRun(c, FRESH_PROFILE);
+    parkHero(s);
+    buildTower(s, c, 0, "bow", []);
+    startNextWave(s, c);
+    for (let i = 0; i < 60 * 40 && s.phase === "wave"; i++) tick(s, c, 1 / 60);
+    expect(s.phase).toBe("victory");
   });
 
   it("débite l'or à la construction et refuse si insuffisant", () => {
@@ -164,7 +253,7 @@ describe("sim core", () => {
         uid: s.nextUid++, defId: "orc", pathIndex: 0,
         hp: lv1.damage + 1, maxHp: lv1.damage + 1, // survit au niv.1, meurt au niv.3
         dist: 0, pos: { ...s.hero.pos }, slowUntil: 0, slowFactor: 1,
-        burnUntil: 0, burnPctPerS: 0, blocked: false, alive: true,
+        burnUntil: 0, burnPctPerS: 0, blocked: false, alive: true, boss: false,
       });
       return s.enemies[s.enemies.length - 1]!;
     };
@@ -188,7 +277,7 @@ describe("sim core", () => {
   });
 
   it("spécialisation : réservée au niveau max, payée en or, définitive ; comptée à la revente", () => {
-    const s = createRun(CONTENT, FRESH_PROFILE);
+    const s = createRun(CONTENT, FULL_PROFILE);
     s.gold = 10000;
     buildTower(s, CONTENT, 0, "tower_archer", []);
     expect(specializeTower(s, CONTENT, 0, "spec_volley")).toBe(false); // niveau 1 : refusé
@@ -238,7 +327,7 @@ describe("sim core", () => {
       },
     };
     const c = mkContent({ towers, enemies: { walker: { ...WALKER, hp: 100, speed: 5 } }, waves: [{ enemyId: "walker", count: 1 }], slots: [{ x: 50, y: 40 }] });
-    const s = createRun(c, FRESH_PROFILE);
+    const s = createRun(c, FULL_PROFILE);
     s.gold = 1000;
     parkHero(s);
     buildTower(s, c, 0, "fire", []);
@@ -257,7 +346,7 @@ describe("sim core", () => {
       },
     };
     const c = mkContent({ towers, enemies: { walker: { ...WALKER, hp: 100000 } }, waves: [{ enemyId: "walker", count: 1 }], slots: [{ x: 300, y: 40 }] });
-    const s = createRun(c, FRESH_PROFILE);
+    const s = createRun(c, FULL_PROFILE);
     s.gold = 1000;
     parkHero(s);
     buildTower(s, c, 0, "frost", []);

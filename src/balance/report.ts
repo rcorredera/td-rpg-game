@@ -203,7 +203,8 @@ export function autoplayReport(reports: AutoplayReport[]): string {
  * stratégie que si la tour censée le contrer vaut la peine d'être construite.
  */
 export function compositionReport(c: ContentPack, useHero = true): string {
-  const unlocked = { unlocks: Object.values(c.towers).flatMap(t => (t.requiresUnlock ? [t.requiresUnlock] : [])) };
+  // Paliers ouverts : on compare des compositions à puissance égale, pas des états de méta.
+  const unlocked = { unlocks: c.unlocks.map(u => u.id) };
   const ids = Object.keys(c.towers);
   const compos: { name: string; towers: string[] }[] = [
     ...ids.map(id => ({ name: `${c.towers[id]!.name} seule`, towers: [id] })),

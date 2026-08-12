@@ -93,10 +93,10 @@ describe("autoplay — compositions de défense", () => {
     expect(mix.result.castleHpLeft).not.toBe(solo.result.castleHpLeft);
   });
 
-  it("ignore une tour non débloquée sans planter", () => {
-    // `tower_frost` exige un unlock : imposée sans lui, le bot doit se rabattre,
-    // pas boucler à vide ni construire une tour interdite.
-    const r = autoplayChapter(CONTENT, 0, { policy: "spread", towers: ["tower_frost"] });
+  it("ignore une tour inexistante sans planter", () => {
+    // Imposée une composition impossible, le bot doit se rabattre — pas boucler à
+    // vide ni construire une tour absente du content.
+    const r = autoplayChapter(CONTENT, 0, { policy: "spread", towers: ["tower_inconnue"] });
     expect(r.waves.length).toBeGreaterThan(0);
     expect(r.waves[r.waves.length - 1]!.towers).toBe(0);
   });
@@ -108,7 +108,9 @@ describe("rôles des tours — diversifier doit payer", () => {
   // chapitres sur 10 quand un mélange n'en gagnait que 5 (ADR-020). Choisir sa tour
   // n'était pas une décision, c'était un piège — et aucun ennemi « anti-X » n'aurait
   // rien changé tant que la tour censée le contrer ne valait pas d'être construite.
-  const unlocked = { unlocks: ["tower_frost"] };
+  // Les trois tours sont libres ; ce sont les PALIERS qui s'achètent (ADR-024). Le
+  // banc compare donc des compositions à paliers égaux, sinon il mesurerait la méta.
+  const unlocked = { unlocks: ["tower_specs"] };
   const run = (towers: string[]) => {
     const rs = autoplayAll(CONTENT, { policy: "spread", towers, profile: unlocked });
     return {
@@ -143,7 +145,7 @@ describe("progression — la méta doit être la condition de la fin du jeu", ()
   const LAST = CONTENT.chapters.filter(c => c.playable).length - 1;
   const veteran = {
     unlocks: UNLOCKS.map(u => u.id),
-    forge: { tower_archer: 4, tower_catapult: 4, tower_frost: 4 },
+    forge: Object.fromEntries(Object.keys(CONTENT.towers).map(id => [id, CONTENT.forge.upgradeCosts.length])),
     skills: { whirlwind: 4, rally: 4 },
   };
 
@@ -154,11 +156,26 @@ describe("progression — la méta doit être la condition de la fin du jeu", ()
     expect(raw.result.victory).toBe(false);
   });
 
-  it("le rend franchissable avec l'armurerie et la forge", () => {
-    // Le pendant du test précédent : une méta indispensable mais insuffisante
-    // rendrait le dernier chapitre simplement impossible.
-    const vet = autoplayChapter(CONTENT, LAST, { policy: "spread", profile: veteran });
-    expect(vet.result.victory).toBe(true);
+  it("rend le dernier chapitre infranchissable SANS la Forge, quelle que soit la stratégie", () => {
+    // On ne doit pas pouvoir finir le jeu avec des tours jamais forgées. Sans cette
+    // garantie, la Forge n'est qu'un puits d'Éclats facultatif : mesuré, elle ne
+    // pesait que 5 PV de château cumulés sur les dix chapitres (ADR-024).
+    const noForge = { unlocks: UNLOCKS.map(u => u.id), skills: { whirlwind: 4, rally: 4 } };
+    for (const policy of POLICIES) {
+      const r = autoplayChapter(CONTENT, LAST, { policy, profile: noForge });
+      expect(r.result.victory, `chapitre ${LAST + 1} gagné sans Forge en « ${policy} »`).toBe(false);
+    }
+  });
+
+  it("le rend franchissable avec la méta complète, en jouant bien", () => {
+    // Le pendant des deux tests précédents : une méta indispensable mais insuffisante
+    // rendrait le dernier chapitre simplement impossible. Il faut donc qu'AU MOINS
+    // une façon de jouer l'emporte — et non toutes : le boss final exige la Forge
+    // *et* une bonne implantation, ce qui est exactement l'enjeu voulu d'un dernier
+    // chapitre (ADR-024).
+    const wins = POLICIES.filter(policy =>
+      autoplayChapter(CONTENT, LAST, { policy, profile: veteran }).result.victory);
+    expect(wins.length, "aucune stratégie ne franchit le dernier chapitre").toBeGreaterThan(0);
   });
 
   it("introduit une créature de plus à chaque chapitre du début de campagne", () => {

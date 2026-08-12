@@ -167,6 +167,10 @@ export interface UnlockDef {
   heroRespawnS?: number;
   /** Débloque un sort de compte utilisable en partie. */
   accountSpell?: boolean;
+  /** Relève le niveau maximal auquel une tour peut être améliorée en partie. */
+  maxTowerLevel?: number;
+  /** Débloque le rang 4 : les spécialisations de tour. */
+  allowSpecialize?: boolean;
 }
 
 /** Barème des gains de fin de run, en Éclats (méta défense) et Sceaux (méta héros). */
@@ -265,6 +269,9 @@ export interface EnemyState {
   burnUntil: number; burnPctPerS: number;
   blocked: boolean;
   alive: boolean;
+  /** Boss de vague. Il doit être ABATTU : le laisser atteindre le château fait
+   *  perdre la partie, alors qu'un ennemi ordinaire ne coûte que des PV (ADR-024). */
+  boss: boolean;
 }
 
 export interface TowerState {
@@ -302,7 +309,11 @@ export interface RunState {
   /** PV max du château (base + bonus méta) — pour la barre de PV du rendu. */
   castleHpMax: number;
   waveIndex: number;     // vague courante (0-based), -1 avant la première
-  pendingSpawns: { at: number; enemyId: string; hpMult: number; pathIndex: number }[];
+  pendingSpawns: { at: number; enemyId: string; hpMult: number; pathIndex: number; boss?: boolean }[];
+  /** Niveau maximal auquel une tour peut être améliorée (paliers d'armurerie, ADR-024). */
+  maxTowerLevel: number;
+  /** Le rang 4 (spécialisations) est-il débloqué à la méta ? */
+  canSpecialize: boolean;
   enemies: EnemyState[];
   towers: TowerState[];
   hero: HeroState;

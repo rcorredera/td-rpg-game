@@ -12,6 +12,16 @@ import type {
 
 const FIXED_DT = 1 / 60; // pas de temps fixe : la vitesse x2 multiplie le nb de ticks, pas dt
 
+/**
+ * Niveau auquel un joueur sans aucun achat méta peut déjà monter ses tours.
+ *
+ * À 2, le chapitre 1 lui-même devenait imperdable-ment dur (mesuré : défaite à 9
+ * vagues sur 10, avec 400 pièces inutilisables faute de quoi les dépenser). Les
+ * trois rangs du content sont donc ouverts d'emblée ; c'est le rang 4 — les
+ * spécialisations — que l'armurerie vend (ADR-024).
+ */
+const BASE_MAX_TOWER_LEVEL = 3;
+
 /** Chapitre du run. Un run ne peut exister que sur un chapitre playable. */
 function chapterOf(s: RunState, c: ContentPack): PlayableChapter {
   const ch = c.chapters[s.chapterIndex];
@@ -55,6 +65,10 @@ export function createRun(content: ContentPack, profile: Profile, chapterIndex =
   const sum = (pick: (u: UnlockDef) => number | undefined) =>
     owned.reduce((a, u) => a + (pick(u) ?? 0), 0);
   const castleBonus = sum(u => u.castleHp);
+  // Plafond de niveau : la méta ne débloque plus des TOURS entières mais des paliers
+  // de puissance. Une tour manquante rendait le chapitre 1 injouable tant qu'on ne
+  // l'avait pas achetée ; un plafond, lui, laisse toujours jouer (ADR-024).
+  const maxTowerLevel = Math.max(BASE_MAX_TOWER_LEVEL, ...owned.map(u => u.maxTowerLevel ?? 0));
   const heroStart = ch.map.paths[0]!.waypoints[0]!;
   return {
     time: 0, timeAcc: 0, speed: 1, phase: "building", chapterIndex,
@@ -73,6 +87,8 @@ export function createRun(content: ContentPack, profile: Profile, chapterIndex =
     },
     accountSpellReady: 0,
     hasAccountSpell: owned.some(u => u.accountSpell),
+    maxTowerLevel,
+    canSpecialize: owned.some(u => u.allowSpecialize),
     nextUid: 1, kills: 0, heroKills: 0, heroDeaths: 0, heroBlockSeconds: 0,
     skillLevels: { whirlwind: profile.skills?.whirlwind ?? 1, rally: profile.skills?.rally ?? 1 },
     forgeLevels: { ...profile.forge },
@@ -103,7 +119,7 @@ export function specOf(c: ContentPack, t: TowerState): TowerSpecDef | undefined 
 /** Niveau 4 : transforme une tour au niveau max en l'une de ses spécialisations (choix définitif). */
 export function specializeTower(s: RunState, c: ContentPack, slotIndex: number, specId: string): boolean {
   const t = s.towers.find(t => t.slotIndex === slotIndex);
-  if (!t || t.specId) return false;
+  if (!t || t.specId || !s.canSpecialize) return false;
   const def = c.towers[t.defId]!;
   if (t.level < def.levels.length) return false;
   const spec = def.specs?.find(sp => sp.id === specId);
@@ -117,7 +133,8 @@ export function upgradeTower(s: RunState, c: ContentPack, slotIndex: number): bo
   const t = s.towers.find(t => t.slotIndex === slotIndex);
   if (!t) return false;
   const def = c.towers[t.defId]!;
-  if (t.level >= def.levels.length) return false;
+  // Deux plafonds : celui du content (nombre de niveaux) et celui de la méta.
+  if (t.level >= Math.min(def.levels.length, s.maxTowerLevel)) return false;
   const cost = def.costs[t.level]!;
   if (s.gold < cost) return false;
   s.gold -= cost;
@@ -218,7 +235,7 @@ export function startNextWave(s: RunState, c: ContentPack): boolean {
   }
   if (wave.miniBoss) {
     const lastAt = Math.max(...s.pendingSpawns.map(p => p.at), s.time);
-    s.pendingSpawns.push({ at: lastAt + 2, enemyId: wave.miniBoss.enemyId, hpMult: hpMult * wave.miniBoss.hpMult, pathIndex: 0 });
+    s.pendingSpawns.push({ at: lastAt + 2, enemyId: wave.miniBoss.enemyId, hpMult: hpMult * wave.miniBoss.hpMult, pathIndex: 0, boss: true });
   }
   return true;
 }
@@ -294,7 +311,7 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
       s.enemies.push({
         uid: s.nextUid++, defId: p.enemyId, hp, maxHp: hp, pathIndex: p.pathIndex, dist: 0,
         pos: { ...ch.map.paths[p.pathIndex]!.waypoints[0]! }, slowUntil: 0, slowFactor: 1,
-        burnUntil: 0, burnPctPerS: 0, blocked: false, alive: true,
+        burnUntil: 0, burnPctPerS: 0, blocked: false, alive: true, boss: p.boss ?? false,
       });
       if (!s.seenEnemies.includes(p.enemyId)) s.seenEnemies.push(p.enemyId); // → Bestiaire
       s.pendingSpawns.splice(i, 1);
@@ -360,6 +377,10 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
       const dmg = Math.max(def.damageToCastle, Math.round(def.damageToCastle * strength));
       s.castleHp -= dmg;
       events.push({ type: "castleHit", damage: dmg });
+      // Un boss doit être ABATTU pour emporter le niveau. Sans cette règle, il
+      // suffisait de le laisser passer : atteindre le château le retirait du jeu,
+      // la vague se terminait et la victoire tombait quand même (ADR-024).
+      if (e.boss) { s.castleHp = Math.max(0, s.castleHp); s.phase = "defeat"; return; }
     }
   }
 
