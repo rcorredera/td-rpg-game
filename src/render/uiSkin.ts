@@ -54,6 +54,10 @@ interface Sheet {
   file: string;
   cols: readonly [readonly [number, number], readonly [number, number], readonly [number, number]];
   rows: readonly [readonly [number, number], readonly [number, number], readonly [number, number]];
+  /** Coin conservé, par planche. Un panneau peut s'offrir 16 px ; un BOUTON non :
+   *  à 36 de haut, deux coins de 16 n'en laissent que 4 de centre et la plaque
+   *  paraît écrasée. Doit rester ≤ la moitié du plus petit élément habillé. */
+  corner?: number;
 }
 
 interface Box { x: number; y: number; w: number; h: number }
@@ -82,18 +86,46 @@ const CORNER = 16;
  *  étirée par le nine-slice, 8 px suffisent et gardent la texture minuscule. */
 const MID = 8;
 
-const SHEETS: Record<string, Sheet> = {
-  ts_panel: {
-    file: "paper-regular.png",
-    cols: [[0, 64], [128, 64], [256, 64]],
-    rows: [[0, 64], [128, 64], [256, 64]],
-  },
+/** Toutes les planches carrées du pack partagent cette grille (pièces 64×64,
+ *  posées aux offsets 0/128/256 d'une planche de 320). */
+const SQUARE: Pick<Sheet, "cols" | "rows"> = {
+  cols: [[0, 64], [128, 64], [256, 64]],
+  rows: [[0, 64], [128, 64], [256, 64]],
 };
+
+const BTN_CORNER = 10;
+
+const SHEETS: Record<string, Sheet> = {
+  ts_panel: { file: "paper-regular.png", ...SQUARE },
+  ts_btn: { file: "btn-big-blue.png", ...SQUARE, corner: BTN_CORNER },
+  ts_btn_press: { file: "btn-big-blue-pressed.png", ...SQUARE, corner: BTN_CORNER },
+  ts_btn_primary: { file: "btn-big-red.png", ...SQUARE, corner: BTN_CORNER },
+  ts_btn_primary_press: { file: "btn-big-red-pressed.png", ...SQUARE, corner: BTN_CORNER },
+};
+
+/** Marge de nine-slice à passer à `scene.add.nineslice` pour une texture composée. */
+export function uiSkinInset(key: string): number {
+  return SHEETS[key]?.corner ?? CORNER;
+}
 
 /** Marge de nine-slice des textures composées ici. */
 export const UI_SKIN_INSET = CORNER;
 /** Clé de la texture de panneau (parchemin). */
 export const UI_SKIN_PANEL = "ts_panel";
+/** Boutons du pack : bleu au repos, rouge pour l'action principale, chacun avec
+ *  son état enfoncé. Contrairement au parchemin, ces planches sont COLORÉES et
+ *  ne se teintent donc pas par thème (`setTint` multiplie : un bleu ne peut pas
+ *  devenir doré) — elles portent leur propre gamme, assumée. */
+export const UI_SKIN_BTN = "ts_btn";
+export const UI_SKIN_BTN_PRESS = "ts_btn_press";
+export const UI_SKIN_BTN_PRIMARY = "ts_btn_primary";
+export const UI_SKIN_BTN_PRIMARY_PRESS = "ts_btn_primary_press";
+
+/** Le chrome du pack est-il disponible ? Sert aux composants à choisir entre
+ *  l'habillage dessiné et leur repli Kenney. */
+export function uiSkinActive(scene: Phaser.Scene): boolean {
+  return scene.textures.exists(UI_SKIN_PANEL);
+}
 
 /** À appeler dans le `preload()` de chaque scène qui affiche du chrome d'UI. */
 export function preloadUiSkin(scene: Phaser.Scene): void {
@@ -123,14 +155,15 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
     pctx.drawImage(img, 0, 0);
     const data = pctx.getImageData(0, 0, img.width, img.height).data;
 
-    const size = CORNER * 2 + MID;
+    const corner = sheet.corner ?? CORNER;
+    const size = corner * 2 + MID;
     const tex = scene.textures.createCanvas(key, size, size);
     if (!tex) continue;
     const ctx = tex.getContext();
     ctx.imageSmoothingEnabled = false;
 
-    const dx = [0, CORNER, CORNER + MID];
-    const dy = [0, CORNER, CORNER + MID];
+    const dx = [0, corner, corner + MID];
+    const dy = [0, corner, corner + MID];
 
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 3; c++) {
@@ -143,14 +176,14 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
         // jamais à son bord — un bord porte le contour, qui se répéterait en
         // couture une fois étiré. Colonnes/rangées extrêmes : on garde le coin
         // du bon côté, à la densité 1:1.
-        const sw = c === 1 ? MID : CORNER;
-        const sh = r === 1 ? MID : CORNER;
+        const sw = c === 1 ? MID : corner;
+        const sh = r === 1 ? MID : corner;
         const sx = c === 0 ? cell.x
           : c === 1 ? cell.x + Math.floor((cell.w - MID) / 2)
-          : cell.x + cell.w - CORNER;
+          : cell.x + cell.w - corner;
         const sy = r === 0 ? cell.y
           : r === 1 ? cell.y + Math.floor((cell.h - MID) / 2)
-          : cell.y + cell.h - CORNER;
+          : cell.y + cell.h - corner;
         ctx.drawImage(img, sx, sy, sw, sh, dx[c]!, dy[r]!, sw, sh);
       }
     }
