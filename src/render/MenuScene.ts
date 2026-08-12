@@ -12,11 +12,12 @@ import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT
 import { touchSize, viewport } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
+import { ensureTerrainTextures, grassTextureKey } from "./terrain";
 import { enemyView, towerView } from "./sprites";
 import { preloadSprites } from "./assets";
 import { ACCENT, TEXT } from "./theme";
 import {
-  layoutCursor, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiNavCard, uiPanel,
+  hubLayout, layoutCursor, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiPanel, uiTile,
   uiScrollList, uiSectionHeader,
   type LayoutCursor, type RowState, type UiChip, type UiScrollList,
 } from "./components";
@@ -290,29 +291,49 @@ export class MenuScene extends Phaser.Scene {
     const total = CONTENT.chapters.length;
     const storyDone = this.profileSvc.storyCompleted();
     const entries: { icon: string; title: string; sub: string; view: View; rift?: boolean }[] = [
-      { icon: ICON.story, title: "Histoire", sub: wonCount > 0 ? `${wonCount}/${total} chapitres conquis` : "Chapitre 1 : La Route du Bastion", view: "story" },
+      // Sous-titres COURTS : une tuile n'est pas une rangée de liste, la phrase y
+      // passe à la ligne et écrase l'icône. On y met l'état, pas la description —
+      // le détail appartient à l'écran qu'elle ouvre (ADR-025).
+      { icon: ICON.story, title: "Histoire", sub: wonCount > 0 ? `${wonCount} / ${total} chapitres conquis` : "Chapitre 1 · La Route du Bastion", view: "story" },
       {
         icon: storyDone ? ICON.rift : ICON.locked, title: "Failles infinies",
-        sub: storyDone ? "Vagues sans fin, gloire au plus endurant — bientôt" : "Se débloque en achevant l'Histoire",
+        sub: storyDone ? "Bientôt" : "Achevez l'Histoire",
         view: "rifts", rift: true,
       },
-      { icon: ICON.armory, title: "Armurerie", sub: "Arsenal, forge des tours et sorts du héros", view: "shop" },
-      { icon: ICON.bestiary, title: "Bestiaire", sub: `Connaître l'ennemi, c'est déjà le vaincre — ${this.profileSvc.get().bestiary.length}/${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
-      { icon: ICON.chronicles, title: "Chroniques", sub: "Vos hauts faits de guerre", view: "chronicles" },
+      { icon: ICON.armory, title: "Armurerie", sub: "Arsenal · Forge · Héros", view: "shop" },
+      { icon: ICON.bestiary, title: "Bestiaire", sub: `${this.profileSvc.get().bestiary.length} / ${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
+      { icon: ICON.chronicles, title: "Chroniques", sub: "Vos hauts faits", view: "chronicles" },
     ];
-    // Empilement d'après la hauteur EFFECTIVE des cartes : sur mobile elles grandissent
-    // pour rester tapables, un pas en dur les ferait se chevaucher (ADR-011).
-    const cardH = touchSize(68);
-    const cursor = layoutCursor(192 - cardH / 2);
-    entries.forEach((e) => {
-      const y = cursor.next(cardH, 12);
-      p.add(uiNavCard(this, 400, y, {
+    // Deux rangs de tuiles, disposés d'après la largeur RÉELLE de l'écran (ADR-025).
+    // Avant : cinq cartes identiques dans une colonne de 540 unités, quand le paysage
+    // mobile en offre ~1 300 — 44 % d'occupation, et aucune hiérarchie pour dire où
+    // aller. La disposition est calculée par `hubLayout`, pur et testé.
+    const v = viewport();
+    const [primary, ...rest] = entries;
+    const zoneW = Math.min(1180, v.width - 80);
+    const top = 150;
+    const zoneH = Math.max(220, Math.min(v.bottom - 30, 560) - top);
+    const layout = hubLayout(400, top + zoneH / 2, zoneW, zoneH, rest.length);
+
+    p.add(uiTile(this, layout.primary.x, layout.primary.y, {
+      w: layout.primary.w, h: layout.primary.h,
+      icon: primary!.icon, title: primary!.title, sub: primary!.sub,
+      primary: true,
+      progress: total > 0 ? wonCount / total : 0,
+      onSelect: () => this.showView(primary!.view),
+    }));
+
+    rest.forEach((e, i) => {
+      const box = layout.secondary[i]!;
+      p.add(uiTile(this, box.x, box.y, {
+        w: box.w, h: box.h,
         icon: e.icon, title: e.title, sub: e.sub,
         titleColor: e.rift ? TEXT.rift : TEXT.gold,
         iconColor: e.rift ? (storyDone ? 0xb07cc6 : ACCENT.locked) : ACCENT.goldSoft,
         accent: e.rift ? ACCENT.dimBorder : ACCENT.gold,
+        locked: e.rift && !storyDone,
         onSelect: () => this.showView(e.view),
-      }).container);
+      }));
     });
   }
 
@@ -405,6 +426,10 @@ export class MenuScene extends Phaser.Scene {
     // là où une grille les montre tous d'un coup (ADR-013).
     const scroll = this.scrollArea(top);
     const c = scroll.content;
+    // Les textures de sol sont générées à la demande côté jeu (ADR-023) ; l'écran
+    // Histoire en a besoin aussi pour l'aperçu des vignettes.
+    for (const ch of CONTENT.chapters) ensureTerrainTextures(this, ch.biome);
+
     const tiles = CONTENT.chapters.map((ch, i) => {
       const won = this.profileSvc.chapterWon(i);
       const unlocked = isUnlocked(i);
@@ -413,12 +438,16 @@ export class MenuScene extends Phaser.Scene {
         name: unlocked || won ? ch.name : "???",
         state: (won ? "done" : unlocked ? "normal" : "locked") as RowState,
         stars: won ? this.profileSvc.chapterStarsOf(i) : 0,
+        // Le lieu se découvre : un chapitre verrouillé garde son décor caché.
+        biomeTexture: unlocked || won ? grassTextureKey(ch.biome) : undefined,
         onSelect: unlocked
           ? () => this.scene.start("game", { profileSvc: this.profileSvc, chapterIndex: i })
           : undefined,
       };
     });
-    const grid = uiLevelGrid(this, 400, 6, tiles, Math.min(700, viewport().width - 60));
+    // La grille s'élargit avec l'écran : bornée à 700, elle laissait un tiers du
+    // paysage inutilisé alors qu'elle est l'écran le plus consulté du jeu (ADR-025).
+    const grid = uiLevelGrid(this, 400, 6, tiles, Math.min(1180, viewport().width - 60));
     c.add(grid.container);
 
     // Lore du prochain objectif (premier chapitre débloqué non conquis)

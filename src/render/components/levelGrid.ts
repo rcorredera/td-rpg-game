@@ -50,6 +50,13 @@ export interface LevelTile {
   state: RowState;
   /** Étoiles obtenues (0-3) ; non affichées si le niveau n'est pas conquis. */
   stars?: number;
+  /**
+   * Clé de texture de sol du chapitre — la vignette montre alors le LIEU (ADR-025).
+   * Dix cases numérotées identiques ne disent rien de ce qui attend le joueur ;
+   * un aperçu du biome les rend reconnaissables d'un coup d'œil. Omise sur un
+   * chapitre verrouillé : le lieu fait partie de ce qu'on découvre.
+   */
+  biomeTexture?: string;
   onSelect?: () => void;
 }
 
@@ -85,6 +92,19 @@ export function uiLevelGrid(
       w: layout.cellW, h: cellH, tint: colors.fill, borderColor: colors.border, radius: 10,
     });
     cell.add(panel);
+
+    // Aperçu du lieu, fortement assombri : il doit se deviner derrière le texte,
+    // pas lui disputer la lisibilité (le numéro reste l'information première).
+    if (t.biomeTexture && scene.textures.exists(t.biomeTexture)) {
+      // Rectangle en retrait plutôt qu'un masque arrondi : un masque géométrique
+      // travaille en coordonnées MONDE, or la grille vit dans un conteneur
+      // défilant — il se décalait et masquait tout. Le retrait suffit à ce que le
+      // cadre arrondi reste net par-dessus.
+      const inset = 7;
+      cell.add(scene.add.tileSprite(
+        0, 0, layout.cellW - inset * 2, cellH - inset * 2, t.biomeTexture,
+      ).setAlpha(0.4));
+    }
 
     // Numéro et nom empilés d'après leurs hauteurs réelles, le bloc étant remonté
     // pour laisser la place aux étoiles en bas.
