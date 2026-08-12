@@ -57,6 +57,18 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   7 emplacements moins concentrés restaurent les deux garanties (infranchissable sans
   Forge, franchissable avec). Tout changement de carte sur un chapitre à invariant de
   méta doit repasser `autoplay.test.ts`.
+- **Lisibilité des cartes / HUD mobile (ADR-028) — FAIT** : les 3 garanties géométriques
+  d'ADR-019/020 valident la jouabilité mécanique, pas la lisibilité. Un audit UX post-027
+  a trouvé les 9 cartes recouvertes par le HUD sur mobile (le HUD suit les bords RÉELS de
+  l'écran, `hudTop` ~410-455 en unités logiques sur mobile contre ~500 sur desktop — un
+  chemin sur trois et un emplacement sur deux invisibles ET non-tappables), et 27
+  emplacements plantés dans la route ou le sprite du château (rien ne testait de
+  PLANCHER de distance, seulement un plafond de couverture ≤130). `PLAY_SAFE_BOTTOM`
+  (`render/viewport.ts`) + 4 nouvelles garanties testées dans `datasheet.test.ts`
+  (zone jouable, clearance route ≥55, espacement dalles ≥75, clearance château ≥94).
+  ⚠ Retoucher le ch.10 pour la lisibilité a de nouveau cassé son invariant de méta —
+  toute retouche de `MapDef` sur un chapitre à garantie testée doit repasser
+  `autoplay.test.ts`, pas seulement les tests géométriques.
 - **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { CONTENT } from "../content/index";
 import { createRun, startNextWave, tick } from "../core/sim";
+import { BATTLEFIELD } from "../core/types";
 import type { ContentPack, Profile, RunState } from "../core/types";
+import { PLAY_SAFE_BOTTOM } from "../render/viewport";
 import {
-  allChapterStats, chapterStats, castleDamageOf, enemyHpAtWave, pathLength,
+  allChapterStats, chapterStats, castleDamageOf, distanceToPath, enemyHpAtWave, pathLength,
   playableChapter, slotCoverage, towerBurstDps, towerDps, towerInvestment,
   traversalSeconds, waveStats,
 } from "./datasheet";
@@ -164,6 +166,84 @@ describe("cartes — toute voie doit être défendable", () => {
       const ratio = Math.max(...lens) / Math.min(...lens);
       expect(ratio, `ch${i + 1} : voies de ${lens.map(Math.round).join(" et ")} px`)
         .toBeLessThan(1.25);
+    }
+  });
+});
+
+// ADR-028 : les 3 garanties ci-dessus valident la jouabilité MÉCANIQUE (le jeu
+// se joue), pas la lisibilité — une carte qui les satisfait peut quand même être
+// recouverte par le HUD sur mobile, ou avoir des tours plantées dans la route.
+describe("cartes — lisibilité et zone jouable (ADR-028)", () => {
+  // Demi-largeur de la dalle d'emplacement (`GameScene.buildTerrain`, 64×64).
+  const SLOT_HALF = 32;
+  // Demi-largeur de route (`PATH_WIDTH`, render/path.ts) + demi-largeur de dalle :
+  // en dessous, la dalle mord visuellement la route.
+  const MIN_SLOT_TO_PATH = 55;
+  // Deux dalles de 64 ont besoin d'au moins ça pour ne pas se chevaucher à l'écran.
+  const MIN_SLOT_TO_SLOT = 75;
+  // Sprite du château (`GameScene.buildCastle`) : 124×124 centré sur
+  // `(min(end.x, GAME_W-62), min(end.y, GAME_H-70) - 6)`.
+  function castleCenter(end: { x: number; y: number }) {
+    return { x: Math.min(end.x, BATTLEFIELD.w - 62), y: Math.min(end.y, BATTLEFIELD.h - 70) - 6 };
+  }
+  const CASTLE_HALF = 62;
+
+  it("ne pose aucun waypoint ni emplacement sous la limite jouable (HUD mobile)", () => {
+    for (let i = 0; i < CONTENT.chapters.length; i++) {
+      if (!CONTENT.chapters[i]!.playable) continue;
+      const ch = playableChapter(CONTENT, i);
+      for (const [lane, p] of ch.map.paths.entries()) {
+        for (const wp of p.waypoints) {
+          expect(wp.y, `ch${i + 1} voie ${lane + 1} : waypoint à y=${wp.y}`)
+            .toBeLessThanOrEqual(PLAY_SAFE_BOTTOM + 20);
+        }
+      }
+      for (const [idx, s] of ch.map.slots.entries()) {
+        expect(s.y, `ch${i + 1} emplacement ${idx + 1} : y=${s.y}`)
+          .toBeLessThanOrEqual(PLAY_SAFE_BOTTOM - SLOT_HALF);
+      }
+    }
+  });
+
+  it("garde chaque emplacement hors de la route (dalle qui ne mord pas)", () => {
+    for (let i = 0; i < CONTENT.chapters.length; i++) {
+      if (!CONTENT.chapters[i]!.playable) continue;
+      const ch = playableChapter(CONTENT, i);
+      for (const [idx, s] of ch.map.slots.entries()) {
+        const nearest = Math.min(...ch.map.paths.map(p => distanceToPath(s, p.waypoints)));
+        expect(nearest, `ch${i + 1} emplacement ${idx + 1} : à ${Math.round(nearest)}px de la route`)
+          .toBeGreaterThanOrEqual(MIN_SLOT_TO_PATH);
+      }
+    }
+  });
+
+  it("espace suffisamment les emplacements entre eux (dalles qui ne se chevauchent pas)", () => {
+    for (let i = 0; i < CONTENT.chapters.length; i++) {
+      if (!CONTENT.chapters[i]!.playable) continue;
+      const ch = playableChapter(CONTENT, i);
+      const slots = ch.map.slots;
+      for (let a = 0; a < slots.length; a++) {
+        for (let b = a + 1; b < slots.length; b++) {
+          const d = Math.hypot(slots[a]!.x - slots[b]!.x, slots[a]!.y - slots[b]!.y);
+          expect(d, `ch${i + 1} : emplacements ${a + 1} et ${b + 1} à ${Math.round(d)}px l'un de l'autre`)
+            .toBeGreaterThanOrEqual(MIN_SLOT_TO_SLOT);
+        }
+      }
+    }
+  });
+
+  it("garde chaque emplacement hors du sprite du château", () => {
+    for (let i = 0; i < CONTENT.chapters.length; i++) {
+      if (!CONTENT.chapters[i]!.playable) continue;
+      const ch = playableChapter(CONTENT, i);
+      const wps = ch.map.paths[0]!.waypoints;
+      const end = wps[wps.length - 1]!;
+      const c = castleCenter(end);
+      for (const [idx, s] of ch.map.slots.entries()) {
+        const d = Math.hypot(s.x - c.x, s.y - c.y);
+        expect(d, `ch${i + 1} emplacement ${idx + 1} : à ${Math.round(d)}px du château`)
+          .toBeGreaterThanOrEqual(CASTLE_HALF + SLOT_HALF);
+      }
     }
   });
 });
