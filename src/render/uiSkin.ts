@@ -37,12 +37,42 @@ const SRC = "assets/tiny-swords/ui";
  *  le nommer passerait par le namespace Phaser, donc par un import de valeur. */
 const NEAREST = 1 as Phaser.Textures.FilterMode;
 
-/** Bornes OPAQUES d'une planche, mesurées sur son canal alpha : [début, fin]
- *  inclus de chacune des trois colonnes et des trois rangées. */
+/**
+ * Découpe d'une planche : rectangles des CELLULES de la grille, `[origine,
+ * taille]` par colonne et par rangée.
+ *
+ * On décrit la grille, pas l'art : chaque pièce flotte dans sa cellule avec du
+ * vide autour, et pas de la même façon d'une pièce à l'autre. Une première
+ * version mesurait les bornes opaques par BANDE (union des trois pièces d'une
+ * rangée) et échantillonnait au bord de cette bande — ce qui attrapait du vide
+ * là où une pièce commence plus tard, et le contour de la voisine ailleurs :
+ * bandes transparentes en haut du panneau et couture verticale au milieu,
+ * visibles à l'écran. Les bornes sont donc mesurées PIÈCE PAR PIÈCE, à
+ * l'exécution.
+ */
 interface Sheet {
   file: string;
   cols: readonly [readonly [number, number], readonly [number, number], readonly [number, number]];
   rows: readonly [readonly [number, number], readonly [number, number], readonly [number, number]];
+}
+
+interface Box { x: number; y: number; w: number; h: number }
+
+/** Bornes opaques dans un rectangle de la planche, ou `null` si tout est vide. */
+function opaqueBounds(
+  data: Uint8ClampedArray, sheetW: number, x0: number, y0: number, w: number, h: number,
+): Box | null {
+  let minX = x0 + w, minY = y0 + h, maxX = x0 - 1, maxY = y0 - 1;
+  for (let y = y0; y < y0 + h; y++) {
+    for (let x = x0; x < x0 + w; x++) {
+      if (data[(y * sheetW + x) * 4 + 3]! <= 40) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return maxX < minX ? null : { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
 }
 
 /** Coin conservé, en pixels source. Doit rester ≤ la moitié du plus petit
@@ -55,8 +85,8 @@ const MID = 8;
 const SHEETS: Record<string, Sheet> = {
   ts_panel: {
     file: "paper-regular.png",
-    cols: [[12, 63], [128, 191], [256, 307]],
-    rows: [[20, 63], [128, 191], [256, 300]],
+    cols: [[0, 64], [128, 64], [256, 64]],
+    rows: [[0, 64], [128, 64], [256, 64]],
   },
 };
 
@@ -81,7 +111,17 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
     if (scene.textures.exists(key)) continue;
     const sheetKey = `${key}__sheet`;
     if (!scene.textures.exists(sheetKey)) continue; // planche pas encore chargée
-    const src = scene.textures.get(sheetKey).getSourceImage() as CanvasImageSource;
+    const img = scene.textures.get(sheetKey).getSourceImage() as HTMLImageElement;
+
+    // Relevé du canal alpha de la planche, une fois : c'est lui qui dit où
+    // commence et finit CHAQUE pièce dans sa cellule.
+    const probe = document.createElement("canvas");
+    probe.width = img.width;
+    probe.height = img.height;
+    const pctx = probe.getContext("2d");
+    if (!pctx) continue;
+    pctx.drawImage(img, 0, 0);
+    const data = pctx.getImageData(0, 0, img.width, img.height).data;
 
     const size = CORNER * 2 + MID;
     const tex = scene.textures.createCanvas(key, size, size);
@@ -89,19 +129,29 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
     const ctx = tex.getContext();
     ctx.imageSmoothingEnabled = false;
 
-    // Coordonnées source de chaque bande : coin gauche/haut pris au début de
-    // l'art, coin droit/bas pris à sa FIN moins le coin (l'art n'est pas centré
-    // dans sa cellule — le parchemin commence à x=12 et finit à x=307).
-    const sx = [sheet.cols[0][0], sheet.cols[1][0], sheet.cols[2][1] + 1 - CORNER];
-    const sy = [sheet.rows[0][0], sheet.rows[1][0], sheet.rows[2][1] + 1 - CORNER];
-    const sw = [CORNER, MID, CORNER];
-    const sh = [CORNER, MID, CORNER];
     const dx = [0, CORNER, CORNER + MID];
     const dy = [0, CORNER, CORNER + MID];
 
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 3; c++) {
-        ctx.drawImage(src, sx[c]!, sy[r]!, sw[c]!, sh[r]!, dx[c]!, dy[r]!, sw[c]!, sh[r]!);
+        const cell = opaqueBounds(
+          data, img.width,
+          sheet.cols[c]![0], sheet.rows[r]![0], sheet.cols[c]![1], sheet.rows[r]![1],
+        );
+        if (!cell) continue;
+        // Colonne/rangée du MILIEU : on prélève une bande au CENTRE de la pièce,
+        // jamais à son bord — un bord porte le contour, qui se répéterait en
+        // couture une fois étiré. Colonnes/rangées extrêmes : on garde le coin
+        // du bon côté, à la densité 1:1.
+        const sw = c === 1 ? MID : CORNER;
+        const sh = r === 1 ? MID : CORNER;
+        const sx = c === 0 ? cell.x
+          : c === 1 ? cell.x + Math.floor((cell.w - MID) / 2)
+          : cell.x + cell.w - CORNER;
+        const sy = r === 0 ? cell.y
+          : r === 1 ? cell.y + Math.floor((cell.h - MID) / 2)
+          : cell.y + cell.h - CORNER;
+        ctx.drawImage(img, sx, sy, sw, sh, dx[c]!, dy[r]!, sw, sh);
       }
     }
     tex.refresh();
