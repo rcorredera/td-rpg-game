@@ -1,0 +1,18 @@
+<!-- Catapulte de rang 3 — trébuchet : contrepoids, bras plus long, socle renforcé. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g stroke="#241a12" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="32" cy="57" rx="22" ry="6" fill="#7d786c"/>
+    <path d="M10 42h44v13H10z" fill="#8b5e34"/>
+    <path d="M10 42h44v4H10z" fill="#6d4526"/>
+    <path d="M18 44 34 14" fill="none" stroke-width="4"/>
+    <path d="M46 44 34 14" fill="none" stroke-width="4"/>
+    <path d="M16 40 50 12" fill="none" stroke-width="5"/>
+    <path d="M16 40 50 12" fill="none" stroke="#8b5e34" stroke-width="2.4"/>
+    <circle cx="52" cy="10" r="7" fill="#8a8577"/>
+    <path d="M12 36h10v10H12z" fill="#6d4526"/>
+  </g>
+  <circle cx="18" cy="51" r="4.5" fill="#6d4526" stroke="#241a12" stroke-width="2.2"/>
+  <circle cx="46" cy="51" r="4.5" fill="#6d4526" stroke="#241a12" stroke-width="2.2"/>
+  <path d="M30 12h2v6h-2z" fill="#e8b84b"/>
+  <path d="M32 12h8l-3 3 3 3h-8z" fill="#c4453f" stroke="#241a12" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>
