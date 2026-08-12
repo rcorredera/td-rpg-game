@@ -6,7 +6,7 @@
 import Phaser from "phaser";
 import { TEXT } from "../theme";
 import { FONT_DISPLAY } from "../ui";
-import { touchSize } from "../viewport";
+import { touchSize, WORLD_W } from "../viewport";
 import { uiButton } from "./button";
 
 export interface UiSectionHeaderOpts {
@@ -28,7 +28,9 @@ export interface UiSectionHeader {
 }
 
 export function uiSectionHeader(scene: Phaser.Scene, opts: UiSectionHeaderOpts): UiSectionHeader {
-  const x = opts.x ?? 400;
+  // Défaut DÉRIVÉ, jamais écrit en dur : un `400` (l'ancien 800/2) avait survécu
+  // au passage du monde en 960×540 et décalait l'en-tête vers la gauche (ADR-027).
+  const x = opts.x ?? WORLD_W / 2;
   const y = opts.y ?? 165;
   const half = opts.halfWidth ?? 320;
   const container = scene.add.container(0, 0);

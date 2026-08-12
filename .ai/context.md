@@ -57,6 +57,17 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   7 emplacements moins concentrés restaurent les deux garanties (infranchissable sans
   Forge, franchissable avec). Tout changement de carte sur un chapitre à invariant de
   méta doit repasser `autoplay.test.ts`.
+- **Centrage des menus (suite d'ADR-027) — FAIT** : le centre horizontal `400` (l'ancien
+  800/2) était écrit en dur à une vingtaine d'endroits de `MenuScene.ts` et avait survécu
+  au passage du monde en 960×540 — **tout l'écran de menu était décalé de 80 unités vers
+  la gauche** (tuiles du Campement coupées au bord gauche, 120 unités de vide à droite).
+  Le centre vit désormais dans `menuZone`/`levelGridZone` (`components/hubLayout.ts`),
+  dérivé de `WORLD_W` et testé par comparaison au centre du monde sur un panel d'écrans.
+  ⚠ Défaut INVISIBLE en paysage mobile (le débord latéral l'absorbe), flagrant en 16:9/16:10
+  exact — d'où une vérification visuelle qui l'avait manqué. Deux effets de bord corrigés au
+  passage : le plancher tactile de `hubLayout` ne s'activait que pour déborder, et
+  `SIDE_BY_SIDE_MIN_WIDTH` (900) faisait repasser le Campement en colonne unique sur
+  tout écran 16:9 alors que cinq tuiles empilées ne tiennent plus dans 540 de haut.
 - **Lisibilité des cartes / HUD mobile (ADR-028) — FAIT** : les 3 garanties géométriques
   d'ADR-019/020 valident la jouabilité mécanique, pas la lisibilité. Un audit UX post-027
   a trouvé les 9 cartes recouvertes par le HUD sur mobile (le HUD suit les bords RÉELS de
