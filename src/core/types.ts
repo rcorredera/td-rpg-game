@@ -106,10 +106,12 @@ export interface HeroDef {
 
 /** Champ de bataille en coordonnées logiques : l'espace où vivent cartes, tours,
  *  ennemis et héros. Source unique — `render/viewport.ts` et `GameScene` s'y réfèrent
- *  au lieu de redéclarer 800×600 chacun de leur côté. Ce n'est pas de l'équilibrage
+ *  au lieu de redéclarer 960×540 chacun de leur côté. Ce n'est pas de l'équilibrage
  *  (ADR-003) mais la définition du repère : les waypoints et slots du content y sont
- *  exprimés. Toute entité pilotée par le joueur y est confinée. */
-export const BATTLEFIELD = { w: 800, h: 600 } as const;
+ *  exprimés. Toute entité pilotée par le joueur y est confinée.
+ *  16:9 (ADR-027) — moitié de 1920×1080. Bord logique : entrées à x/y≈-20, sorties
+ *  côté château à x≈w+20 / y≈h+20. */
+export const BATTLEFIELD = { w: 960, h: 540 } as const;
 
 export interface PathDef {
   /** Waypoints (coordonnées logiques, cf. `BATTLEFIELD`). Convention : tous les chemins finissent au château. */

@@ -5,6 +5,7 @@
 import Phaser from "phaser";
 import { TEXT } from "../theme";
 import { FONT_BODY, FONT_DISPLAY } from "../ui";
+import { WORLD_W, WORLD_H } from "../viewport";
 import { uiPanel } from "./panel";
 import { uiButton } from "./button";
 
@@ -35,11 +36,11 @@ export interface UiModal {
   close: () => void;
 }
 
-/** Modale centrée à l'écran (800×600 logique) — généralise l'overlay d'intro/confirmation/fin de run. */
+/** Modale centrée sur le champ de bataille (`WORLD_W`/`WORLD_H` logiques) — généralise l'overlay d'intro/confirmation/fin de run. */
 export function uiModal(scene: Phaser.Scene, opts: UiModalOpts): UiModal {
   const depth = opts.depth ?? 3000;
-  const c = scene.add.container(400, 300).setDepth(depth);
-  c.add(scene.add.rectangle(0, 0, 800, 600, 0x120d08, opts.dimAlpha ?? 0.5));
+  const c = scene.add.container(WORLD_W / 2, WORLD_H / 2).setDepth(depth);
+  c.add(scene.add.rectangle(0, 0, WORLD_W, WORLD_H, 0x120d08, opts.dimAlpha ?? 0.5));
   c.add(uiPanel(scene, 0, 0, opts.w, opts.h));
   c.add(scene.add.text(0, -opts.h / 2 + 34, opts.title, {
     fontSize: "19px", color: TEXT.gold, fontFamily: FONT_DISPLAY,
