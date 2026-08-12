@@ -457,7 +457,7 @@ describe("sim core", () => {
    *  passerait un test moins complet. */
   const OUT_OF_BOUNDS: Vec2[] = [
     { x: -500, y: 300 }, { x: 9999, y: 300 }, { x: 400, y: -500 }, { x: 400, y: 9999 },
-    { x: -500, y: -500 }, { x: 9999, y: 9999 }, { x: -0.5, y: 600.5 },
+    { x: -500, y: -500 }, { x: 9999, y: 9999 }, { x: -0.5, y: BATTLEFIELD.h + 0.5 },
   ];
 
   const inBattlefield = (p: Vec2) =>

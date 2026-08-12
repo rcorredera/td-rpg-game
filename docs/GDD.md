@@ -48,7 +48,7 @@ Le vectoriel procédural actuel est un choix de proto ; pour passer un cap visue
 
 Règle d'intégration : un seul pack principal (Kenney TD + Kenney UI) plutôt qu'un patchwork de sources — la cohérence prime sur la richesse. L'architecture est prête : seul `render/` change, la sim n'est pas concernée (ADR-001).
 
-**Rendu net (HiDPI)** : le framebuffer est rendu à la densité de l'écran (DPR×, plafonné à 2) avec recadrage caméra — les coordonnées restent en 800×600 logique — et les textes sont rasterisés en haute résolution. Corrige le texte flou constaté au playtest.
+**Rendu net (HiDPI)** : le framebuffer est rendu à la densité de l'écran (DPR×, plafonné à 2) avec recadrage caméra — les coordonnées restent en 960×540 logique, 16:9 (ADR-027) — et les textes sont rasterisés en haute résolution. Corrige le texte flou constaté au playtest.
 
 **Backlog animations** (playtest : « peu d'animations ») : fait — marche bondissante des terrestres, flottement des volants, flammes de brûlure, étoile de spécialisation pulsée, effets du Ralliement. À venir : FX de mort (pièces d'or qui sautent), transitions d'écrans, pulsation de l'or au gain, icônes animées du HUD.
 
@@ -88,12 +88,12 @@ La **meilleure** note est conservée par chapitre (jamais dégradée), affichée
 
 ## Campagne — plan (ADR-004)
 
-10 chapitres **tous jouables** : le ch.1 est conçu à la main, les ch.2-10 ont un **contenu généré provisoire** (deux layouts alternés — « Faille » avec portail, « Tenailles » avec deux sources permanentes — et des vagues au volume croissant ; ch.10 : 12 vagues + mini-boss ×12 en attendant le vrai boss). Noms de chapitres = placeholders à remplacer via le fichier de lore. **Déblocage séquentiel : conquérir le chapitre N ouvre le N+1** ; les chapitres verrouillés affichent « ??? » et un cadenas. À concevoir au fil de l'eau :
+10 chapitres **tous jouables** : le ch.1 est conçu à la main, les ch.2-10 ont un **contenu généré provisoire** — vagues au volume croissant, mais depuis l'ADR-027 chaque chapitre a sa **propre topologie** (1 à 3 voies selon le chapitre, en écho à son biome), plus deux layouts partagés ; ch.10 : 12 vagues + mini-boss ×12 en attendant le vrai boss. Noms de chapitres = placeholders à remplacer via le fichier de lore. **Déblocage séquentiel : conquérir le chapitre N ouvre le N+1** ; les chapitres verrouillés affichent « ??? » et un cadenas. À concevoir au fil de l'eau :
 
 - **Ch.10 — Le Roi-Charogne, boss multi-phases** : un boss qu'on tue… et qui revient plus fort. Design cible : à la mort de chaque phase, respawn avec plus de PV et une capacité supplémentaire (ex. phase 1 marche, phase 2 invoque des gobelins, phase 3 AoE qui assomme les tours). Nécessite une extension de la sim (états de boss, capacités scriptées) — à chiffrer avant le ch.10.
 - **Multi-chemins** : une carte peut avoir plusieurs sources d'arrivée (`MapDef.paths`, chaque spawn choisit son chemin). Convention : tous les chemins mènent au château. Supporté par la sim dès maintenant (testé).
 - **Portails de Faille** : un chemin marqué `portal` n'apparaît que lorsqu'il sert. Règle : **annoncé pendant la phase building précédente** (« ⚠ Une Faille s'ouvrira à la prochaine vague ! »), actif le temps de la vague, puis disparaît. Supporté sim + rendu ; premier usage prévu dans les chapitres à venir.
-- **Tailles de cartes** : décision ouverte — tout est en 800×600 logique aujourd'hui ; des cartes plus grandes imposeraient scroll/zoom (coût UX mobile non trivial). À trancher quand on conçoit les ch.2+.
+- **Tailles de cartes** : tranché — canevas 960×540 (16:9, ADR-027), sans scroll/zoom ; chaque chapitre a sa propre géométrie de carte (1 à 3 voies).
 
 ## Bestiaire (ADR-022)
 
@@ -165,7 +165,7 @@ La brûlure (% des **PV max**) est le contre aux sacs à PV ; le blizzard est un
 
 ## Héros
 
-Unité déplaçable au tap, **confinée au champ de bataille** (`BATTLEFIELD`, 800×600 logiques) : depuis le viewport adaptatif (ADR-010) l'écran déborde de la carte, et un tap dans ce hors-champ ramène la cible au bord au lieu de faire déserter le héros. Même règle pour la Pluie de flèches, qui se recentre dans la carte plutôt que de brûler son cooldown dans le vide — toute action visée au tap passe par `clampToBattlefield`. **Bloque ET attaque en mêlée** (DPS continu) l'ennemi terrestre le plus avancé à portée — c'est le cœur des décisions tactiques de dernière seconde ; l'ennemi bloqué riposte. Le combat doit être lisible à l'écran (lame animée vers la cible + impact). PV, respawn 8s. **Ralliement** est lisible aussi : onde de portée dorée au lancement, et chaque tour boostée porte un anneau pulsé + chevrons ascendants pendant toute la durée du buff. Deux compétences à cooldown : Tournoiement (AoE contact) et Ralliement (buff cadence des tours proches). Talents/équipement : v1.
+Unité déplaçable au tap, **confinée au champ de bataille** (`BATTLEFIELD`, 960×540 logiques, ADR-027) : depuis le viewport adaptatif (ADR-010) l'écran déborde de la carte, et un tap dans ce hors-champ ramène la cible au bord au lieu de faire déserter le héros. Même règle pour la Pluie de flèches, qui se recentre dans la carte plutôt que de brûler son cooldown dans le vide — toute action visée au tap passe par `clampToBattlefield`. **Bloque ET attaque en mêlée** (DPS continu) l'ennemi terrestre le plus avancé à portée — c'est le cœur des décisions tactiques de dernière seconde ; l'ennemi bloqué riposte. Le combat doit être lisible à l'écran (lame animée vers la cible + impact). PV, respawn 8s. **Ralliement** est lisible aussi : onde de portée dorée au lancement, et chaque tour boostée porte un anneau pulsé + chevrons ascendants pendant toute la durée du buff. Deux compétences à cooldown : Tournoiement (AoE contact) et Ralliement (buff cadence des tours proches). Talents/équipement : v1.
 
 ## Ennemis (v0)
 

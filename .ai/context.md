@@ -44,7 +44,19 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   ROUTE, pas seulement une teinte — teinter ne suffit pas, `setTint` assombrit sans désaturer. Tests :
   biome connu par chapitre, jamais deux décors identiques consécutifs, sol+route distincts, repli sûr,
   et saturation < 0,55 (le décor ne doit pas concurrencer les unités).
-  ⚠ RESTE : les 10 chapitres partagent toujours DEUX tracés — le décor les distingue, pas la topologie.
+  ✓ FAIT (ADR-027) : les 10 chapitres n'ont plus deux tracés partagés — chaque chapitre
+  a désormais sa propre topologie (1 à 3 voies selon le chapitre, tronc commun pour les
+  cartes à voies multiples), en écho au biome quand c'est pertinent.
+- **Format 16:9 + cartes par chapitre (ADR-027) — FAIT** : `BATTLEFIELD` passe de 800×600
+  (4:3) à **960×540** (16:9, moitié de 1920×1080). `LAYOUT_RIFT`/`LAYOUT_PINCER` supprimés,
+  chaque chapitre 2-10 a sa `MapDef` (`content/index.ts`). `makeWaves` prend désormais
+  `pathCount` (au lieu d'un booléen `secondPath`) et distribue les renforts en tourniquet
+  sur les voies secondaires. ⚠ La géométrie d'une carte est un levier d'équilibrage à part
+  entière : la 1re version du ch.10 (8 emplacements, tronc trop généreusement couvert)
+  rendait le chapitre gagnable SANS la Forge en « spread », cassant la garantie ADR-024 —
+  7 emplacements moins concentrés restaurent les deux garanties (infranchissable sans
+  Forge, franchissable avec). Tout changement de carte sur un chapitre à invariant de
+  méta doit repasser `autoplay.test.ts`.
 - **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups

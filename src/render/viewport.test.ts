@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeViewport, MAX_DPR, TOUCH_MIN_CSS, WORLD_H, WORLD_W } from "./viewport";
 
 describe("computeViewport", () => {
-  it("garde la zone de jeu 800×600 entièrement visible sur tout écran", () => {
+  it("garde la zone de jeu (WORLD_W×WORLD_H) entièrement visible sur tout écran", () => {
     const screens: [number, number][] = [
       [1280, 800], [1920, 1080], [812, 375], [375, 812], [1024, 768], [2560, 1440],
     ];
@@ -17,13 +17,13 @@ describe("computeViewport", () => {
   });
 
   it("étend la vue dans le sens le plus large (bleed), sans rogner l'autre", () => {
-    // Écran plus large que 4:3 → débord horizontal, hauteur pile à 600.
+    // Écran plus large que 16:9 → débord horizontal, hauteur pile à WORLD_H.
     const wide = computeViewport(1200, 600, 1);
     expect(wide.height).toBeCloseTo(WORLD_H, 6);
     expect(wide.width).toBeGreaterThan(WORLD_W);
     expect(wide.left).toBeLessThan(0);
 
-    // Écran plus haut que 4:3 → débord vertical, largeur pile à 800.
+    // Écran plus haut que 16:9 → débord vertical, largeur pile à WORLD_W.
     const tall = computeViewport(600, 1200, 1);
     expect(tall.width).toBeCloseTo(WORLD_W, 6);
     expect(tall.height).toBeGreaterThan(WORLD_H);
@@ -47,7 +47,7 @@ describe("computeViewport", () => {
   });
 
   it("retranche les encoches des bords sûrs, converties en unités logiques", () => {
-    // 800×600 @dpr1 → zoom 1 : 1 px CSS = 1 unité logique, conversion triviale.
+    // WORLD_W×WORLD_H @dpr1 → zoom 1 : 1 px CSS = 1 unité logique, conversion triviale.
     const v = computeViewport(WORLD_W, WORLD_H, 1, { top: 40, right: 10, bottom: 20, left: 30 });
     expect(v.zoom).toBeCloseTo(1, 6);
     expect(v.safeTop).toBeCloseTo(v.top + 40, 6);

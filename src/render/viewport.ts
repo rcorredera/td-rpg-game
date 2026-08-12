@@ -1,8 +1,8 @@
 // ============================================================
 // render/viewport.ts — Viewport adaptatif (ADR-010).
 //
-// Le jeu raisonne toujours en unités logiques : la ZONE DE JEU fait 800×600
-// (WORLD_W/WORLD_H) et reste intégralement visible sur tout écran. Ce qui
+// Le jeu raisonne toujours en unités logiques : la ZONE DE JEU fait 960×540
+// (WORLD_W/WORLD_H, 16:9 — ADR-027) et reste intégralement visible sur tout écran. Ce qui
 // change, c'est que l'écran réel est presque toujours PLUS GRAND que cette
 // zone dans un sens : ce débord ("bleed") n'est plus du noir perdu — le fond
 // s'y étend et le HUD s'y ancre.
@@ -52,7 +52,7 @@ export interface Viewport {
   cssH: number;
   /** Zoom caméra : pixels de framebuffer par unité logique. */
   zoom: number;
-  /** Rectangle visible en unités logiques — englobe toujours 800×600. */
+  /** Rectangle visible en unités logiques — englobe toujours WORLD_W×WORLD_H. */
   left: number;
   top: number;
   right: number;
@@ -78,8 +78,8 @@ export interface Viewport {
 /**
  * Calcule le viewport à partir de la taille d'écran CSS, de la densité et des encoches.
  *
- * Contrat : la zone 800×600 est toujours entièrement contenue (« contain »), donc
- * `width >= 800` et `height >= 600`, l'un des deux étant exactement égal.
+ * Contrat : la zone WORLD_W×WORLD_H est toujours entièrement contenue (« contain »), donc
+ * `width >= WORLD_W` et `height >= WORLD_H`, l'un des deux étant exactement égal.
  */
 export function computeViewport(
   cssW: number,
@@ -119,7 +119,7 @@ export function computeViewport(
 // ---- Runtime (navigateur) -------------------------------------------------
 
 /** Viewport courant. Valeur de repli tant que `attachViewport` n'a pas tourné
- *  (tests unitaires, import précoce) : exactement l'ancien cadrage 800×600. */
+ *  (tests unitaires, import précoce) : exactement le cadrage WORLD_W×WORLD_H. */
 let current: Viewport = computeViewport(WORLD_W, WORLD_H, 1);
 
 export function viewport(): Viewport {

@@ -1,53 +1,149 @@
 // ============================================================
 // content/index.ts — TOUTES les valeurs d'équilibrage (ADR-003).
 // Aucune stat en dur dans core/ ou render/. Modifier ici = rééquilibrer.
-// Coordonnées logiques : 800x600 (le rendu scale).
+// Coordonnées logiques : 960x540, 16:9 (ADR-027 — le rendu scale). Convention de
+// bord : entrées à x/y≈-20, sorties côté château à x≈980 / y≈560.
 // ============================================================
 
 import type { ChapterDef, ContentPack, MapDef, UnlockDef, WaveDef, WaveSpawn } from "../core/types";
 export type { UnlockDef };
 
-// ---------- Cartes des chapitres 2+ (placeholders en attente du lore) ----------
+// ---------- Cartes des chapitres 2-10 : une topologie propre à chaque chapitre
+// (ADR-027), 1 à 3 voies selon la carte, en écho au biome. Placeholders en
+// attente du lore (docs/LORE.md) — seule la géométrie change, pas les noms.
 
-// Layout "Faille" : montée depuis le bas-gauche, traversée, descente vers le
-// château + portail plongeant du haut sur la traversée.
-// Le tracé précédent partait à droite jusqu'à x=560 puis REVENAIT à x=180 : un
-// demi-tour complet, illisible sur une carte de 800 de large.
-const LAYOUT_RIFT: MapDef = {
+// Ch.2 « Faubourgs en cendres » : zigzag au sol + raccourci de Faille qui plonge
+// verticalement et rejoint le tronc commun (~27 % plus court, exempté du ratio).
+const CH2_MAP: MapDef = {
   castleHp: 20,
   paths: [
-    { waypoints: [{ x: -20, y: 470 }, { x: 220, y: 470 }, { x: 220, y: 180 }, { x: 520, y: 180 }, { x: 520, y: 400 }, { x: 820, y: 400 }] },
-    // Raccourci assumé (~29 %) : c'est l'intérêt d'une Faille, elle saute la montée.
-    { waypoints: [{ x: 280, y: -20 }, { x: 280, y: 180 }, { x: 520, y: 180 }, { x: 520, y: 400 }, { x: 820, y: 400 }], portal: true },
+    { waypoints: [{ x: -20, y: 460 }, { x: 260, y: 460 }, { x: 260, y: 200 }, { x: 620, y: 200 }, { x: 620, y: 440 }, { x: 980, y: 440 }] },
+    { waypoints: [{ x: 340, y: -20 }, { x: 340, y: 200 }, { x: 620, y: 200 }, { x: 620, y: 440 }, { x: 980, y: 440 }], portal: true },
   ],
-  // 8 emplacements, contre 6 au chapitre 1. La difficulté monte de chapitre en
-  // chapitre mais la défense était plafonnée à 6 partout : passé la mi-partie l'or
-  // s'accumulait sans emploi (1 800 à 3 800 pièces mesurées) et il n'y avait plus
-  // aucune décision économique à prendre (ADR-020).
   slots: [
-    { x: 120, y: 330 }, { x: 330, y: 290 }, { x: 390, y: 90 }, { x: 90, y: 400 },
-    { x: 620, y: 270 }, { x: 400, y: 400 }, { x: 700, y: 290 }, { x: 560, y: 480 },
+    { x: 150, y: 395 }, { x: 150, y: 300 }, { x: 430, y: 260 }, { x: 500, y: 150 },
+    { x: 700, y: 300 }, { x: 760, y: 480 }, { x: 430, y: 80 }, { x: 850, y: 380 },
   ],
 };
 
-// Layout "Tenailles" : deux arrivées permanentes (haut-gauche et bas-gauche) qui
-// CONVERGENT à mi-carte avant le château.
-// Le tracé précédent avait une seconde voie 27 % plus courte que la première et
-// couverte par 3 emplacements sur 6 : les ennemis y arrivaient plus vite sur la
-// portion la moins défendable, d'où une fuite systématique dès la vague 4. Les
-// deux voies font désormais la même longueur et partagent un tronc commun, ce qui
-// rend les emplacements centraux utiles contre les deux.
-const LAYOUT_PINCER: MapDef = {
+// Ch.3 « Gué des Orcs » : deux méandres (marais, courbes douces) qui convergent
+// avant le château — « deux routes mènent au Bastion » (lore).
+const CH3_MAP: MapDef = {
   castleHp: 20,
   paths: [
-    { waypoints: [{ x: -20, y: 150 }, { x: 300, y: 150 }, { x: 300, y: 300 }, { x: 560, y: 300 }, { x: 560, y: 430 }, { x: 820, y: 430 }] },
-    { waypoints: [{ x: -20, y: 470 }, { x: 300, y: 470 }, { x: 300, y: 300 }, { x: 560, y: 300 }, { x: 560, y: 430 }, { x: 820, y: 430 }] },
+    { waypoints: [{ x: -20, y: 120 }, { x: 200, y: 120 }, { x: 200, y: 260 }, { x: 400, y: 220 }, { x: 560, y: 300 }, { x: 980, y: 300 }] },
+    { waypoints: [{ x: -20, y: 420 }, { x: 220, y: 420 }, { x: 220, y: 300 }, { x: 400, y: 220 }, { x: 560, y: 300 }, { x: 980, y: 300 }] },
   ],
-  // 8 emplacements, même raison que « Faille » : deux d'entre eux ne couvrent qu'une
-  // seule branche, ce qui donne un vrai choix d'implantation selon la voie à tenir.
   slots: [
-    { x: 200, y: 310 }, { x: 390, y: 210 }, { x: 390, y: 400 }, { x: 180, y: 220 },
-    { x: 620, y: 300 }, { x: 480, y: 480 }, { x: 700, y: 320 }, { x: 180, y: 390 },
+    { x: 100, y: 180 }, { x: 300, y: 150 }, { x: 100, y: 380 }, { x: 300, y: 420 },
+    { x: 480, y: 260 }, { x: 650, y: 290 }, { x: 800, y: 290 }, { x: 900, y: 300 },
+  ],
+};
+
+// Ch.4 « Forêt Murmurante » : deux voies plus anguleuses (la faille déchire le
+// voile) qui convergent plus tôt, tronc long qui absorbe l'écart de longueur.
+const CH4_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 90 }, { x: 250, y: 90 }, { x: 250, y: 280 }, { x: 500, y: 280 }, { x: 750, y: 180 }, { x: 980, y: 180 }] },
+    { waypoints: [{ x: -20, y: 480 }, { x: 300, y: 480 }, { x: 300, y: 280 }, { x: 500, y: 280 }, { x: 750, y: 180 }, { x: 980, y: 180 }] },
+  ],
+  slots: [
+    { x: 120, y: 150 }, { x: 300, y: 180 }, { x: 150, y: 430 }, { x: 330, y: 350 },
+    { x: 600, y: 240 }, { x: 700, y: 200 }, { x: 850, y: 180 }, { x: 950, y: 180 },
+  ],
+};
+
+// Ch.5 « Carrières » : une seule voie, en lacets serrés — pas de choix de voie,
+// toute la pression se concentre sur une ligne (pression concentrée, ADR-020).
+const CH5_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [
+      { x: -20, y: 450 }, { x: 250, y: 450 }, { x: 250, y: 150 }, { x: 550, y: 150 },
+      { x: 550, y: 450 }, { x: 850, y: 450 }, { x: 980, y: 300 },
+    ] },
+  ],
+  slots: [
+    { x: 120, y: 350 }, { x: 130, y: 250 }, { x: 400, y: 220 }, { x: 450, y: 350 },
+    { x: 700, y: 380 }, { x: 610, y: 250 }, { x: 800, y: 400 }, { x: 900, y: 340 },
+  ],
+};
+
+// Ch.6 « Col du Gel » : trois cols (haut/milieu/bas) qui se resserrent en un
+// seul tronc avant le château — le froid n'ouvre qu'un seul passage.
+const CH6_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 40 }, { x: 300, y: 40 }, { x: 300, y: 220 }, { x: 480, y: 270 }, { x: 720, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 270 }, { x: 250, y: 270 }, { x: 480, y: 270 }, { x: 720, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 500 }, { x: 300, y: 500 }, { x: 300, y: 320 }, { x: 480, y: 270 }, { x: 720, y: 270 }, { x: 980, y: 270 }] },
+  ],
+  slots: [
+    { x: 150, y: 80 }, { x: 100, y: 300 }, { x: 150, y: 460 },
+    { x: 550, y: 270 }, { x: 650, y: 250 }, { x: 750, y: 290 }, { x: 850, y: 270 }, { x: 930, y: 270 },
+  ],
+};
+
+// Ch.7 « Tertres » : chemin qui contourne les tumulus + raccourci court « les
+// morts se lèvent » (portail), la majeure partie du trajet reste partagée.
+const CH7_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 300 }, { x: 250, y: 300 }, { x: 250, y: 140 }, { x: 560, y: 140 }, { x: 560, y: 400 }, { x: 980, y: 400 }] },
+    { waypoints: [{ x: 400, y: -20 }, { x: 400, y: 140 }, { x: 560, y: 140 }, { x: 560, y: 400 }, { x: 980, y: 400 }], portal: true },
+  ],
+  slots: [
+    { x: 130, y: 220 }, { x: 320, y: 230 }, { x: 400, y: 100 }, { x: 650, y: 270 },
+    { x: 850, y: 350 }, { x: 930, y: 420 }, { x: 480, y: 80 }, { x: 500, y: 220 },
+  ],
+};
+
+// Ch.8 « Herse Brisée » : trois voies qui traversent la muraille effondrée et
+// fusionnent en un seul tronc, qui reste fusionné jusqu'au château.
+const CH8_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 60 }, { x: 260, y: 60 }, { x: 260, y: 200 }, { x: 400, y: 270 }, { x: 650, y: 270 }, { x: 850, y: 180 }, { x: 980, y: 180 }] },
+    { waypoints: [{ x: -20, y: 270 }, { x: 230, y: 270 }, { x: 400, y: 270 }, { x: 650, y: 270 }, { x: 850, y: 180 }, { x: 980, y: 180 }] },
+    { waypoints: [{ x: -20, y: 480 }, { x: 260, y: 480 }, { x: 260, y: 340 }, { x: 400, y: 270 }, { x: 650, y: 270 }, { x: 850, y: 180 }, { x: 980, y: 180 }] },
+  ],
+  slots: [
+    { x: 150, y: 110 }, { x: 100, y: 300 }, { x: 150, y: 430 },
+    { x: 500, y: 270 }, { x: 600, y: 270 }, { x: 750, y: 220 }, { x: 870, y: 180 }, { x: 950, y: 180 },
+  ],
+};
+
+// Ch.9 « Portes du Nord » : trois voies larges (haut/milieu/bas), le cas le
+// plus dur pour la couverture de slots — elles ne convergent que tard.
+const CH9_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 90 }, { x: 350, y: 90 }, { x: 600, y: 190 }, { x: 750, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 270 }, { x: 400, y: 270 }, { x: 750, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 450 }, { x: 350, y: 450 }, { x: 600, y: 350 }, { x: 750, y: 270 }, { x: 980, y: 270 }] },
+  ],
+  slots: [
+    { x: 200, y: 60 }, { x: 200, y: 480 },
+    { x: 550, y: 270 }, { x: 620, y: 270 }, { x: 680, y: 270 }, { x: 760, y: 270 }, { x: 850, y: 270 }, { x: 950, y: 270 },
+  ],
+};
+
+// Ch.10 « Roi-Charogne » : reste proche de la simplicité du ch.1 — un S au sol
+// + un raccourci de Faille court, pour ne pas ajouter une lecture de carte
+// difficile au premier vrai combat de boss.
+const CH10_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 270 }, { x: 300, y: 270 }, { x: 300, y: 420 }, { x: 650, y: 420 }, { x: 650, y: 220 }, { x: 980, y: 220 }] },
+    { waypoints: [{ x: 500, y: -20 }, { x: 500, y: 220 }, { x: 650, y: 220 }, { x: 980, y: 220 }], portal: true },
+  ],
+  // 6 emplacements, pas 8 : garder la couverture au minimum requis (pas de tronc
+  // sur-couvert) — un ch.10 trop généreusement défendable en spread invaliderait
+  // la garantie ADR-024 (infranchissable sans la Forge, quelle que soit la stratégie).
+  slots: [
+    { x: 150, y: 340 }, { x: 450, y: 480 }, { x: 560, y: 80 },
+    { x: 480, y: 150 }, { x: 800, y: 280 }, { x: 900, y: 180 }, { x: 620, y: 300 },
   ],
 };
 
@@ -84,7 +180,7 @@ function rosterFor(num: number): string[] {
  * découvrir une mécanique au milieu d'un mélange ne l'enseigne pas.
  * Déterministe (pas de RNG) : même content à chaque chargement.
  */
-function makeWaves(num: number, secondPath: boolean): WaveDef[] {
+function makeWaves(num: number, pathCount: number): WaveDef[] {
   const d = num - 1;
   const waveCount = d >= 9 ? 12 : 10;
   const roster = rosterFor(num);
@@ -137,8 +233,11 @@ function makeWaves(num: number, secondPath: boolean): WaveDef[] {
         if (has("gargoyle")) spawns.push({ enemyId: "gargoyle", count: Math.max(1, Math.round(0.7 * k)), intervalS: 3.5, delayS: 6 });
         if (has("wraith")) spawns.push({ enemyId: "wraith", count: Math.max(1, Math.round(1.4 * k)), intervalS: 1.1, delayS: 3 });
     }
-    if (secondPath && w >= 3 && w % 2 === 1) {
-      spawns.push({ enemyId: w % 4 === 1 ? "goblin" : "orc", count: Math.round(3 * k), intervalS: 0.85, delayS: 2, pathIndex: 1 });
+    // Distribue les renforts sur les voies secondaires en tourniquet (1..pathCount-1) :
+    // un chapitre à 3 voies alterne entre elles au lieu de toujours viser la voie 1.
+    if (pathCount > 1 && w >= 3 && w % 2 === 1) {
+      const extraPathIndex = 1 + (Math.floor(w / 2) % (pathCount - 1));
+      spawns.push({ enemyId: w % 4 === 1 ? "goblin" : "orc", count: Math.round(3 * k), intervalS: 0.85, delayS: 2, pathIndex: extraPathIndex });
     }
     const wave: WaveDef = { spawns };
     // Boss de mi-parcours (vague 5) : le Chef de guerre dès qu'il entre en scène,
@@ -163,10 +262,10 @@ function makeWaves(num: number, secondPath: boolean): WaveDef[] {
   return waves;
 }
 
-/** Chapitres 2-10 : contenu généré provisoire. Noms/lore = placeholders (docs/LORE.md). */
-function makeChapter(num: number, name: string, biome: string, lore: string): ChapterDef {
-  const map = num % 2 === 0 ? LAYOUT_RIFT : LAYOUT_PINCER;
-  return { id: `ch${num}`, name, lore, biome, playable: true, map, waves: makeWaves(num, true) };
+/** Chapitres 2-10 : chaque chapitre a désormais sa propre topologie (ADR-027),
+ *  1 à 3 voies selon la carte. Noms/lore = placeholders (docs/LORE.md). */
+function makeChapter(num: number, name: string, biome: string, lore: string, map: MapDef): ChapterDef {
+  return { id: `ch${num}`, name, lore, biome, playable: true, map, waves: makeWaves(num, map.paths.length) };
 }
 
 export const CONTENT: ContentPack = {
@@ -343,14 +442,14 @@ export const CONTENT: ContentPack = {
         paths: [
           {
             waypoints: [
-              { x: -20, y: 150 }, { x: 250, y: 150 }, { x: 250, y: 320 },
-              { x: 550, y: 320 }, { x: 550, y: 470 }, { x: 820, y: 470 },
+              { x: -20, y: 135 }, { x: 300, y: 135 }, { x: 300, y: 288 },
+              { x: 660, y: 288 }, { x: 660, y: 423 }, { x: 980, y: 423 },
             ],
           },
         ],
         slots: [
-          { x: 150, y: 235 }, { x: 330, y: 230 }, { x: 170, y: 400 },
-          { x: 400, y: 400 }, { x: 470, y: 240 }, { x: 630, y: 390 },
+          { x: 180, y: 212 }, { x: 396, y: 207 }, { x: 204, y: 360 },
+          { x: 480, y: 360 }, { x: 564, y: 216 }, { x: 756, y: 351 },
         ],
       },
       // 10 vagues. Mini-boss vagues 5 et 10 (GDD).
@@ -371,17 +470,17 @@ export const CONTENT: ContentPack = {
     },
     // Ch.2-10 : contenu généré provisoire, noms placeholders (à remplacer via docs/LORE.md).
     // Déblocage séquentiel : conquérir le chapitre précédent (géré côté UI/profil).
-    makeChapter(2, "Les Faubourgs en cendres", "ash", "Les survivants affluent. Les hordes aussi."),
-    makeChapter(3, "Le Gué des Orcs", "marsh", "Deux routes mènent au Bastion. Les orcs le savent."),
-    makeChapter(4, "La Forêt Murmurante", "forest", "Quelque chose déchire le voile entre les mondes."),
-    makeChapter(5, "Les Carrières", "quarry", "La pierre du Bastion vient d'ici. Elle est rouge, désormais."),
-    makeChapter(6, "Le Col du Gel", "frost", "Le froid ne les arrête pas. Rien ne les arrête."),
-    makeChapter(7, "Les Tertres", "barrow", "Les morts d'hier grossissent les rangs d'aujourd'hui."),
-    makeChapter(8, "La Herse Brisée", "ruins", "La première muraille est tombée. Reste la vôtre."),
-    makeChapter(9, "Les Portes du Nord", "tundra", "Au-delà : son royaume. Il vous attend."),
+    makeChapter(2, "Les Faubourgs en cendres", "ash", "Les survivants affluent. Les hordes aussi.", CH2_MAP),
+    makeChapter(3, "Le Gué des Orcs", "marsh", "Deux routes mènent au Bastion. Les orcs le savent.", CH3_MAP),
+    makeChapter(4, "La Forêt Murmurante", "forest", "Quelque chose déchire le voile entre les mondes.", CH4_MAP),
+    makeChapter(5, "Les Carrières", "quarry", "La pierre du Bastion vient d'ici. Elle est rouge, désormais.", CH5_MAP),
+    makeChapter(6, "Le Col du Gel", "frost", "Le froid ne les arrête pas. Rien ne les arrête.", CH6_MAP),
+    makeChapter(7, "Les Tertres", "barrow", "Les morts d'hier grossissent les rangs d'aujourd'hui.", CH7_MAP),
+    makeChapter(8, "La Herse Brisée", "ruins", "La première muraille est tombée. Reste la vôtre.", CH8_MAP),
+    makeChapter(9, "Les Portes du Nord", "tundra", "Au-delà : son royaume. Il vous attend.", CH9_MAP),
     // Final : boss multi-phases prévu (à chaque mort, il revient plus fort — GDD §Boss final).
     // En attendant : mini-boss x12 en 12e vague.
-    makeChapter(10, "Le Roi-Charogne", "blight", "Le maître des hordes en personne."),
+    makeChapter(10, "Le Roi-Charogne", "blight", "Le maître des hordes en personne.", CH10_MAP),
   ],
 
   hero: {
