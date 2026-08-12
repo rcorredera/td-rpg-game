@@ -57,6 +57,17 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   7 emplacements moins concentrés restaurent les deux garanties (infranchissable sans
   Forge, franchissable avec). Tout changement de carte sur un chapitre à invariant de
   méta doit repasser `autoplay.test.ts`.
+- **Habillage Tiny Swords — EN COURS (étape 1/4)** : adoption décidée par le PO du pack
+  complet (menus + bâtiments + décor + FX), teinté selon le thème actif. **Fait** : le
+  parchemin `ui/paper-regular.png` habille les panneaux nine-slice — `render/uiSkin.ts`
+  recompose les planches (grilles 3×3 de pièces séparées) en textures contiguës sur canvas,
+  coins rognés à 16 px, filtre NEAREST par texture. **Restent** : boutons, rubans/bannières
+  de titre, château, décor, FX. ⚠ Deux constats à trancher avant la suite : (1) les trois
+  palettes d'ADR-026 teintent les panneaux en SOMBRE, donc la matière du parchemin ne
+  ressort pas — le pack n'apporte que sa bordure biseautée tant qu'on n'éclaircit pas les
+  panneaux ; (2) le pack n'a AUCUN sprite d'unité, donc ennemis et héros resteront
+  vectoriels (ADR-016) au milieu de bâtiments/décors pixel — mélange durable, à relier à
+  la recherche d'un pack de monstres restée en suspens.
 - **Centrage des menus (suite d'ADR-027) — FAIT** : le centre horizontal `400` (l'ancien
   800/2) était écrit en dur à une vingtaine d'endroits de `MenuScene.ts` et avait survécu
   au passage du monde en 960×540 — **tout l'écran de menu était décalé de 80 unités vers
