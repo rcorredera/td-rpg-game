@@ -20,6 +20,14 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
+- **Menus mobiles (ADR-025) — FAIT** : le Campement passe de cinq cartes empilées dans une colonne
+  centrée (**44 % de la largeur occupée** en paysage mobile) à **deux rangs de tuiles** — une PRINCIPALE
+  (Histoire + jauge de progression) et des SECONDAIRES en grille. Disposition dans `components/hubLayout.ts`
+  (**pur et testé** : ≥ 90 % de largeur occupée, principale plus grande, zéro chevauchement, rien hors zone),
+  rendu dans `components/tile.ts` (grande icône au-dessus du titre). Les vignettes de chapitre affichent
+  l'**aperçu de leur biome** (ADR-023) ; les verrouillées le cachent. Grille des chapitres 700 → 1 180.
+  `uiNavCard` supprimé (orphelin). ⚠ Deux bugs introduits puis corrigés : `setInteractive({})` ne définit
+  aucune zone de clic, et le clic TRAVERSAIT d'un écran à l'autre (`pointerdown` vs `pointerup`).
 - **Règles de niveau (ADR-024) — FAIT** : (1) un BOSS doit être ABATTU — s'il atteint le château la partie est perdue ; avant, il était retiré du jeu en touchant le château, la vague se terminait et la victoire tombait quand même. (2) Les 3 tours sont constructibles dès la 1re partie : la Tour de givre verrouillée à 30 ◆ rendait le ch.1 très rude, et un joueur bloqué ne gagne pas de quoi se débloquer. (3) La méta vend des PALIERS (`maxTowerLevel`, `allowSpecialize`) — les 3 rangs sont ouverts d'emblée, « Doctrines de siège » débloque le rang 4. ⚠ Plafonner au rang 2 rendait le ch.1 infranchissable (400 or inutilisable) : ce qui est nécessaire pour finir la 1re partie doit être disponible dans la 1re partie. Boss allégés d'environ 30 % — les rendre éliminatoires change leur fonction. Effet de bord surveillé : le triangle de rôles se resserre (9 vs 8 victoires contre 10 vs 7), un boss étant une cible isolée qui favorise le mono-cible.
 - **Forge (ADR-024)** : 4 → **6 rangs** par tour (20/45/80/130/200/300 ◆, 2 325 ◆ au total) et surtout elle est devenue la **CONDITION du dernier chapitre** — le boss final (Vouivre ×2,8) n'est pas abattable avec des tours jamais forgées, quelle que soit la stratégie. Mesuré avant correction : la Forge ne pesait que **5 PV de château cumulés sur 10 chapitres**, c'était un puits d'Éclats et non une progression. Un axe de méta qu'on peut ignorer sera ignoré : mesurer chaque axe avec et sans.
 - **Biomes de chapitre (ADR-023) — FAIT** : chaque chapitre a son identité visuelle (prairie, cendres,

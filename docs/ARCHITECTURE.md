@@ -51,6 +51,8 @@ qu'un écran empile des rangées/cartes sous un en-tête ou des onglets (évite 
 (`TEXT` couleurs de texte, `ACCENT` teintes de bordure, en plus des tokens existants). `render/ui.ts`
 ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, préchargement).
 
+`render/components/hubLayout.ts` (ADR-025) : la DISPOSITION du Campement est calculée à part du rendu, donc testable sans Phaser — deux rangs de tuiles, bascule en deux colonnes selon la largeur réelle. Le hub occupait 44 % de la largeur en paysage mobile et donnait le même poids visuel à ses cinq entrées ; les tests portent sur ces deux défauts (occupation ≥ 90 %, tuile principale plus grande) et non sur des valeurs de pixels. Règle générale : quand une mise en page a une règle métier, extraire le calcul dans un module pur et laisser au composant le seul dessin.
+
 `render/icons.ts` (ADR-012) : registre des icônes d'UI — les écrans nomment un **rôle**
 (`story`, `armory`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
 qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji
