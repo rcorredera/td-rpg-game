@@ -30,8 +30,9 @@ const ASSET_FILES = Object.keys(import.meta.glob("/public/assets/**/*"));
 /**
  * Assets versionnés mais pas encore câblés. Une entrée ici est une DETTE, pas une
  * exemption permanente : ce qui atterrit dans cette réserve doit être branché ou
- * supprimé. Le pack Tiny Swords y attend la reprise de l'UI mobile (modales 9-slice,
- * château, FX).
+ * supprimé. Migration du pack Tiny Swords en cours : `ui/paper-regular.png` est
+ * branché (panneaux nine-slice, `render/uiSkin.ts`) ; restent les boutons, les
+ * rubans/bannières, le château, le décor et les FX.
  */
 const RESERVE = [/^\/public\/assets\/tiny-swords\//];
 

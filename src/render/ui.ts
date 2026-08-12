@@ -6,6 +6,7 @@
 
 import Phaser from "phaser";
 import { onViewportChange, viewport, WORLD_H, WORLD_W, type Viewport } from "./viewport";
+import { preloadUiSkin } from "./uiSkin";
 
 export { UI_TINT } from "./theme";
 
@@ -143,6 +144,7 @@ export function preloadUi(scene: Phaser.Scene): void {
   scene.load.image("ui_btn", `${P}/btn-grey.png`);
   scene.load.image("ui_btn_gold", `${P}/btn-yellow.png`);
   scene.load.image("ui_panel", `${P}/panel-grey.png`);
+  preloadUiSkin(scene); // parchemin Tiny Swords, recomposé en nine-slice (uiSkin.ts)
   scene.load.image("ui_divider", `${P}/divider.png`);
   // Icônes de sorts (game-icons.net, CC BY 3.0 — crédit dans assets/README.md)
   scene.load.svg("icon_ww", "assets/icons/tornado.svg", { width: 64, height: 64 });

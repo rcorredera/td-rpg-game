@@ -4,13 +4,20 @@
 
 import Phaser from "phaser";
 import { ACCENT, UI_TINT } from "../theme";
+import { ensureUiSkinTextures, UI_SKIN_INSET, UI_SKIN_PANEL } from "../uiSkin";
 
 /** Panneau nine-slice teinté (remplace les rectangles plats). */
 export function uiPanel(
   scene: Phaser.Scene, x: number, y: number, w: number, h: number,
   tint: number = UI_TINT.panel, alpha = 1,
 ): Phaser.GameObjects.NineSlice {
-  const p = scene.add.nineslice(x, y, "ui_panel", undefined, w, h, 14, 14, 14, 14);
+  // Parchemin du pack Tiny Swords, recomposé en nine-slice contigu. La teinte
+  // reste pilotée par le thème (ADR-026) : la base est claire exprès, `setTint`
+  // multipliant, elle peut virer ardoise, parchemin ou pourpre selon la palette.
+  ensureUiSkinTextures(scene);
+  const key = scene.textures.exists(UI_SKIN_PANEL) ? UI_SKIN_PANEL : "ui_panel";
+  const inset = key === UI_SKIN_PANEL ? UI_SKIN_INSET : 14;
+  const p = scene.add.nineslice(x, y, key, undefined, w, h, inset, inset, inset, inset);
   p.setTint(tint).setAlpha(alpha);
   return p;
 }
