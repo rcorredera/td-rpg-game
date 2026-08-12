@@ -9,7 +9,9 @@ import { onViewportChange, viewport, WORLD_H, WORLD_W, type Viewport } from "./v
 
 export { UI_TINT } from "./theme";
 
-const P = "assets/kenney-ui/PNG";
+// Le pack Kenney UI n'est plus embarqué en entier : seuls les fichiers réellement
+// chargés sont versionnés, à plat et renommés par usage (11 Mo → 4 fichiers).
+const P = "assets/kenney-ui";
 
 // L'échelle de rendu vit désormais dans render/viewport.ts (ADR-010) : elle est
 // recalculée à chaque resize/rotation au lieu d'être figée au boot, et le
@@ -138,10 +140,10 @@ export function setupCamera(scene: Phaser.Scene): void {
 
 /** Charge les éléments d'UI (le cache Phaser rend l'appel idempotent entre scènes). */
 export function preloadUi(scene: Phaser.Scene): void {
-  scene.load.image("ui_btn", `${P}/Grey/Default/button_rectangle_depth_gradient.png`);
-  scene.load.image("ui_btn_gold", `${P}/Yellow/Default/button_rectangle_depth_gradient.png`);
-  scene.load.image("ui_panel", `${P}/Grey/Default/button_rectangle_flat.png`);
-  scene.load.image("ui_divider", `${P}/Extra/Default/divider_edges.png`);
+  scene.load.image("ui_btn", `${P}/btn-grey.png`);
+  scene.load.image("ui_btn_gold", `${P}/btn-yellow.png`);
+  scene.load.image("ui_panel", `${P}/panel-grey.png`);
+  scene.load.image("ui_divider", `${P}/divider.png`);
   // Icônes de sorts (game-icons.net, CC BY 3.0 — crédit dans assets/README.md)
   scene.load.svg("icon_ww", "assets/icons/tornado.svg", { width: 64, height: 64 });
   scene.load.svg("icon_rally", "assets/icons/flying-flag.svg", { width: 64, height: 64 });
