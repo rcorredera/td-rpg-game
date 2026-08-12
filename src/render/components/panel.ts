@@ -4,7 +4,7 @@
 
 import Phaser from "phaser";
 import { ACCENT, UI_TINT } from "../theme";
-import { ensureUiSkinTextures, UI_SKIN_INSET, UI_SKIN_PANEL } from "../uiSkin";
+import { ensureUiSkinTextures, uiSkinActive, uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
 
 /** Panneau nine-slice teinté (remplace les rectangles plats). */
 export function uiPanel(
@@ -16,7 +16,7 @@ export function uiPanel(
   // multipliant, elle peut virer ardoise, parchemin ou pourpre selon la palette.
   ensureUiSkinTextures(scene);
   const key = scene.textures.exists(UI_SKIN_PANEL) ? UI_SKIN_PANEL : "ui_panel";
-  const inset = key === UI_SKIN_PANEL ? UI_SKIN_INSET : 14;
+  const inset = key === UI_SKIN_PANEL ? uiSkinInset(key) : 14;
   const p = scene.add.nineslice(x, y, key, undefined, w, h, inset, inset, inset, inset);
   p.setTint(tint).setAlpha(alpha);
   return p;
@@ -45,8 +45,16 @@ export function uiFramedPanel(scene: Phaser.Scene, x: number, y: number, opts: U
   const container = scene.add.container(x, y);
   const panel = uiPanel(scene, 0, 0, w, h, tint);
   const border = scene.add.graphics();
-  border.lineStyle(1, borderColor, borderAlpha);
-  border.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+  // Le parchemin du pack porte DÉJÀ son contour, dessiné dans l'art. Reposer
+  // par-dessus un liseré doré vectoriel donnait un double trait peu flatteur
+  // (retour de playtest). On ne trace donc plus que les bordures qui portent une
+  // INFORMATION — état verrouillé, Faille — reconnaissables à leur couleur
+  // différente de l'accent par défaut.
+  const stateBorder = borderColor !== ACCENT.gold;
+  if (!uiSkinActive(scene) || stateBorder) {
+    border.lineStyle(1, borderColor, borderAlpha);
+    border.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
+  }
   container.add([panel, border]);
   return { container, panel, border };
 }
