@@ -4,6 +4,8 @@
 // ce sont des constantes pures, réutilisées par GameScene/MenuScene/ui.
 // ============================================================
 
+
+import { UI_THEME } from "./uiTheme";
 /** Palette médiévale (parchemin / forêt / pierre). */
 export const C = {
   // Terrain & décor (fallback procédural ; les tuiles Tiny prennent le relais en Phase 2)
@@ -25,19 +27,24 @@ export const STATUS = {
   burn: 0xe67e22, frostRing: 0x7ec8e3,
 } as const;
 
-/** Teintes appliquées aux éléments gris du pack Kenney UI (multiplication → bois/pierre). */
+// Le chrome des menus est habillé par un THÈME interchangeable (ADR-026) : les
+// trois blocs ci-dessous en dérivent au lieu de porter des valeurs en dur. Les
+// couleurs du champ de bataille (C, STATUS ci-dessus) n'en dépendent PAS — un
+// thème de menu ne doit jamais toucher au terrain de jeu.
+
+/** Teintes appliquées aux éléments gris du pack Kenney UI (multiplication). */
 export const UI_TINT = {
-  panel: 0x3a2f22,      // panneau standard (brun sombre)
-  panelDim: 0x2c241b,   // panneau verrouillé/inactif
-  btn: 0x8a7350,        // bouton secondaire (bois)
+  panel: UI_THEME.panel,        // panneau standard
+  panelDim: UI_THEME.panelDim,  // panneau verrouillé/inactif
+  btn: UI_THEME.btn,            // bouton secondaire
 } as const;
 
 /** Couleurs de texte (chaînes CSS) — source unique pour tout render/, remplace
  *  les constantes locales dupliquées dans MenuScene/GameScene (ADR-007). */
 export const TEXT = {
-  gold: "#e8c252",   // titres, montants, accents
-  dim: "#a89878",    // sous-titres, texte secondaire, verrouillé
-  light: "#f0e6d2",  // corps de texte principal
+  gold: UI_THEME.textAccent,   // titres, montants, accents
+  dim: UI_THEME.textDim,       // sous-titres, texte secondaire, verrouillé
+  light: UI_THEME.textLight,   // corps de texte principal
   ok: "#27ae60",     // acquis / victoire / conquis
   bad: "#c0392b",    // coût inabordable / défaite
   warn: "#e8a87c",   // avertissement doux (quitter, groundOnly)
@@ -47,10 +54,10 @@ export const TEXT = {
 
 /** Teintes de bordure/accent (nombres, pour Graphics/nine-slice) — même principe que TEXT. */
 export const ACCENT = {
-  gold: 0xc9a227,        // bordure active/focus
-  goldSoft: 0xe8c252,    // survol
-  locked: 0x4a3f2e,      // bordure verrouillé
-  lockedFill: 0x221b12,  // fond verrouillé
-  dimBorder: 0x6b5a3e,   // bordure inactive douce
-  won: 0x27ae60,         // bordure "conquis"
+  gold: UI_THEME.accent,          // bordure active/focus
+  goldSoft: UI_THEME.accentSoft,  // survol
+  locked: UI_THEME.locked,        // bordure verrouillé
+  lockedFill: UI_THEME.lockedFill,// fond verrouillé
+  dimBorder: UI_THEME.dimBorder,  // bordure inactive douce
+  won: UI_THEME.won,              // bordure "conquis"
 } as const;

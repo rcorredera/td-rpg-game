@@ -20,6 +20,13 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
+- **Thèmes d'interface (ADR-026) — FAIT** : l'habillage des menus est une DONNÉE (`render/uiTheme.ts`),
+  plus des valeurs en dur. Trois directions : **Braise** (l'ancienne, parchemin/bois/or), **Nocturne**
+  (ardoise bleu nuit + or, **défaut**), **Arcane** (pourpre + or rosé). `?theme=` bascule SANS rebuild —
+  outil de décision, aucune UI ne l'expose. Tests sur ce qui rendrait un thème inacceptable (fond sombre,
+  contraste texte/panneau, panneau actif ≠ inactif, directions réellement distinctes), pas sur le goût.
+  ⚠ **Portée bornée et testée** : un thème habille les MENUS, jamais le champ de bataille — le PO juge
+  les deux séparément.
 - **Menus mobiles (ADR-025) — FAIT** : le Campement passe de cinq cartes empilées dans une colonne
   centrée (**44 % de la largeur occupée** en paysage mobile) à **deux rangs de tuiles** — une PRINCIPALE
   (Histoire + jauge de progression) et des SECONDAIRES en grille. Disposition dans `components/hubLayout.ts`

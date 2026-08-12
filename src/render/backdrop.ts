@@ -11,12 +11,15 @@
 // ============================================================
 
 import type Phaser from "phaser";
+import { UI_THEME } from "./uiTheme";
 
 export const TEX_GRAIN = "ui_grain";
 export const TEX_VIGNETTE = "ui_vignette";
 
 /** Bruit pseudo-aléatoire reproductible : suffisant pour du grain, et stable
  *  d'une exécution à l'autre contrairement à Math.random. */
+const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
+
 function noise(x: number, y: number): number {
   const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
@@ -24,7 +27,7 @@ function noise(x: number, y: number): number {
 
 /** Dalle de grain répétable : pierre/parchemin sombre, sans motif perceptible. */
 function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
-  ctx.fillStyle = "#1a140e";
+  ctx.fillStyle = hex(UI_THEME.backdrop);
   ctx.fillRect(0, 0, size, size);
 
   // Marbrures larges : cassent l'uniformité sans créer de motif reconnaissable.
@@ -34,7 +37,7 @@ function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
     const r = 30 + noise(i, 3) * 90;
     const warm = noise(i, 4) > 0.5;
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, warm ? "rgba(74,58,38,0.10)" : "rgba(18,13,9,0.14)");
+    g.addColorStop(0, warm ? UI_THEME.marbleLight : UI_THEME.marbleDark);
     g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -102,7 +105,7 @@ export function addBackdrop(scene: Phaser.Scene, v: BackdropRect): Phaser.GameOb
     c.add(scene.add.tileSprite(v.left, v.top, v.width, v.height, TEX_GRAIN).setOrigin(0, 0));
   } else {
     // Repli (texture indisponible) : l'aplat historique, jamais un écran vide.
-    c.add(scene.add.rectangle(v.left + v.width / 2, v.top + v.height / 2, v.width, v.height, 0x1a140e));
+    c.add(scene.add.rectangle(v.left + v.width / 2, v.top + v.height / 2, v.width, v.height, UI_THEME.backdrop));
   }
   if (scene.textures.exists(TEX_VIGNETTE)) {
     c.add(scene.add.image(v.left + v.width / 2, v.top + v.height / 2, TEX_VIGNETTE)
