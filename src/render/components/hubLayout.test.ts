@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { hubLayout, SIDE_BY_SIDE_MIN_WIDTH, type TileBox } from "./hubLayout";
+import { computeViewport, WORLD_W } from "../viewport";
+import { hubLayout, levelGridZone, menuZone, SIDE_BY_SIDE_MIN_WIDTH, type TileBox } from "./hubLayout";
 
 /** Deux boîtes se chevauchent-elles ? (marge de 0,5 pour les arrondis) */
 function overlaps(a: TileBox, b: TileBox): boolean {
@@ -74,5 +75,55 @@ describe("hubLayout — le Campement doit occuper l'écran", () => {
   it("bascule exactement au seuil annoncé", () => {
     expect(hubLayout(0, 0, SIDE_BY_SIDE_MIN_WIDTH, 400, 4).sideBySide).toBe(true);
     expect(hubLayout(0, 0, SIDE_BY_SIDE_MIN_WIDTH - 1, 400, 4).sideBySide).toBe(false);
+  });
+});
+
+// ============================================================
+// ANCRAGE. Les tests ci-dessus passent un centre ARBITRAIRE (`600`, `0`…) et
+// vérifient tout RELATIVEMENT à ce centre : ils prouvent que la répartition est
+// juste pour n'importe quel centre, jamais que le centre employé est le bon.
+// C'est par ce trou qu'un `400` en dur (l'ancien 800/2) a survécu au passage du
+// monde en 960×540 et décalé tout l'écran de 80 unités vers la gauche, sans
+// qu'aucun test ne bronche. Même famille qu'ADR-028 : on testait la fonction
+// pure, pas son ancrage dans le monde.
+// ============================================================
+describe("ancrage des écrans de menu dans le monde", () => {
+  /** Un panel d'écrans réels, du mobile étroit au grand bureau. */
+  const SCREENS: [string, number, number, number][] = [
+    ["bureau 16:10", 1280, 800, 1],
+    ["bureau large", 1920, 1080, 1],
+    ["mobile paysage", 780, 360, 2],
+    ["mobile étroit", 667, 375, 2],
+    ["tablette", 1024, 768, 2],
+  ];
+
+  it("centre les écrans sur le monde, jamais sur une constante écrite en dur", () => {
+    for (const [name, w, h, dpr] of SCREENS) {
+      const v = computeViewport(w, h, dpr);
+      expect(menuZone(v).cx, `${name} : Campement`).toBeCloseTo(WORLD_W / 2, 6);
+      expect(levelGridZone(v).cx, `${name} : grille des chapitres`).toBeCloseTo(WORLD_W / 2, 6);
+    }
+  });
+
+  it("garde toutes les tuiles du Campement dans la zone visible", () => {
+    for (const [name, w, h, dpr] of SCREENS) {
+      const v = computeViewport(w, h, dpr);
+      const z = menuZone(v);
+      for (const [i, b] of boxes(hubLayout(z.cx, z.cy, z.w, z.h, 4)).entries()) {
+        expect(b.x - b.w / 2, `${name} : tuile ${i} déborde à gauche`).toBeGreaterThanOrEqual(v.left - 0.5);
+        expect(b.x + b.w / 2, `${name} : tuile ${i} déborde à droite`).toBeLessThanOrEqual(v.right + 0.5);
+        expect(b.y - b.h / 2, `${name} : tuile ${i} déborde en haut`).toBeGreaterThanOrEqual(v.top - 0.5);
+        expect(b.y + b.h / 2, `${name} : tuile ${i} déborde en bas`).toBeLessThanOrEqual(v.bottom + 0.5);
+      }
+    }
+  });
+
+  it("garde la grille des chapitres dans la zone visible", () => {
+    for (const [name, w, h, dpr] of SCREENS) {
+      const v = computeViewport(w, h, dpr);
+      const g = levelGridZone(v);
+      expect(g.cx - g.w / 2, `${name} : déborde à gauche`).toBeGreaterThanOrEqual(v.left - 0.5);
+      expect(g.cx + g.w / 2, `${name} : déborde à droite`).toBeLessThanOrEqual(v.right + 0.5);
+    }
   });
 });

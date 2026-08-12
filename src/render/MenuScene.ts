@@ -9,7 +9,7 @@ import Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
 import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
-import { touchSize, viewport } from "./viewport";
+import { touchSize, viewport, WORLD_W } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
 import { ensureTerrainTextures, grassTextureKey } from "./terrain";
@@ -17,7 +17,8 @@ import { enemyView, towerView } from "./sprites";
 import { preloadSprites } from "./assets";
 import { ACCENT, TEXT } from "./theme";
 import {
-  hubLayout, layoutCursor, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiPanel, uiTile,
+  hubLayout, layoutCursor, levelGridZone, menuZone,
+  uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiPanel, uiTile,
   uiScrollList, uiSectionHeader,
   type LayoutCursor, type RowState, type UiChip, type UiScrollList,
 } from "./components";
@@ -27,6 +28,14 @@ type ShopTab = "arsenal" | "forge" | "hero";
 
 const TXT = { fontFamily: FONT_BODY };
 const TITLE = { fontFamily: FONT_DISPLAY };
+
+/** Centre horizontal du repère logique. Il était écrit en dur (`400` = l'ancien
+ *  800/2) à une vingtaine d'endroits et a SURVÉCU au passage du champ de bataille
+ *  en 960×540 (ADR-027) : tout l'écran était décalé de 80 unités vers la gauche.
+ *  Invisible en paysage mobile — le débord latéral l'absorbe — mais flagrant dès
+ *  que la largeur visible vaut celle du monde (desktop 16:10). Ne jamais réécrire
+ *  un centre en dur : `hubZone`/`levelGridZone` le dérivent, et un test le garantit. */
+const CX = WORLD_W / 2;
 const GOLD = "#e8c252", DIM = "#a89878", OK = "#27ae60", LIGHT = "#f0e6d2", SCEAU = "#c97ba2";
 
 const LORE_INTRO = [
@@ -78,7 +87,7 @@ export class MenuScene extends Phaser.Scene {
    *  tel — halo derrière le titre, filets à filerets et non un simple trait, et un
    *  écart net avec le sous-titre. Avant, tout le texte avait le même poids. */
   private buildMasthead(v: { left: number; width: number }) {
-    const cx = 400;
+    const cx = CX;
     const g = this.add.graphics().setDepth(-50);
 
     // Bandeau sombre derrière l'en-tête : détache le titre du grain du fond.
@@ -121,8 +130,8 @@ export class MenuScene extends Phaser.Scene {
     const gap = 34;
     const wa = this.chipShards.text.width, wb = this.chipSceaux.text.width;
     const total = wa + gap + wb;
-    this.chipShards.container.setX(400 - total / 2 + wa / 2);
-    this.chipSceaux.container.setX(400 + total / 2 - wb / 2);
+    this.chipShards.container.setX(CX - total / 2 + wa / 2);
+    this.chipSceaux.container.setX(CX + total / 2 - wb / 2);
   }
 
   private refreshCurrencies() {
@@ -206,7 +215,7 @@ export class MenuScene extends Phaser.Scene {
     const made = defs.map(t => uiButton(this, 0, cy, t.label,
       { w: touchSize(130), h, gold: active === t.id, fontSize: 15 }, () => onPick(t.id)));
     const totalW = made.reduce((s, b) => s + b.w, 0) + gap * (made.length - 1);
-    let x = 400 - totalW / 2;
+    let x = CX - totalW / 2;
     made.forEach((b) => {
       b.container.setX(x + b.w / 2);
       x += b.w + gap;
@@ -249,7 +258,7 @@ export class MenuScene extends Phaser.Scene {
     const inner = objs.reduce((s, o, i) => s + o.height + (i ? lead : 0), 0);
     const h = Math.max(inner + pad * 2, portrait ? 78 : 0);
     const y = cursor.next(h, 10);
-    this.box(400, y, 640, h, fill, stroke, 10, c);
+    this.box(CX,y, 640, h, fill, stroke, 10, c);
 
     if (portrait) {
       const size = Math.min(62, h - 14);
@@ -275,7 +284,7 @@ export class MenuScene extends Phaser.Scene {
     title: string, desc: string, trailingLabel: string, trailingColor: string,
     cb: (() => void) | null, state: RowState = "normal",
   ) {
-    const r = uiListRow(this, 400, 0, {
+    const r = uiListRow(this, CX, 0, {
       w: 640, title, desc, state,
       trailing: cb ? { label: trailingLabel, onClick: cb } : { label: trailingLabel, color: trailingColor },
     });
@@ -307,13 +316,11 @@ export class MenuScene extends Phaser.Scene {
     // Deux rangs de tuiles, disposés d'après la largeur RÉELLE de l'écran (ADR-025).
     // Avant : cinq cartes identiques dans une colonne de 540 unités, quand le paysage
     // mobile en offre ~1 300 — 44 % d'occupation, et aucune hiérarchie pour dire où
-    // aller. La disposition est calculée par `hubLayout`, pur et testé.
-    const v = viewport();
+    // aller. La disposition est calculée par `hubLayout`, pur et testé, et son
+    // ANCRAGE (centre + zone utile) par `menuZone` — les deux le sont désormais.
     const [primary, ...rest] = entries;
-    const zoneW = Math.min(1180, v.width - 80);
-    const top = 150;
-    const zoneH = Math.max(220, Math.min(v.bottom - 30, 560) - top);
-    const layout = hubLayout(400, top + zoneH / 2, zoneW, zoneH, rest.length);
+    const z = menuZone(viewport());
+    const layout = hubLayout(z.cx, z.cy, z.w, z.h, rest.length);
 
     p.add(uiTile(this, layout.primary.x, layout.primary.y, {
       w: layout.primary.w, h: layout.primary.h,
@@ -384,7 +391,7 @@ export class MenuScene extends Phaser.Scene {
         { text: stats, size: 12, color: LIGHT, wrap: 560 },
       ], 0xc9a227, 0x2b2118, { key: enemyView(e.id).key, known: true });
     });
-    c.add(this.add.text(400, cursor.next(28) - 6,
+    c.add(this.add.text(CX,cursor.next(28) - 6,
       "Les mini-boss sont des variantes renforcées des créatures connues.",
       { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5));
     scroll.setContentHeight(cursor.y);
@@ -407,7 +414,7 @@ export class MenuScene extends Phaser.Scene {
         { text: `⚔ ${l1.damage}→${l3.damage}   ⊙ ${l1.range}→${l3.range}   ${l1.fireRate}→${l3.fireRate} tir/s   coûts ${t.costs.join(" / ")} ◆`, size: 12, color: LIGHT, wrap: 560 },
       ], locked ? 0x6b5a3e : 0xc9a227, 0x2b2118, { key: towerView(t.id).base.key, known: !locked });
     });
-    c.add(this.add.text(400, cursor.next(30) - 6,
+    c.add(this.add.text(CX,cursor.next(30) - 6,
       "Le héros bloque et frappe les ennemis terrestres ; les volants l'ignorent — prévoyez l'Archerie.",
       { fontSize: "11px", color: DIM, ...TXT }).setOrigin(0.5));
     scroll.setContentHeight(cursor.y);
@@ -447,14 +454,15 @@ export class MenuScene extends Phaser.Scene {
     });
     // La grille s'élargit avec l'écran : bornée à 700, elle laissait un tiers du
     // paysage inutilisé alors qu'elle est l'écran le plus consulté du jeu (ADR-025).
-    const grid = uiLevelGrid(this, 400, 6, tiles, Math.min(1180, viewport().width - 60));
+    const gz = levelGridZone(viewport());
+    const grid = uiLevelGrid(this, gz.cx, 6, tiles, gz.w);
     c.add(grid.container);
 
     // Lore du prochain objectif (premier chapitre débloqué non conquis)
     const next = CONTENT.chapters.findIndex((_ch, i) => isUnlocked(i) && !this.profileSvc.chapterWon(i));
     const lore = next >= 0 ? CONTENT.chapters[next]!.lore : "La vallée respire. Pour l'instant.";
     const loreY = 6 + grid.layout.totalH + 14;
-    const loreText = this.add.text(400, loreY, lore.replace("\n", " "),
+    const loreText = this.add.text(CX,loreY, lore.replace("\n", " "),
       { fontSize: "12px", color: TEXT.dim, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0);
     c.add(loreText);
     scroll.setContentHeight(loreY + loreText.height + 12);
@@ -466,7 +474,7 @@ export class MenuScene extends Phaser.Scene {
     const p = this.panel!;
     this.header("Failles infinies");
     if (!this.profileSvc.storyCompleted()) {
-      p.add(this.add.text(400, 290,
+      p.add(this.add.text(CX,290,
         "Les Failles ne s'ouvrent qu'aux vainqueurs.\n\nAchevez l'Histoire — terrassez le Roi-Charogne —\net leur seuil vous sera révélé.",
         { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
       const locked = uiChip(this, 412, 410, {
@@ -478,13 +486,13 @@ export class MenuScene extends Phaser.Scene {
         .setDisplaySize(17, 17).setTint(ACCENT.dimBorder));
       return;
     }
-    p.add(this.add.text(400, 280,
+    p.add(this.add.text(CX,280,
       "Au-delà des terres connues, les Failles déversent\ndes hordes sans fin. Nul n'en est revenu —\nseuls les noms des plus endurants survivent,\ngravés dans les Chroniques.",
       { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-    const soon = uiChip(this, 408, 400, { text: "Bientôt", fontSize: 20, color: TEXT.rift, pill: true });
+    const soon = uiChip(this, CX + 8, 400, { text: "Bientôt", fontSize: 20, color: TEXT.rift, pill: true });
     p.add(soon.container);
-    p.add(this.add.image(408 - soon.text.width / 2 - 20, 400, ICON.rift).setDisplaySize(21, 21).setTint(0xb07cc6));
-    p.add(this.add.text(400, 460, "Mode v1 : scaling agressif, modificateurs de Faille, leaderboard.",
+    p.add(this.add.image(CX + 8 - soon.text.width / 2 - 20, 400, ICON.rift).setDisplaySize(21, 21).setTint(0xb07cc6));
+    p.add(this.add.text(CX,460, "Mode v1 : scaling agressif, modificateurs de Faille, leaderboard.",
       { fontSize: "12px", color: TEXT.dim, ...TXT }).setOrigin(0.5));
   }
 
@@ -548,7 +556,7 @@ export class MenuScene extends Phaser.Scene {
   private buildHeroRows(cursor: LayoutCursor, c: Phaser.GameObjects.Container) {
     // Dit ce qui est RÉELLEMENT récompensé (ADR-021) : le temps passé à retenir la
     // horde, et non les kills — sinon le joueur optimise la mauvaise chose.
-    c.add(this.add.text(400, cursor.next(26), `${CONTENT.hero.name} — les Sceaux ⚜ se gagnent en retenant la horde au corps à corps`,
+    c.add(this.add.text(CX,cursor.next(26), `${CONTENT.hero.name} — les Sceaux ⚜ se gagnent en retenant la horde au corps à corps`,
       { fontSize: "13px", color: DIM, ...TXT }).setOrigin(0.5));
 
     const skills: { id: SkillId; name: string; desc: (lvl: number) => string }[] = [
@@ -593,18 +601,18 @@ export class MenuScene extends Phaser.Scene {
     const top = this.header("Chroniques");
     const runs = this.profileSvc.get().bestRuns;
     if (runs.length === 0) {
-      this.panel!.add(this.add.text(400, top + 120, "Les Chroniques sont vierges.\nLe Roi-Charogne n'attendra pas — partez au combat !",
+      this.panel!.add(this.add.text(CX,top + 120, "Les Chroniques sont vierges.\nLe Roi-Charogne n'attendra pas — partez au combat !",
         { fontSize: "16px", color: DIM, ...TXT, align: "center", lineSpacing: 6 }).setOrigin(0.5));
       return;
     }
     const scroll = this.scrollArea(top);
     const c = scroll.content;
     const cursor = layoutCursor(0);
-    c.add(this.add.text(400, cursor.next(24), `Vos ${runs.length} plus hauts faits`, { fontSize: "14px", color: DIM, ...TXT }).setOrigin(0.5));
+    c.add(this.add.text(CX,cursor.next(24), `Vos ${runs.length} plus hauts faits`, { fontSize: "14px", color: DIM, ...TXT }).setOrigin(0.5));
     runs.forEach((r, i) => {
       const y = cursor.next(touchSize(44), 8);
       const date = new Date(r.dateISO).toLocaleDateString("fr-FR");
-      this.box(400, y, 600, touchSize(44), 0x2b2118, r.victory ? 0x27ae60 : 0x6b5a3e, 8, c);
+      this.box(CX,y, 600, touchSize(44), 0x2b2118, r.victory ? 0x27ae60 : 0x6b5a3e, 8, c);
       c.add(this.add.text(120, y, `#${i + 1}`, { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0, 0.5));
       const chap = r.chapter !== undefined ? `Ch.${r.chapter + 1} — ` : "";
       c.add(this.add.text(170, y, `${chap}${r.waves} vague${r.waves > 1 ? "s" : ""} — ${r.kills} kills`, { fontSize: "15px", color: LIGHT, ...TXT }).setOrigin(0, 0.5));
