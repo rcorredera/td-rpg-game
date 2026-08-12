@@ -33,6 +33,15 @@ export const TOUCH_MIN_CSS = 44;
  *  y était rendu à ~7 px, illisible (retour utilisateur sur appareil réel). */
 export const TEXT_MIN_CSS = 13;
 
+/** Hauteur logique (unités BATTLEFIELD) sous laquelle le HUD bas peut recouvrir
+ *  le champ de bataille sur le pire appareil plausible (mobile paysage étroit) :
+ *  le HUD s'ancre aux bords RÉELS de l'écran (ADR-010) et son plancher tactile
+ *  grimpe fort sur petit écran (`touchSize`), poussant `hudTop` aussi bas que
+ *  ~410-455 en unités logiques sur un panel de mobiles courants. Aucun waypoint
+ *  ni aucun emplacement de tour ne doit être posé sous cette limite (ADR-028) :
+ *  la sim ne connaît pas le HUD, seul le content peut s'en garder. */
+export const PLAY_SAFE_BOTTOM = 400;
+
 /** Encoches / barres système, en pixels CSS (env(safe-area-inset-*)). */
 export interface SafeInsets {
   top: number;
