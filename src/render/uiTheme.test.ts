@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_UI_THEME, UI_THEMES, resolveUiTheme } from "./uiTheme";
+import { DEFAULT_UI_THEME, UI_THEMES, renderedPanel, resolveUiTheme } from "./uiTheme";
 import { C, STATUS, TEXT } from "./theme";
 
 /** Luminance perçue (0..1) — sert à juger contraste et clarté. */
@@ -30,17 +30,23 @@ describe("thèmes d'interface", () => {
   it("laisse un contraste net entre le texte courant et les panneaux", () => {
     // C'est la lisibilité qui décide, pas le goût : un thème n'est acceptable que
     // si son texte reste franchement plus clair que le panneau qui le porte.
+    //
+    // ⚠ On juge `renderedPanel(t)` et non `t.panel` : depuis que l'habillage vient
+    // du panneau ouvragé du pack (ADR-029), c'est le REMPLISSAGE DE LA PLANCHE,
+    // nuancé par `skinTint`, qui s'affiche — `panel` ne sert plus qu'au repli.
+    // Garder l'ancien comparant aurait donné des tests verts garantissant la
+    // lisibilité d'une couleur que plus aucun écran n'affiche.
     for (const t of Object.values(UI_THEMES)) {
-      const gap = luminance(fromCss(t.textLight)) - luminance(t.panel);
+      const gap = luminance(fromCss(t.textLight)) - luminance(renderedPanel(t));
       expect(gap, `thème « ${t.id} » : contraste texte/panneau`).toBeGreaterThan(0.45);
-      const dimGap = luminance(fromCss(t.textDim)) - luminance(t.panel);
+      const dimGap = luminance(fromCss(t.textDim)) - luminance(renderedPanel(t));
       expect(dimGap, `thème « ${t.id} » : contraste texte secondaire`).toBeGreaterThan(0.15);
       // L'ACCENT (titres, libellés dorés) n'était pas gardé — seuls `textLight` et
       // `textDim` l'étaient. En éclaircissant les panneaux pour que la matière du
       // parchemin ressorte, l'or de « Braise » s'est retrouvé sur un panneau de
       // même dominante chaude : lisibilité en chute sans qu'aucun test ne bronche.
       // Un titre doit se détacher PLUS franchement que du texte secondaire.
-      const accentGap = luminance(fromCss(t.textAccent)) - luminance(t.panel);
+      const accentGap = luminance(fromCss(t.textAccent)) - luminance(renderedPanel(t));
       // Seuil calé au-dessus du cas réel qui a motivé ce test (0,348 pour un
       // panneau « Braise » trop clair) : un seuil qui laisse passer le défaut
       // qu'on vient de corriger ne garantit rien.
@@ -56,7 +62,7 @@ describe("thèmes d'interface", () => {
     // sans qu'un seul test bronche. Même seuil que le texte secondaire.
     for (const t of Object.values(UI_THEMES)) {
       for (const [nom, css] of [["acquis", TEXT.ok], ["inabordable", TEXT.bad]] as const) {
-        const gap = Math.abs(luminance(fromCss(css)) - luminance(t.panel));
+        const gap = Math.abs(luminance(fromCss(css)) - luminance(renderedPanel(t)));
         expect(gap, `thème « ${t.id} » : contraste ${nom}/panneau`).toBeGreaterThan(0.15);
       }
     }
@@ -65,7 +71,7 @@ describe("thèmes d'interface", () => {
   it("distingue le panneau actif du panneau inactif", () => {
     // Sans écart, l'état « verrouillé » ne se lit plus.
     for (const t of Object.values(UI_THEMES)) {
-      expect(luminance(t.panel), `thème « ${t.id} »`).toBeGreaterThan(luminance(t.panelDim));
+      expect(luminance(renderedPanel(t)), `thème « ${t.id} »`).toBeGreaterThan(luminance(renderedPanel(t, true)));
     }
   });
 

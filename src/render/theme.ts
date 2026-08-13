@@ -5,7 +5,7 @@
 // ============================================================
 
 
-import { UI_THEME } from "./uiTheme";
+import { SKIN_DIM_FACTOR, UI_THEME } from "./uiTheme";
 /** Palette médiévale (parchemin / forêt / pierre). */
 export const C = {
   // Terrain & décor (fallback procédural ; les tuiles Tiny prennent le relais en Phase 2)
@@ -38,6 +38,25 @@ export const UI_TINT = {
   panelDim: UI_THEME.panelDim,  // panneau verrouillé/inactif
   btn: UI_THEME.btn,            // bouton secondaire
 } as const;
+
+/**
+ * Teinte à appliquer à l'habillage SOMBRE du pack pour une teinte de panneau
+ * demandée (ADR-029).
+ *
+ * Les appelants raisonnent en couleur de panneau — un héritage du repli Kenney,
+ * dont la planche était grise et se teignait directement. L'habillage du pack est
+ * déjà ardoise et doré : le teindre avec ces mêmes valeurs sombres le noircirait
+ * et effacerait ses volutes, puisque `setTint` MULTIPLIE. On ne retient donc de
+ * la demande que son INTENTION — standard ou éteint.
+ */
+export function skinPanelTint(requested: number): number {
+  const eteint = requested === UI_TINT.panelDim || requested === UI_THEME.lockedFill;
+  const t = UI_THEME.skinTint;
+  if (!eteint) return t;
+  const ch = (shift: number) =>
+    Math.round((((t >> shift) & 0xff) * SKIN_DIM_FACTOR));
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+}
 
 /** Couleurs de texte (chaînes CSS) — source unique pour tout render/, remplace
  *  les constantes locales dupliquées dans MenuScene/GameScene (ADR-007). */

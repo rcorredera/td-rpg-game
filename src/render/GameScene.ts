@@ -20,8 +20,8 @@ import { ICON, preloadIcons } from "./icons";
 import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { decorativeEdgeVisible, uiButton, uiPanel } from "./components";
 import {
-  ensureUiSkinTextures, uiSkinActive, uiSkinInsets,
-  UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
+  ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets,
+  UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS, UI_SKIN_PANEL,
 } from "./uiSkin";
 import { preloadSprites, TEX } from "./assets";
 import { ENEMY_SIZE_FALLBACK, enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
@@ -367,34 +367,59 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
+    // Largeur DÉRIVÉE du contenu : à 230 en dur, la ligne descriptive la plus
+    // longue mesurait 275 unités et débordait des deux côtés du panneau. Le défaut
+    // préexistait, mais un panneau au cadre ouvragé ne pardonne plus le débord.
+    const mesure = (txt: string, px: number): number => {
+      const t = this.add.text(0, 0, txt, { fontSize: `${px}px`, fontFamily: FONT_BODY });
+      const w = t.width;
+      t.destroy();
+      return w;
+    };
+    const menuW = Math.ceil(Math.max(230, ...entries.flatMap(e => [
+      mesure(e.label, 14),
+      ...(e.sub ? [mesure(e.sub, 11)] : []),
+      ...(e.sub2 ? [mesure(e.sub2, 11)] : []),
+    ])) + 2 * uiSkinInset(UI_SKIN_PANEL) + 10);
+    const half = menuW / 2;
+
     let yOff = 0;
     for (const e of entries) {
       const enabled = e.cb !== null;
-      const hgt = e.sub2 ? 58 : e.sub ? 44 : 30;
+      // Hauteurs relevées pour l'habillage ouvragé : ses marges valent 22, donc
+      // une rangée de 44 n'est QUE du cadre et le texte se pose sur l'ornement.
+      // Au passage, 30 était sous le plancher tactile (ADR-011) pour une cible
+      // qu'on vise au doigt en pleine partie.
+      const hgt = e.sub2 ? 78 : e.sub ? 64 : 48;
       const cy = yOff + hgt / 2;
-      const bg = uiPanel(this, 0, cy, 230, hgt, enabled ? UI_TINT.panel : UI_TINT.panelDim, enabled ? 1 : 0.8);
+      const bg = uiPanel(this, 0, cy, menuW, hgt, enabled ? UI_TINT.panel : UI_TINT.panelDim, enabled ? 1 : 0.8);
       menu.add(bg);
-      const edge = this.add.graphics();
-      edge.lineStyle(1, enabled ? 0xc9a227 : 0x6b5a3e, 0.9);
-      edge.strokeRoundedRect(-115, yOff, 230, hgt, 8);
-      menu.add(edge);
-      const labelY = e.sub2 ? cy - 17 : e.sub ? cy - 8 : cy;
+      // Liseré tracé à la main : il doublait le cadre du panneau ouvragé du pack,
+      // exactement comme celui de `uiFramedPanel` (ADR-029). L'état « indisponible »
+      // reste porté par la teinte éteinte et l'opacité du panneau.
+      if (decorativeEdgeVisible(this)) {
+        const edge = this.add.graphics();
+        edge.lineStyle(1, enabled ? 0xc9a227 : 0x6b5a3e, 0.9);
+        edge.strokeRoundedRect(-half, yOff, menuW, hgt, 8);
+        menu.add(edge);
+      }
+      const labelY = e.sub2 ? cy - 22 : e.sub ? cy - 11 : cy;
       const txt = this.add.text(0, labelY, e.label, {
         fontSize: "14px", color: e.color ?? C.uiText, fontFamily: FONT_BODY,
       }).setOrigin(0.5).setAlpha(enabled ? 1 : 0.75);
       menu.add(txt);
       if (e.sub) {
-        menu.add(this.add.text(0, e.sub2 ? cy - 1 : cy + 10, e.sub, {
+        menu.add(this.add.text(0, e.sub2 ? cy - 2 : cy + 11, e.sub, {
           fontSize: "11px", color: "#a89878", fontFamily: FONT_BODY,
         }).setOrigin(0.5).setAlpha(enabled ? 1 : 0.75));
       }
       if (e.sub2) {
-        menu.add(this.add.text(0, cy + 15, e.sub2, {
+        menu.add(this.add.text(0, cy + 20, e.sub2, {
           fontSize: "11px", color: "#f0e6d2", fontFamily: FONT_BODY,
         }).setOrigin(0.5).setAlpha(enabled ? 1 : 0.75));
       }
       if (enabled) {
-        const zone = this.add.zone(0, cy, 230, hgt).setInteractive({ cursor: CURSOR_POINT });
+        const zone = this.add.zone(0, cy, menuW, hgt).setInteractive({ cursor: CURSOR_POINT });
         zone.on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev: Phaser.Types.Input.EventData) => {
           ev.stopPropagation(); e.cb!();
         });

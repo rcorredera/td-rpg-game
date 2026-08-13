@@ -29,13 +29,6 @@ export interface UiTileOpts {
   primary?: boolean;
   /** Avancement 0..1 — dessine une jauge en pied de tuile. */
   progress?: number;
-  /**
-   * Texture de fond, fortement assombrie sous le contenu — même traitement que
-   * les vignettes de chapitre (`uiLevelGrid`). Une grande tuile qui ne porte
-   * qu'une icône et deux lignes se creuse : l'aperçu du LIEU lui donne sa
-   * surface, et dit au passage où mène la tuile.
-   */
-  bgTexture?: string;
   /** Verrouillée : plus de relief au survol, plus de curseur main. */
   locked?: boolean;
   onSelect: () => void;
@@ -50,14 +43,6 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
     w, h, borderColor: opts.accent ?? ACCENT.gold, radius,
   });
   container.add(panel);
-
-  // Aperçu du lieu, en retrait du cadre pour que l'arrondi du pack reste net
-  // par-dessus (un masque géométrique travaille en coordonnées MONDE et se
-  // décale dès que la tuile vit dans un conteneur défilant — cf. `uiLevelGrid`).
-  if (opts.bgTexture && scene.textures.exists(opts.bgTexture)) {
-    const inset = 8;
-    container.add(scene.add.tileSprite(0, 0, w - inset * 2, h - inset * 2, opts.bgTexture).setAlpha(0.4));
-  }
 
   const highlight = scene.add.graphics();
   highlight.fillStyle(ACCENT.gold, 0.09);
@@ -90,6 +75,14 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
     maxGlyph: ICON_RASTER_PX, footerH: opts.progress !== undefined ? barH : 0,
   });
 
+  // Ombre portée sous l'emblème. Nos icônes sont des SILHOUETTES monochromes
+  // (ADR-012) : posées à grande taille sur l'ardoise ouvragée du pack, elles
+  // lisaient comme un aplat de remplissage. Un double sombre décalé leur rend
+  // l'épaisseur que l'art du pack a partout ailleurs, sans changer d'iconographie.
+  const shadow = 3;
+  container.add(scene.add.image(shadow, box.iconCy + shadow, opts.icon)
+    .setDisplaySize(box.glyph, box.glyph)
+    .setTint(0x0b0f1a).setAlpha(0.45));
   container.add(scene.add.image(0, box.iconCy, opts.icon)
     .setDisplaySize(box.glyph, box.glyph)
     .setTint(opts.iconColor ?? ACCENT.goldSoft));

@@ -12,6 +12,7 @@ import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
 import { scaleFont, touchSize } from "../viewport";
 import { uiFramedPanel } from "./panel";
 import { rowColors, type RowState } from "./listRow";
+import { uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
 
 export interface GridLayout {
   cols: number;
@@ -123,7 +124,10 @@ export function uiLevelGrid(
       // travaille en coordonnées MONDE, or la grille vit dans un conteneur
       // défilant — il se décalait et masquait tout. Le retrait suffit à ce que le
       // cadre arrondi reste net par-dessus.
-      const inset = 7;
+      // Retrait dérivé de la marge RÉELLE de l'habillage : à 7 unités, l'aperçu
+      // recouvrait le liseré doré du panneau ouvragé du pack, qui court à ~9 du
+      // bord. Une valeur en dur redevient fausse au premier changement de planche.
+      const inset = Math.max(7, uiSkinInset(UI_SKIN_PANEL) * 0.6);
       cell.add(scene.add.tileSprite(
         0, 0, layout.cellW - inset * 2, cellH - inset * 2, t.biomeTexture,
       ).setAlpha(0.4));
