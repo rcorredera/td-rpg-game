@@ -18,7 +18,7 @@ import { preloadSprites } from "./assets";
 import { ACCENT, TEXT } from "./theme";
 import {
   hubLayout, layoutCursor, levelGridZone, menuZone,
-  uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiPanel, uiTile,
+  decorativeEdgeVisible, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiPanel, uiPanelPad, uiTile,
   uiScrollList, uiSectionHeader,
   type LayoutCursor, type RowState, type UiChip, type UiScrollList,
 } from "./components";
@@ -74,8 +74,11 @@ export class MenuScene extends Phaser.Scene {
     // à neuf plutôt que de repositionner chaque élément un par un.
     onSceneResize(this, () => this.scene.restart({ profileSvc: this.profileSvc }));
     this.buildMasthead(v);
-    this.chipShards = uiChip(this, 330, 122, { icon: "◆", text: "Éclats : 0", fontSize: 19, color: TEXT.light });
-    this.chipSceaux = uiChip(this, 470, 122, { icon: "⚜", text: "Sceaux : 0", fontSize: 19, color: TEXT.light });
+    // Posées au centre : `spreadCurrencies()` les écarte ensuite d'après leur
+    // largeur réelle. Les créer à des abscisses en dur « puisqu'elles sont
+    // recalculées » laisse traîner deux valeurs justes par accident.
+    this.chipShards = uiChip(this, CX, 122, { icon: "◆", text: "Éclats : 0", fontSize: 19, color: TEXT.light });
+    this.chipSceaux = uiChip(this, CX, 122, { icon: "⚜", text: "Sceaux : 0", fontSize: 19, color: TEXT.light });
     this.refreshCurrencies();
     this.spreadCurrencies();
 
@@ -182,7 +185,12 @@ export class MenuScene extends Phaser.Scene {
     const tint = fill === 0x221b12 ? UI_TINT.panelDim : UI_TINT.panel;
     t.add(uiPanel(this, x, y, w, h, tint));
     const g = this.add.graphics();
-    g.lineStyle(1, stroke, 0.85); g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
+    // Le panneau du pack porte son propre cadre : un liseré vectoriel par-dessus
+    // le double (ADR-030). Même règle que `uiFramedPanel`, appliquée ici aussi —
+    // ce helper sert les Chroniques et les fiches du Bestiaire.
+    if (decorativeEdgeVisible(this)) {
+      g.lineStyle(1, stroke, 0.85); g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
+    }
     t.add(g);
     return g;
   }
@@ -247,10 +255,16 @@ export class MenuScene extends Phaser.Scene {
      *  décrit pas seulement (ADR-016). `null` = inconnue, silhouette masquée. */
     portrait?: { key: string; known: boolean },
   ) {
-    const pad = 14, lead = 4;
+    // Géométrie DÉRIVÉE de la carte. `textX` valait `110 + artW` et la carte va de
+    // 160 à 800 : le texte du Bestiaire commençait 50 unités HORS de son panneau,
+    // un reste du monde 800×600 que le passage en 960×540 (ADR-027) n'avait pas
+    // rattrapé. La marge, elle, vient de l'ornement du pack (ADR-030).
+    const cardW = 640;
+    const pad = Math.max(14, uiPanelPad(this)), lead = 4;
+    const cardLeft = CX - cardW / 2;
     const artW = portrait ? 76 : 0;
-    const textX = 110 + artW;
-    const wrapMax = 560 - artW;
+    const textX = cardLeft + pad + artW;
+    const wrapMax = cardW - pad * 2 - artW;
     const objs = lines.map(l => this.add.text(0, 0, l.text, {
       fontSize: `${l.size}px`, color: l.color, ...TXT, lineSpacing: 2,
       ...(l.wrap ? { wordWrap: { width: Math.min(l.wrap, wrapMax) } } : {}),
@@ -258,11 +272,11 @@ export class MenuScene extends Phaser.Scene {
     const inner = objs.reduce((s, o, i) => s + o.height + (i ? lead : 0), 0);
     const h = Math.max(inner + pad * 2, portrait ? 78 : 0);
     const y = cursor.next(h, 10);
-    this.box(CX,y, 640, h, fill, stroke, 10, c);
+    this.box(CX, y, cardW, h, fill, stroke, 10, c);
 
     if (portrait) {
       const size = Math.min(62, h - 14);
-      const img = this.add.image(110 + artW / 2 - 8, y, portrait.key).setDisplaySize(size, size);
+      const img = this.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key).setDisplaySize(size, size);
       // Créature non découverte : silhouette noire, comme un Pokédex — on voit la
       // forme sans révéler l'unité.
       if (!portrait.known) img.setTint(0x120d09);
@@ -482,12 +496,12 @@ export class MenuScene extends Phaser.Scene {
       p.add(this.add.text(CX,290,
         "Les Failles ne s'ouvrent qu'aux vainqueurs.\n\nAchevez l'Histoire — terrassez le Roi-Charogne —\net leur seuil vous sera révélé.",
         { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-      const locked = uiChip(this, 412, 410, {
+      const locked = uiChip(this, CX, 410, {
         text: `${this.profileSvc.get().chaptersWon.length}/${CONTENT.chapters.length} chapitres conquis`,
         fontSize: 16, color: TEXT.dim, pill: true,
       });
       p.add(locked.container);
-      p.add(this.add.image(412 - locked.text.width / 2 - 18, 410, ICON.locked)
+      p.add(this.add.image(CX - locked.text.width / 2 - 18, 410, ICON.locked)
         .setDisplaySize(17, 17).setTint(ACCENT.dimBorder));
       return;
     }
@@ -614,15 +628,27 @@ export class MenuScene extends Phaser.Scene {
     const c = scroll.content;
     const cursor = layoutCursor(0);
     c.add(this.add.text(CX,cursor.next(24), `Vos ${runs.length} plus hauts faits`, { fontSize: "14px", color: DIM, ...TXT }).setOrigin(0.5));
+    // Colonnes DÉRIVÉES de la rangée, jamais posées en absolu. Les quatre X
+    // valaient 120 / 170 / 500 / 680 : des restes du monde 800×600 centré sur 400.
+    // Après le passage en 960×540 (ADR-027), la rangée va de 180 à 780 — le rang
+    // « #1 » tombait donc 60 unités HORS du panneau et le libellé se posait sur sa
+    // volute d'angle. Le centre avait été corrigé partout, ces quatre-là non.
+    const rowW = 600;
+    const pad = uiPanelPad(this);
+    const left = CX - rowW / 2 + pad;
+    const right = CX + rowW / 2 - pad;
     runs.forEach((r, i) => {
       const y = cursor.next(touchSize(44), 8);
       const date = new Date(r.dateISO).toLocaleDateString("fr-FR");
-      this.box(CX,y, 600, touchSize(44), 0x2b2118, r.victory ? 0x27ae60 : 0x6b5a3e, 8, c);
-      c.add(this.add.text(120, y, `#${i + 1}`, { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0, 0.5));
+      this.box(CX, y, rowW, touchSize(44), 0x2b2118, r.victory ? 0x27ae60 : 0x6b5a3e, 8, c);
+      const rang = this.add.text(left, y, `#${i + 1}`, { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0, 0.5);
+      c.add(rang);
       const chap = r.chapter !== undefined ? `Ch.${r.chapter + 1} — ` : "";
-      c.add(this.add.text(170, y, `${chap}${r.waves} vague${r.waves > 1 ? "s" : ""} — ${r.kills} kills`, { fontSize: "15px", color: LIGHT, ...TXT }).setOrigin(0, 0.5));
-      c.add(this.add.text(500, y, r.victory ? "Victoire" : "Défaite", { fontSize: "14px", color: r.victory ? OK : DIM, ...TXT }).setOrigin(0.5));
-      c.add(this.add.text(680, y, date, { fontSize: "13px", color: DIM, ...TXT }).setOrigin(1, 0.5));
+      c.add(this.add.text(left + rang.width + 12, y, `${chap}${r.waves} vague${r.waves > 1 ? "s" : ""} — ${r.kills} kills`,
+        { fontSize: "15px", color: LIGHT, ...TXT }).setOrigin(0, 0.5));
+      c.add(this.add.text(CX + rowW * 0.12, y, r.victory ? "Victoire" : "Défaite",
+        { fontSize: "14px", color: r.victory ? OK : DIM, ...TXT }).setOrigin(0.5));
+      c.add(this.add.text(right, y, date, { fontSize: "13px", color: DIM, ...TXT }).setOrigin(1, 0.5));
     });
     scroll.setContentHeight(cursor.y);
   }

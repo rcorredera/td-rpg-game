@@ -123,6 +123,13 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   Bastion porte maintenant la châsse du pack (`bar-small-base`, bande à TROIS tranches via
   `planStrip`). ⚠ RESTE inutilisé : rubans (`ribbons-*.png`) pour les titres, bannière
   (`banner.png`) pour le lore — la prochaine passe.
+- **Marges intérieures et abscisses en dur (suite ADR-030) — FAIT** : le contenu se posait sur les
+  volutes d'angle (numéro de chapitre à 6 unités du bord pour une marge de 22) et les colonnes
+  des Chroniques/du Bestiaire/des Failles gardaient des abscisses en dur héritées du monde 800 —
+  le rang « #1 » tombait 60 unités HORS de son panneau. `uiPanelPad(scene)` dérive la marge de
+  l'habillage, et `render/layoutLiterals.test.ts` interdit la FORME entière (toute abscisse ≥ 100
+  en littéral dans les scènes), pas les cinq cas trouvés. Mesuré après : pire marge 20 unités sur
+  les 29 textes de la grille des chapitres, zéro texte à moins de 20 d'un bord aux Chroniques.
 - **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups
