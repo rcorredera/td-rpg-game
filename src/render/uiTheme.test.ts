@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_UI_THEME, UI_THEMES, resolveUiTheme } from "./uiTheme";
-import { C, STATUS } from "./theme";
+import { C, STATUS, TEXT } from "./theme";
 
 /** Luminance perçue (0..1) — sert à juger contraste et clarté. */
 function luminance(rgb: number): number {
@@ -45,6 +45,20 @@ describe("thèmes d'interface", () => {
       // panneau « Braise » trop clair) : un seuil qui laisse passer le défaut
       // qu'on vient de corriger ne garantit rien.
       expect(accentGap, `thème « ${t.id} » : contraste accent/panneau`).toBeGreaterThan(0.36);
+    }
+  });
+
+  it("garde lisibles les couleurs qui PORTENT une information", () => {
+    // `ok` et `bad` ne sont pas décoratives : elles disent « acquis » et « hors de
+    // portée ». Posées sur un panneau, elles n'étaient gardées par AUCUN test —
+    // en éclaircissant les panneaux pour le parchemin, le coût inabordable de
+    // l'Armurerie est tombé à 0,04 d'écart de luminance, illisible à l'écran,
+    // sans qu'un seul test bronche. Même seuil que le texte secondaire.
+    for (const t of Object.values(UI_THEMES)) {
+      for (const [nom, css] of [["acquis", TEXT.ok], ["inabordable", TEXT.bad]] as const) {
+        const gap = Math.abs(luminance(fromCss(css)) - luminance(t.panel));
+        expect(gap, `thème « ${t.id} » : contraste ${nom}/panneau`).toBeGreaterThan(0.15);
+      }
     }
   });
 
