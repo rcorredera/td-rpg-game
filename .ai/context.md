@@ -101,11 +101,21 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   vide dans la tuile « Histoire », jauge 82 unités sous le texte, 40 % de l'écran Histoire vide
   sous la grille. `components/tileContent.ts` fait remplir la boîte (icône jusqu'à
   `ICON_RASTER_PX`, porté 128 → 192) et `gridLayout` reçoit sa hauteur disponible.
-  Occupation après : secondaires 82 %, principale 75 % (+ aperçu du biome du prochain
-  chapitre en fond, même idiome que les vignettes). ⚠ RESTE : le pack a des bannières et des
-  rubans (`banner.png`, `ribbons-*.png`, `paper-special.png`) encore inutilisés, et les
-  panneaux restent sombres (`setTint` MULTIPLIE, cf. ADR-026) — la matière du parchemin ne
-  ressort toujours pas, seule sa bordure porte l'habillage.
+  Occupation après : secondaires 82 %, principale 75 %.
+- **Panneau ouvragé du pack (ADR-030) — FAIT** : les tuiles ne « faisaient pas le même jeu »
+  que les boutons parce qu'on avait branché la mauvaise planche — `paper-regular` (parchemin
+  crème) teinté vers l'ardoise des thèmes, donc réduit à sa forme de bord, quand les boutons
+  gardaient leur art natif. `paper-special` (ardoise + volutes dorées) est désormais
+  l'habillage de TOUS les panneaux, sans teinte de clarté : le thème n'en nuance plus que la
+  dominante (`skinTint`, multiplicateur CLAIR — une base sombre ne se teinte pas avec du
+  sombre). Trois corrections de racine au passage : `cornerDetailDepth` mesure jusqu'au
+  DERNIER pixel non-remplissage (la volute est à 9-17 px de l'angle, pas collée à lui),
+  `fitInsets` empêche un nine-slice de se replier quand l'élément est plus court que deux
+  marges, et plus aucun liseré vectoriel n'est tracé par-dessus l'habillage (l'anneau vert
+  « conquis » doublait le cadre doré). Deux défauts préexistants remontés par le nouveau
+  cadre : menu de tour figé à 230 de large pour 275 de texte, et rangées de 30 sous le
+  plancher tactile. ⚠ RESTE inutilisé : rubans (`ribbons-*.png`) pour les titres, bannière
+  (`banner.png`) pour le lore, jauge en bois (`bar-big-*.png`) — la prochaine passe.
 - **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups

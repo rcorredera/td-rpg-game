@@ -43,13 +43,17 @@ describe("composition du contenu d'une tuile", () => {
     const grande = composeTile({ ...SECONDAIRE, h: 240 }).glyph;
     expect(moyenne).toBeGreaterThan(petite);
     expect(grande).toBeGreaterThan(moyenne);
-    // Dès qu'il y a la place, l'icône va JUSQU'À sa résolution native — c'est ce
-    // qu'un plafond en dur (96) interdisait, et un simple « ça grandit » ne l'aurait
-    // pas attrapé : 96 grandit aussi, il s'arrête juste trop tôt.
-    expect(composeTile({ ...SECONDAIRE, h: 300 }).glyph).toBe(128);
-    expect(composeTile(PRINCIPALE).glyph).toBe(128);
+    // L'icône est PROPORTIONNELLE : doubler la hauteur double l'emblème tant
+    // qu'aucun plafond ne mord. Un simple « ça grandit » ne suffit pas à attraper
+    // le défaut d'origine — un plafond en dur à 96 grandit aussi, il s'arrête
+    // juste trop tôt.
+    const bas = composeTile({ ...SECONDAIRE, w: 900, h: 150 }).glyph;
+    const haut = composeTile({ ...SECONDAIRE, w: 900, h: 300 }).glyph;
+    expect(haut / bas).toBeGreaterThan(1.8);
+    // Dès qu'il y a la place, l'icône va JUSQU'À sa résolution native…
+    expect(composeTile({ ...SECONDAIRE, w: 600, h: 500 }).glyph).toBe(128);
     // …et jamais au-delà, sous peine de flou.
-    expect(composeTile({ ...SECONDAIRE, h: 600, w: 600 }).glyph).toBeLessThanOrEqual(128);
+    expect(composeTile({ ...SECONDAIRE, h: 900, w: 900 }).glyph).toBeLessThanOrEqual(128);
   });
 
   it("garde la jauge de pied au contact du bloc", () => {
@@ -74,13 +78,30 @@ describe("composition du contenu d'une tuile", () => {
     }
   });
 
-  it("remplit la tuile dès que la résolution de l'icône le permet", () => {
-    // La garantie chiffrée qui remplace le contrôle à l'œil : sur une tuile où
-    // l'icône n'est pas bridée par sa rastérisation, le contenu occupe toute sa
-    // zone utile. Mesuré avant correction sur la tuile secondaire : 57 % occupés.
-    const b = composeTile(SECONDAIRE);
-    const zoneH = (SECONDAIRE.h / 2 - b.pad) - (-SECONDAIRE.h / 2 + b.pad);
-    const bloc = basDuBloc(SECONDAIRE) - (b.iconCy - b.glyph / 2);
-    expect(bloc / zoneH, "part de la zone utile réellement occupée").toBeGreaterThan(0.95);
+  it("occupe sa zone utile sur toute la gamme de tuiles du jeu", () => {
+    // La garantie chiffrée qui remplace le contrôle à l'œil. Avant correction :
+    // 43 % sur la tuile principale et 57 % sur les secondaires, parce que le
+    // contenu avait une taille fixe. Le seuil est calé bien au-dessus de ces
+    // deux cas réels — un seuil qui les laisserait passer ne garantirait rien.
+    //
+    // Il ne porte que sur les gabarits que le jeu produit réellement (≤ 360 de
+    // haut) : au-delà, l'emblème plafonne par proportion, et le reste est de
+    // l'air voulu autour d'un cadre ouvragé, pas du vide subi.
+    // Couples (largeur, hauteur) RÉELLEMENT produits par `hubLayout`, relevés en
+    // jeu à 960×540 et à 844×390 — et non un produit cartésien : une tuile
+    // secondaire de 242 de large ne fait jamais 350 de haut, la juger sur ce
+    // gabarit reviendrait à tester une mise en page qui n'existe pas.
+    const REELS = [
+      { ...SECONDAIRE, w: 242, h: 167 },
+      { ...SECONDAIRE, w: 303, h: 167 },
+      { ...PRINCIPALE, w: 363, h: 350 },
+      { ...PRINCIPALE, w: 450, h: 350 },
+    ];
+    for (const o of REELS) {
+      const b = composeTile(o);
+      const bas = o.footerH > 0 ? b.footerTop + o.footerH : basDuBloc(o);
+      const part = (bas - (b.iconCy - b.glyph / 2)) / (o.h - 2 * b.pad);
+      expect(part, `part occupée, ${o.w}×${o.h}`).toBeGreaterThan(0.63);
+    }
   });
 });

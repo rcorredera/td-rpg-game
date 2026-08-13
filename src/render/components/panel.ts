@@ -3,7 +3,8 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { ACCENT, UI_TINT } from "../theme";
+import { ACCENT, skinPanelTint, UI_TINT } from "../theme";
+import { fitInsets } from "../nineSlicePlan";
 import { ensureUiSkinTextures, uiSkinActive, uiSkinInsets, UI_SKIN_PANEL } from "../uiSkin";
 
 /** Panneau nine-slice teinté (remplace les rectangles plats). */
@@ -15,14 +16,17 @@ export function uiPanel(
   // reste pilotée par le thème (ADR-026) : la base est claire exprès, `setTint`
   // multipliant, elle peut virer ardoise, parchemin ou pourpre selon la palette.
   ensureUiSkinTextures(scene);
-  const key = scene.textures.exists(UI_SKIN_PANEL) ? UI_SKIN_PANEL : "ui_panel";
+  const skin = scene.textures.exists(UI_SKIN_PANEL);
+  const key = skin ? UI_SKIN_PANEL : "ui_panel";
   // Marges par CÔTÉ : les pièces du pack ne sont pas carrées (45 de large pour
   // 47 de haut), une marge unique déformerait les angles.
-  const i = key === UI_SKIN_PANEL
-    ? uiSkinInsets(key)
-    : { left: 14, right: 14, top: 14, bottom: 14 };
+  // Les marges sont ramenées à ce que l'élément peut loger : un panneau plus court
+  // que deux marges replierait le nine-slice sur lui-même.
+  const i = fitInsets(
+    skin ? uiSkinInsets(key) : { left: 14, right: 14, top: 14, bottom: 14 }, w, h,
+  );
   const p = scene.add.nineslice(x, y, key, undefined, w, h, i.left, i.right, i.top, i.bottom);
-  p.setTint(tint).setAlpha(alpha);
+  p.setTint(skin ? skinPanelTint(tint) : tint).setAlpha(alpha);
   return p;
 }
 
@@ -64,13 +68,16 @@ export function uiFramedPanel(scene: Phaser.Scene, x: number, y: number, opts: U
   const container = scene.add.container(x, y);
   const panel = uiPanel(scene, 0, 0, w, h, tint);
   const border = scene.add.graphics();
-  // Le parchemin du pack porte DÉJÀ son contour, dessiné dans l'art. Reposer
-  // par-dessus un liseré doré vectoriel donnait un double trait peu flatteur
-  // (retour de playtest). On ne trace donc plus que les bordures qui portent une
-  // INFORMATION — état verrouillé, Faille — reconnaissables à leur couleur
-  // différente de l'accent par défaut.
-  const stateBorder = borderColor !== ACCENT.gold;
-  if (!uiSkinActive(scene) || stateBorder) {
+  // Le panneau du pack porte DÉJÀ son contour, dessiné dans l'art — liseré doré
+  // et volutes d'angle. Reposer par-dessus un liseré vectoriel superpose deux
+  // courbes de rayons différents, qui divergent aux angles.
+  //
+  // Y compris pour les liserés d'ÉTAT, qu'on avait d'abord épargnés : sur le
+  // panneau ouvragé, l'anneau vert « conquis » de la grille des chapitres doublait
+  // le cadre doré de façon très visible. L'état ne se perd pas pour autant — il
+  // est porté par le contenu (étoiles gagnées, nom masqué, prix en rouge) et par
+  // la teinte éteinte du panneau verrouillé.
+  if (!uiSkinActive(scene)) {
     border.lineStyle(1, borderColor, borderAlpha);
     border.strokeRoundedRect(-w / 2, -h / 2, w, h, radius);
   }

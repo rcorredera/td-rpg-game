@@ -43,7 +43,15 @@ interface Sheet {
 const GRID = { cols: [0, 128, 256], rows: [0, 128, 256], cell: 64 } as const;
 
 const SHEETS = {
-  ts_panel: { file: "paper-regular.png", ...GRID, inset: 16 },
+  // Panneau OUVRAGÉ du pack — ardoise sombre et volutes dorées aux angles. C'est
+  // lui l'habillage du jeu, pas le parchemin crème : `setTint` MULTIPLIE, donc
+  // teindre un parchemin clair vers l'ardoise des thèmes (ADR-026) n'en gardait
+  // que la forme du bord et jetait toute la matière — les boutons, eux, gardaient
+  // leur art natif, d'où deux factures visuelles dans un même écran.
+  // Marge 22 et non 16 : la volute d'angle s'étend jusqu'à 17 px, la rogner à 16
+  // la couperait en deux. `paper-regular.png` reste en réserve pour les pages de
+  // lore, où un parchemin a du sens.
+  ts_panel: { file: "paper-special.png", ...GRID, inset: 22 },
   ts_btn: { file: "btn-big-blue.png", ...GRID, inset: 22 },
   ts_btn_press: { file: "btn-big-blue-pressed.png", ...GRID, inset: 22 },
   ts_btn_primary: { file: "btn-big-red.png", ...GRID, inset: 22 },
@@ -109,11 +117,21 @@ function opaqueBounds(
 
 /**
  * Profondeur du dessin d'angle : distance en diagonale, depuis l'angle de l'art,
- * avant de retomber sur la couleur de remplissage.
+ * jusqu'au DERNIER pixel qui n'est pas la couleur de remplissage.
  *
  * C'est la mesure qui décide de tout (cf. `planNineSlice`) : 3 px sur le
- * parchemin — donc rognable sans dommage — contre 37 sur les boutons, dont le
- * coin porte contour, reflet et un ornement.
+ * parchemin — donc rognable sans dommage — 18 sur le panneau ouvragé, dont
+ * l'angle porte une volute dorée, 37 sur les boutons.
+ *
+ * ⚠ Le DERNIER pixel différent, et non le premier pixel de remplissage. La
+ * première version s'arrêtait au premier retour au remplissage et rendait 3 sur
+ * le panneau ouvragé, dont la volute est posée PLUS LOIN dans la pièce (entre 9
+ * et 17 px de l'angle, mesuré) : le plan aurait rogné en plein milieu de
+ * l'ornement. Un ornement d'angle n'est pas forcément collé à l'angle.
+ *
+ * La diagonale, et non la couronne à distance `k` : un liseré de bord court sur
+ * toute la longueur de la pièce, donc toute couronne au-delà du liseré en
+ * contient — la profondeur mesurée vaudrait toujours la pièce entière.
  */
 function cornerDetailDepth(
   data: Uint8ClampedArray, sheetW: number, corner: Box, fill: readonly [number, number, number],
@@ -121,11 +139,12 @@ function cornerDetailDepth(
   const proche = (i: number) =>
     Math.abs(data[i]! - fill[0]) + Math.abs(data[i + 1]! - fill[1]) + Math.abs(data[i + 2]! - fill[2]) < 60;
   const max = Math.min(corner.w, corner.h);
+  let depth = 0;
   for (let k = 0; k < max; k++) {
     const i = ((corner.y + k) * sheetW + (corner.x + k)) * 4;
-    if (data[i + 3]! > 40 && proche(i)) return k;
+    if (data[i + 3]! > 40 && !proche(i)) depth = k + 1;
   }
-  return max;
+  return depth;
 }
 
 /** Recompose les nine-slice. Idempotent : les composants l'appellent à chaque

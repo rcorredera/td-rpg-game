@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MID, planNineSlice, type SheetFrame } from "./nineSlicePlan";
+import { fitInsets, MID, planNineSlice, type SheetFrame } from "./nineSlicePlan";
 
 // ============================================================
 // Ce fichier existe parce que son absence a coûté cinq allers-retours de
@@ -91,6 +91,37 @@ describe("plan de découpe d'un nine-slice", () => {
       }
       expect(couvert.size, "trou dans l'assemblage").toBe(p.fullW * p.fullH);
     }
+  });
+
+  it("ramène les marges à ce que l'élément peut loger", () => {
+    // Le nine-slice se replie sur lui-même dès que deux marges opposées dépassent
+    // la dimension. Constaté en jeu : le menu de tour pose des rangées de 30 à 44
+    // unités de haut, contre des marges de 22 — l'ornement d'angle du panneau
+    // ouvragé s'y écrasait. La garantie vaut pour TOUT élément habillé, y compris
+    // ceux qu'on n'a pas encore écrits.
+    const voulu = { left: 22, right: 22, top: 22, bottom: 22 };
+    for (const [w, h] of [[230, 30], [230, 44], [230, 58], [44, 44], [12, 9], [400, 300]] as const) {
+      const i = fitInsets(voulu, w, h);
+      expect(i.left + i.right, `largeur ${w}`).toBeLessThan(w);
+      expect(i.top + i.bottom, `hauteur ${h}`).toBeLessThan(h);
+      for (const [cote, v] of Object.entries(i)) {
+        expect(v, `${cote} négatif`).toBeGreaterThanOrEqual(0);
+        expect(v, `${cote} au-delà du voulu`).toBeLessThanOrEqual(22);
+      }
+    }
+  });
+
+  it("rogne les deux côtés à parts égales", () => {
+    // Rogner d'un seul côté déplacerait le dessin : l'élément perdrait sa volute
+    // gauche en gardant la droite, ce qui se lit comme un cadre de travers.
+    const i = fitInsets({ left: 22, right: 22, top: 22, bottom: 22 }, 230, 30);
+    expect(i.top).toBe(i.bottom);
+    expect(i.left).toBe(22);
+  });
+
+  it("ne touche à rien quand tout tient", () => {
+    const voulu = { left: 22, right: 22, top: 22, bottom: 22 };
+    expect(fitInsets(voulu, 400, 300)).toEqual(voulu);
   });
 
   it("ne prélève jamais hors de la planche", () => {

@@ -322,19 +322,10 @@ export class MenuScene extends Phaser.Scene {
     const z = menuZone(viewport());
     const layout = hubLayout(z.cx, z.cy, z.w, z.h, rest.length);
 
-    // La tuile principale montre le LIEU où l'on reprend. Sans lui, une tuile de
-    // 363×350 ne portait qu'une icône et deux lignes : le contenu occupait 43 %
-    // de sa hauteur, le reste était du vide. L'aperçu du biome lui donne sa
-    // surface et dit d'un coup d'œil où mène le bouton (même idiome que les
-    // vignettes de chapitre).
-    const nextChapter = CONTENT.chapters[Math.min(wonCount, total - 1)];
-    if (nextChapter) ensureTerrainTextures(this, nextChapter.biome);
-
     p.add(uiTile(this, layout.primary.x, layout.primary.y, {
       w: layout.primary.w, h: layout.primary.h,
       icon: primary!.icon, title: primary!.title, sub: primary!.sub,
       primary: true,
-      bgTexture: nextChapter ? grassTextureKey(nextChapter.biome) : undefined,
       progress: total > 0 ? wonCount / total : 0,
       onSelect: () => this.showView(primary!.view),
     }));

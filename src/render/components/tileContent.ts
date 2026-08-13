@@ -71,7 +71,12 @@ export function composeTile(o: TileContentInput): TileContentBox {
   // et « pied en bas ») ne peuvent pas tenir ensemble : il n'en reste qu'une.
   const footerBlock = o.footerH > 0 ? gap + o.footerH : 0;
   const textH = o.titleH + (o.subH > 0 ? subGap + o.subH : 0);
-  const glyph = Math.max(0, Math.min(o.maxGlyph, o.w * 0.55, zoneH - textH - footerBlock - gap));
+  // Plafonds de PROPORTION en plus du plafond de résolution : depuis que le
+  // panneau porte le cadre ouvragé du pack, c'est lui qui donne sa présence à la
+  // tuile, et une icône qui occupait 55 % de la hauteur écrasait tout le reste.
+  const glyph = Math.max(0, Math.min(
+    o.maxGlyph, o.w * 0.5, o.h * 0.42, zoneH - textH - footerBlock - gap,
+  ));
 
   const blockH = glyph + gap + textH + footerBlock;
   const top = zoneTop + (zoneH - blockH) / 2;

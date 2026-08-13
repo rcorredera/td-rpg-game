@@ -69,6 +69,30 @@ export interface NineSlicePlan {
 }
 
 /**
+ * Ramène des marges à ce qu'un élément de `w`×`h` peut réellement loger.
+ *
+ * Deux marges opposées ne tiennent pas dans une dimension plus petite que leur
+ * somme : le nine-slice se replie alors sur lui-même — coins écrasés, bande du
+ * milieu de largeur négative. Constaté sur le menu de tour, dont les rangées font
+ * 30 à 44 unités de haut pour des marges de 22 : l'ornement d'angle du panneau
+ * ouvragé s'y écrasait en bouillie.
+ *
+ * On rogne alors PROPORTIONNELLEMENT, pour que l'élément perde du dessin des deux
+ * côtés à parts égales plutôt que de le perdre tout entier d'un seul.
+ */
+export function fitInsets(insets: Insets, w: number, h: number): Insets {
+  const fit = (a: number, b: number, avail: number): [number, number] => {
+    const room = Math.max(0, avail - 2);
+    if (a + b <= room) return [a, b];
+    const k = a + b === 0 ? 0 : room / (a + b);
+    return [Math.floor(a * k), Math.floor(b * k)];
+  };
+  const [left, right] = fit(insets.left, insets.right, w);
+  const [top, bottom] = fit(insets.top, insets.bottom, h);
+  return { left, right, top, bottom };
+}
+
+/**
  * Décide où découper, à partir d'UNE mesure : la profondeur du dessin d'angle.
  *
  * Un coin doit contenir TOUT son dessin, sinon la courbe est tronquée et ne
