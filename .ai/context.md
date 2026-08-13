@@ -114,8 +114,15 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   marges, et plus aucun liseré vectoriel n'est tracé par-dessus l'habillage (l'anneau vert
   « conquis » doublait le cadre doré). Deux défauts préexistants remontés par le nouveau
   cadre : menu de tour figé à 230 de large pour 275 de texte, et rangées de 30 sous le
-  plancher tactile. ⚠ RESTE inutilisé : rubans (`ribbons-*.png`) pour les titres, bannière
-  (`banner.png`) pour le lore, jauge en bois (`bar-big-*.png`) — la prochaine passe.
+  plancher tactile. Trois défauts de HUD relevés au playtest et corrigés dans la foulée :
+  la jauge de PV du Bastion était décentrée de 26 unités (géométrie du château écrite TROIS
+  fois, deux copies divergentes → `render/castle.ts`, pur et importé par le test qui la
+  recopiait) ; « Auto ✗ » recouvrait « x1 » (une plaque qui s'élargit grandit aussi vers la
+  droite, le curseur seul ne compensait qu'à gauche) ; et « ⟵ Camp » partait dans la bande
+  noire sur écran large (`safeLeft` = −114 à 2,2:1, borné à 0 désormais). La jauge du
+  Bastion porte maintenant la châsse du pack (`bar-small-base`, bande à TROIS tranches via
+  `planStrip`). ⚠ RESTE inutilisé : rubans (`ribbons-*.png`) pour les titres, bannière
+  (`banner.png`) pour le lore — la prochaine passe.
 - **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups

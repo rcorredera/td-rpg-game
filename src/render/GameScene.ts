@@ -21,8 +21,9 @@ import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { decorativeEdgeVisible, uiButton, uiPanel } from "./components";
 import {
   ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets,
-  UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS, UI_SKIN_PANEL,
+  UI_SKIN_BAR, UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS, UI_SKIN_PANEL,
 } from "./uiSkin";
+import { castleAnchor, castleBarBox, CASTLE_HALF } from "./castle";
 import { preloadSprites, TEX } from "./assets";
 import { ENEMY_SIZE_FALLBACK, enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
 import { drawDirtPath, ensureTerrainTextures, grassTextureKey } from "./terrain";
@@ -117,6 +118,8 @@ export class GameScene extends Phaser.Scene {
   private quitBtn: Phaser.GameObjects.Container | null = null;
   /** Haut de la barre de HUD en unités logiques — les taps au-dessous sont ignorés. */
   private hudTop = GAME_H - 70;
+  /** Châsse de la jauge du Bastion (habillage du pack) ; `null` sans habillage. */
+  private castleBar: Phaser.GameObjects.NineSlice | null = null;
   /** Bord gauche sûr du HUD : origine de la cascade or / base / vague. */
   private hudLeftX = 0;
 
@@ -234,11 +237,25 @@ export class GameScene extends Phaser.Scene {
     const main = this.ch.map.paths[0]!.waypoints;
     const end = main[main.length - 1]!;
     const cont = this.add.container(0, 0).setDepth(100 + end.y);
-    // Ramené dans le champ de bataille : les chemins finissent au bord droit, un
-    // Bastion centré sur le waypoint final débordait hors cadre (vu à l'écran).
-    const kx = Math.min(end.x, GAME_W - 62), ky = Math.min(end.y, GAME_H - 70);
-    cont.add(this.add.ellipse(kx, ky + 30, 110, 30, 0x1e2a17, 0.3));
-    cont.add(this.add.image(kx, ky - 6, keepView().key).setDisplaySize(124, 124));
+    // Ancrage RAMENÉ dans le champ (les chemins finissent au bord droit) et
+    // calculé une seule fois, dans `render/castle.ts` : la jauge de PV et le test
+    // d'emplacements en dépendent aussi, et deux des trois copies avaient divergé.
+    const a = castleAnchor(end);
+    cont.add(this.add.ellipse(a.x, a.y + 36, 110, 30, 0x1e2a17, 0.3));
+    cont.add(this.add.image(a.x, a.y, keepView().key).setDisplaySize(CASTLE_HALF * 2, CASTLE_HALF * 2));
+
+    // Jauge de PV : châsse du pack (embouts dorés, gorge sombre), posée une fois.
+    // Seul le remplissage est retracé à chaque image, dans `update()`.
+    ensureUiSkinTextures(this);
+    if (this.textures.exists(UI_SKIN_BAR)) {
+      const b = castleBarBox(end);
+      const bi = uiSkinInsets(UI_SKIN_BAR);
+      this.castleBar = this.add.nineslice(
+        b.x + b.w / 2, b.y + b.h / 2, UI_SKIN_BAR, undefined, b.w, b.h,
+        bi.left, bi.right, 0, 0,
+      );
+      cont.add(this.castleBar);
+    }
   }
 
   /** Réancre ce qui dépend des bords de l'écran (décor étendu, HUD) après un
@@ -580,24 +597,34 @@ export class GameScene extends Phaser.Scene {
     // Posés de droite à gauche à partir du bord sûr, chacun d'après sa largeur
     // effective : les boutons grossissent sur mobile sans jamais se chevaucher.
     let x = xR - 16;
-    // `draw` renvoie la largeur EFFECTIVE de la plaque (elle a pu s'élargir pour
-    // loger son libellé) : sans ça, les boutons se chevauchaient sur petit écran.
-    const place = (w: number, draw: (cx: number) => number | void) => {
-      x -= w / 2;
-      const real = draw(x) ?? w;
-      x -= Math.max(w, real) / 2 + 8 + Math.max(0, real - w) / 2;
+    /**
+     * Pose un bouton dont la largeur RÉELLE n'est connue qu'une fois dessiné (la
+     * plaque s'élargit pour loger son libellé).
+     *
+     * L'élargissement se fait autour du CENTRE, donc la plaque grandit aussi vers
+     * la DROITE et mord sur le bouton déjà posé — « Auto ✗ » recouvrait « x1 » à
+     * l'écran. La version précédente ne compensait que du côté gauche, en
+     * décalant le curseur ; il faut recaler la plaque elle-même.
+     */
+    const place = (key: string, w: number, draw: (cx: number) => number | void): void => {
+      const real = draw(x - w / 2) ?? w;
+      const dx = (w - real) / 2;
+      if (dx !== 0) {
+        for (const o of [this.hudPlates[key], this.hudTexts[key], this.hudIcons[key]]) o?.setX(o.x + dx);
+      }
+      x -= real + 8;
     };
     if (this.run.hasAccountSpell) {
-      place(iconS, cx => mkIconBtn("spell", cx, "icon_spell", () => { this.spellMode = true; }));
+      place("spell", iconS, cx => mkIconBtn("spell", cx, "icon_spell", () => { this.spellMode = true; }));
     }
-    place(iconS, cx => mkIconBtn("rally", cx, "icon_rally", () => {
+    place("rally", iconS, cx => mkIconBtn("rally", cx, "icon_rally", () => {
       if (castRally(this.run, CONTENT)) {
         // Onde de portée au lancement : montre la zone d'effet du cri de ralliement
         const sk = CONTENT.hero.skills.rally.levels[this.run.skillLevels.rally - 1]!;
         this.fx.push({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 650, life: 650, kind: "rally" });
       }
     }));
-    place(iconS, cx => mkIconBtn("ww", cx, "icon_ww", () => {
+    place("ww", iconS, cx => mkIconBtn("ww", cx, "icon_ww", () => {
       const evs: SimEvent[] = [];
       if (castWhirlwind(this.run, CONTENT, evs)) {
         const sk = CONTENT.hero.skills.whirlwind.levels[this.run.skillLevels.whirlwind - 1]!;
@@ -606,9 +633,9 @@ export class GameScene extends Phaser.Scene {
       this.consumeEvents(evs);
     }));
     const wSpeed = touchSize(48), wAuto = touchSize(76), wWave = touchSize(100);
-    place(wSpeed, cx => mkBtn("speed", cx, wSpeed, "x1", () => { this.run.speed = this.run.speed === 1 ? 2 : 1; }));
-    place(wAuto, cx => mkBtn("auto", cx, wAuto, "Auto ✗", () => { this.autoWave = !this.autoWave; this.autoWaveAt = null; }));
-    place(wWave, cx => mkBtn("nextWave", cx, wWave, "▶ Vague", () => { startNextWave(this.run, CONTENT); }, 15, true));
+    place("speed", wSpeed, cx => mkBtn("speed", cx, wSpeed, "x1", () => { this.run.speed = this.run.speed === 1 ? 2 : 1; }));
+    place("auto", wAuto, cx => mkBtn("auto", cx, wAuto, "Auto ✗", () => { this.autoWave = !this.autoWave; this.autoWaveAt = null; }));
+    place("nextWave", wWave, cx => mkBtn("nextWave", cx, wWave, "▶ Vague", () => { startNextWave(this.run, CONTENT); }, 15, true));
 
     // Séparateur entre le bloc d'état et le bloc d'actions
     bar.lineStyle(1, 0xc9a227, 0.15);
@@ -617,8 +644,14 @@ export class GameScene extends Phaser.Scene {
 
     // Bouton quitter : coin haut-gauche sûr (sous l'encoche éventuelle). Sa hauteur
     // effective décide de son centre, sinon il déborderait au-dessus sur mobile.
+    // Il suit le bord sûr, mais JAMAIS au-delà du champ de bataille : sur un écran
+    // plus large que le monde (2,2:1 mesuré chez un joueur), `safeLeft` vaut −114
+    // et le bouton partait dans la bande noire, détaché du jeu et collé au bord du
+    // canvas. Le bord du monde reste largement à portée du pouce (ADR-011), c'est
+    // lui la vraie limite de l'écran utile.
     const quitH = touchSize(32), quitW = touchSize(86);
-    this.quitBtn = uiButton(this, v.safeLeft + 10 + quitW / 2, v.safeTop + 8 + quitH / 2, "⟵ Camp",
+    const quitX = Math.max(v.safeLeft, 0) + 10 + quitW / 2;
+    this.quitBtn = uiButton(this, quitX, Math.max(v.safeTop, 0) + 8 + quitH / 2, "⟵ Camp",
       { w: quitW, h: quitH, fontSize: 13 }, () => this.openQuitConfirm()).container.setDepth(1000);
 
     // Annonce de Faille (portails) — haut de l'écran, visible uniquement quand pertinent
@@ -882,15 +915,34 @@ export class GameScene extends Phaser.Scene {
     const hitFlash = this.time.now - this.castleHitAt < 280;
     if (hitFlash) { g.fillStyle(0xc0392b, 0.35); g.fillRect(end.x - 34, end.y - 24, 100, 64); }
 
-    // Barre de PV de la base, toujours visible au-dessus du château
+    // Remplissage de la jauge de PV. La châsse, elle, est posée une fois par
+    // `buildCastle` : ici on ne dessine que ce qui change. Le rectangle vient de
+    // `castleBarBox`, donc du MÊME ancrage que le sprite — auparavant calé sur
+    // `end.x - 62` quand le sprite l'est sur `min(end.x, W - 62)`, soit 26 unités
+    // de décalage dès qu'un chapitre ne finit pas contre le bord droit.
     {
       const pct = Math.max(0, this.run.castleHp / this.run.castleHpMax);
-      const bx = Math.min(end.x - 62, GAME_W - 78), by = end.y - 78, bw = 72, bh = 9;
+      const skin = this.castleBar;
+      // Le rectangle vient de la CHÂSSE RÉELLE quand elle existe : sa hauteur est
+      // celle de l'art, que `castleBarBox` — pur, sans accès aux textures — ne peut
+      // pas connaître. La déduire de nouveau ici aurait recréé la divergence qu'on
+      // vient de supprimer.
+      const b = skin
+        ? { x: skin.x - skin.width / 2, y: skin.y - skin.height / 2, w: skin.width, h: skin.height }
+        : castleBarBox(end);
+      // Le remplissage se pose DANS la gorge : en retrait des embouts et du liseré.
+      const padX = skin ? uiSkinInsets(UI_SKIN_BAR).left : 1;
+      const padY = skin ? Math.round(b.h * 0.28) : 1;
+      const ix = b.x + padX, iy = b.y + padY;
+      const iw = b.w - padX * 2, ih = b.h - padY * 2;
+      const skinned = skin !== null;
       const color = pct > 0.55 ? 0x27ae60 : pct > 0.25 ? 0xe8c252 : 0xc0392b;
-      g.fillStyle(C.hpBack, 0.9); g.fillRoundedRect(bx, by, bw, bh, 4);
-      if (pct > 0.03) { g.fillStyle(color); g.fillRoundedRect(bx, by, bw * pct, bh, 4); }
-      g.lineStyle(1, hitFlash ? 0xc0392b : 0xc9a227, hitFlash ? 1 : 0.6);
-      g.strokeRoundedRect(bx, by, bw, bh, 4);
+      if (!skinned) { g.fillStyle(C.hpBack, 0.9); g.fillRoundedRect(b.x, b.y, b.w, b.h, 4); }
+      if (pct > 0.03) { g.fillStyle(color); g.fillRect(ix, iy, iw * pct, ih); }
+      if (!skinned || hitFlash) {
+        g.lineStyle(1, hitFlash ? 0xc0392b : 0xc9a227, hitFlash ? 1 : 0.6);
+        g.strokeRoundedRect(b.x, b.y, b.w, b.h, 4);
+      }
     }
 
     // Slots vides : marqueur masqué dès qu'une tour occupe le slot, sinon
