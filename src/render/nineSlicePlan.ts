@@ -68,6 +68,52 @@ export interface NineSlicePlan {
   rects: PieceRect[];
 }
 
+/** Bornes opaques des 3 pièces d'une BANDE, hauteur unifiée. */
+export interface StripFrame {
+  left: readonly [number, number, number];
+  right: readonly [number, number, number];
+  top: number;
+  bottom: number;
+}
+
+export interface StripPlan {
+  fullW: number;
+  fullH: number;
+  /** `top`/`bottom` valent 0 : Phaser traite alors la texture en TROIS tranches. */
+  insets: Insets;
+  rects: PieceRect[];
+}
+
+/**
+ * Bande à trois tranches — jauges, rubans : deux embouts et un corps étirable.
+ *
+ * Deux différences assumées avec `planNineSlice` :
+ *
+ * - les embouts ne sont JAMAIS rognés. Sur une jauge, l'embout n'entoure pas un
+ *   remplissage, il EST le dessin ; le rogner reviendrait à le supprimer.
+ * - le corps est prélevé au centre de la pièce du MILIEU de la planche, et non en
+ *   prolongement d'un embout. Sur une planche 3×3 de panneau, la pièce du milieu
+ *   est un remplissage sans bord et ne raccorderait pas ; sur une bande, c'est au
+ *   contraire la pièce que l'artiste a dessinée pour se répéter entre les embouts.
+ */
+export function planStrip(frame: StripFrame): StripPlan {
+  const wL = frame.right[0]! - frame.left[0]!;
+  const wR = frame.right[2]! - frame.left[2]!;
+  const h = frame.bottom - frame.top;
+  const midCentre = Math.round((frame.left[1]! + frame.right[1]!) / 2 - MID / 2);
+
+  return {
+    fullW: wL + MID + wR,
+    fullH: h,
+    insets: { left: wL, right: wR, top: 0, bottom: 0 },
+    rects: [
+      { sx: frame.left[0]!, sy: frame.top, sw: wL, sh: h, dx: 0, dy: 0, stretch: "none" },
+      { sx: midCentre, sy: frame.top, sw: MID, sh: h, dx: wL, dy: 0, stretch: "x" },
+      { sx: frame.right[2]! - wR, sy: frame.top, sw: wR, sh: h, dx: wL + MID, dy: 0, stretch: "none" },
+    ],
+  };
+}
+
 /**
  * Ramène des marges à ce qu'un élément de `w`×`h` peut réellement loger.
  *

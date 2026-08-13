@@ -55,6 +55,8 @@ ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, pré
 
 `render/nineSlicePlan.ts` + `render/nineSliceFlatten.ts` (ADR-029) : toute la géométrie de l'habillage d'UI, PURE et testée par propriétés. Le premier décide où découper une planche 3×3 du pack pour en faire un nine-slice contigu ; le second garantit qu'une pièce ÉTIRÉE est constante le long de son axe d'étirement — sans quoi le grain de la planche devient une traînée large de tout le panneau. `render/uiSkin.ts` ne fait plus que mesurer la planche et peindre le plan. Règle générale : dès qu'un traitement d'image ou de découpe se vérifie « à l'œil sur une capture », c'est qu'il manque un cœur pur.
 
+`render/castle.ts` (ADR-030) : ancrage du Bastion et de sa jauge de PV, PUR et testé. Cette géométrie était écrite trois fois — sprite, jauge, et copie en commentaire dans `balance/datasheet.test.ts` — et deux copies avaient divergé de 26 unités. Règle générale : une géométrie partagée entre le rendu et un test se met dans un module pur que les DEUX importent ; un test qui recopie la règle qu'il vérifie ne vérifie rien.
+
 `render/components/tileContent.ts` (ADR-029) : composition VERTICALE du contenu d'une tuile (icône, titre, sous-titre, jauge), pure et testée. Le contenu remplit la boîte qu'on lui donne, l'icône absorbant la place restante jusqu'à `ICON_RASTER_PX`. Même famille que `hubLayout` : la mise en page a une règle métier, donc elle sort du composant.
 
 `render/icons.ts` (ADR-012) : registre des icônes d'UI — les écrans nomment un **rôle**

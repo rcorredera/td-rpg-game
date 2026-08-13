@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fitInsets, MID, planNineSlice, type SheetFrame } from "./nineSlicePlan";
+import { fitInsets, MID, planNineSlice, planStrip, type SheetFrame } from "./nineSlicePlan";
 
 // ============================================================
 // Ce fichier existe parce que son absence a coûté cinq allers-retours de
@@ -122,6 +122,37 @@ describe("plan de découpe d'un nine-slice", () => {
   it("ne touche à rien quand tout tient", () => {
     const voulu = { left: 22, right: 22, top: 22, bottom: 22 };
     expect(fitInsets(voulu, 400, 300)).toEqual(voulu);
+  });
+
+  it("compose une bande sans rogner ses embouts", () => {
+    // Jauge du pack, mesurée : embouts de 10, corps au milieu de la planche.
+    // Un embout de jauge n'entoure pas un remplissage, il EST le dessin — le
+    // rogner comme un coin de panneau reviendrait à le supprimer.
+    const b = planStrip({ left: [6, 130, 258], right: [16, 182, 268], top: 24, bottom: 38 });
+    expect(b.insets).toEqual({ left: 10, right: 10, top: 0, bottom: 0 });
+    expect(b.fullW).toBe(10 + MID + 10);
+    expect(b.fullH).toBe(14);
+    // `top`/`bottom` à zéro : c'est ce qui fait traiter la texture en TROIS
+    // tranches par Phaser, donc étirer le corps sans déformer les embouts.
+    expect(b.insets.top).toBe(0);
+    expect(b.insets.bottom).toBe(0);
+  });
+
+  it("pave la bande sans trou ni recouvrement, et n'étire que son corps", () => {
+    const b = planStrip({ left: [6, 130, 258], right: [16, 182, 268], top: 24, bottom: 38 });
+    expect(b.rects.map(r => r.stretch)).toEqual(["none", "x", "none"]);
+    let x = 0;
+    for (const r of b.rects) {
+      expect(r.dx, "trou ou recouvrement dans la bande").toBe(x);
+      expect(r.dy).toBe(0);
+      expect(r.sh).toBe(b.fullH);
+      x += r.sw;
+    }
+    expect(x).toBe(b.fullW);
+    // Le corps se prélève au CENTRE de la pièce du milieu : son bord porterait le
+    // raccord avec l'embout, qui se répéterait en couture une fois étiré.
+    const corps = b.rects[1]!;
+    expect(corps.sx + corps.sw / 2).toBeCloseTo((130 + 182) / 2, 0);
   });
 
   it("ne prélève jamais hors de la planche", () => {

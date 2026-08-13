@@ -20,7 +20,10 @@
 // les tests unitaires purs sous Vitest (cf. `.ai/pitfalls.md`).
 import type Phaser from "phaser";
 import { flattenStretched } from "./nineSliceFlatten";
-import { planNineSlice, type Insets, type SheetFrame } from "./nineSlicePlan";
+import {
+  planNineSlice, planStrip,
+  type Insets, type PieceRect, type SheetFrame, type StripFrame,
+} from "./nineSlicePlan";
 
 const SRC = "assets/tiny-swords/ui";
 
@@ -58,6 +61,21 @@ const SHEETS = {
   ts_btn_primary_press: { file: "btn-big-red-pressed.png", ...GRID, inset: 22 },
 } satisfies Record<string, Sheet>;
 
+/** Bande à trois tranches : une seule rangée de la planche, deux embouts et un corps. */
+interface StripSheet {
+  file: string;
+  cols: readonly [number, number, number];
+  /** Ordonnée de la rangée à prélever. */
+  row: number;
+  cell: number;
+}
+
+const STRIPS = {
+  ts_bar: { file: "bar-small-base.png", cols: [0, 128, 256], row: 0, cell: 64 },
+} satisfies Record<string, StripSheet>;
+
+export const UI_SKIN_BAR = "ts_bar" satisfies keyof typeof STRIPS;
+
 export type UiSkinKey = keyof typeof SHEETS;
 
 export const UI_SKIN_PANEL = "ts_panel" satisfies UiSkinKey;
@@ -91,7 +109,7 @@ export function uiSkinActive(scene: Phaser.Scene): boolean {
 
 /** À appeler dans le `preload()` de chaque scène affichant du chrome d'UI. */
 export function preloadUiSkin(scene: Phaser.Scene): void {
-  for (const [key, s] of Object.entries(SHEETS)) {
+  for (const [key, s] of Object.entries({ ...SHEETS, ...STRIPS })) {
     scene.load.image(`${key}__sheet`, `${SRC}/${s.file}`);
   }
 }
@@ -147,22 +165,93 @@ function cornerDetailDepth(
   return depth;
 }
 
+/** Image source d'une planche préchargée, ou `null` si elle n'est pas là. */
+function sheetPixels(
+  scene: Phaser.Scene, key: string,
+): { img: HTMLImageElement; data: Uint8ClampedArray } | null {
+  const sheetKey = `${key}__sheet`;
+  if (!scene.textures.exists(sheetKey)) return null;
+  const img = scene.textures.get(sheetKey).getSourceImage() as HTMLImageElement;
+  const probe = document.createElement("canvas");
+  probe.width = img.width;
+  probe.height = img.height;
+  const ctx = probe.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0);
+  return { img, data: ctx.getImageData(0, 0, img.width, img.height).data };
+}
+
+/**
+ * Peint un plan sur une texture de canvas et l'enregistre sous `key`.
+ *
+ * Assemblage à taille réelle PUIS réduction de l'image entière : réduire pièce
+ * par pièce désaligne les raccords aux arrondis.
+ */
+function paintPlan(
+  scene: Phaser.Scene, key: string, img: HTMLImageElement,
+  plan: { fullW: number; fullH: number; rects: PieceRect[] }, scale: number, insets: Insets,
+): void {
+  const full = document.createElement("canvas");
+  full.width = plan.fullW;
+  full.height = plan.fullH;
+  const fctx = full.getContext("2d");
+  if (!fctx) return;
+  fctx.imageSmoothingEnabled = false;
+  for (const q of plan.rects) fctx.drawImage(img, q.sx, q.sy, q.sw, q.sh, q.dx, q.dy, q.sw, q.sh);
+
+  // Les pièces que le slice ÉTIRE doivent être constantes le long de leur axe,
+  // sinon le grain de la planche devient une traînée (cf. `nineSliceFlatten.ts`).
+  const assemble = fctx.getImageData(0, 0, plan.fullW, plan.fullH);
+  flattenStretched({ w: plan.fullW, h: plan.fullH, data: assemble.data }, plan.rects);
+  fctx.putImageData(assemble, 0, 0);
+
+  const outW = Math.max(1, Math.round(plan.fullW * scale));
+  const outH = Math.max(1, Math.round(plan.fullH * scale));
+  const tex = scene.textures.createCanvas(key, outW, outH);
+  if (!tex) return;
+  const ctx = tex.getContext();
+  // Lissage à la RÉDUCTION seulement : sans lui, un facteur 0,5 jetterait une
+  // ligne sur deux et hacherait le contour. L'affichage, lui, reste NEAREST.
+  ctx.imageSmoothingEnabled = scale !== 1;
+  ctx.drawImage(full, 0, 0, plan.fullW, plan.fullH, 0, 0, outW, outH);
+
+  INSETS.set(key, insets);
+  tex.refresh();
+  tex.setFilter(NEAREST);
+}
+
+/** Recompose les bandes à trois tranches (jauges, rubans). */
+function ensureStripTextures(scene: Phaser.Scene): void {
+  for (const [key, strip] of Object.entries(STRIPS) as [string, StripSheet][]) {
+    if (scene.textures.exists(key)) continue;
+    const src = sheetPixels(scene, key);
+    if (!src) continue;
+
+    const piece = strip.cols.map(x => opaqueBounds(src.data, src.img.width, x, strip.row, strip.cell));
+    if (piece.some(p => p === null)) continue;
+    const found = piece as Box[];
+    // Hauteur COMMUNE aux trois pièces : un embout plus haut que le corps
+    // décalerait le raccord d'un pixel ou deux, très visible sur une jauge fine.
+    const frame: StripFrame = {
+      left: [found[0]!.x, found[1]!.x, found[2]!.x],
+      right: [found[0]!.x + found[0]!.w, found[1]!.x + found[1]!.w, found[2]!.x + found[2]!.w],
+      top: Math.min(...found.map(b => b.y)),
+      bottom: Math.max(...found.map(b => b.y + b.h)),
+    };
+    const plan = planStrip(frame);
+    paintPlan(scene, key, src.img, plan, 1, plan.insets);
+  }
+}
+
 /** Recompose les nine-slice. Idempotent : les composants l'appellent à chaque
  *  usage, le premier fait le travail et les suivants sortent aussitôt. */
 export function ensureUiSkinTextures(scene: Phaser.Scene): void {
+  ensureStripTextures(scene);
   for (const [key, sheet] of Object.entries(SHEETS) as [string, Sheet][]) {
     if (scene.textures.exists(key)) continue;
-    const sheetKey = `${key}__sheet`;
-    if (!scene.textures.exists(sheetKey)) continue;
-    const img = scene.textures.get(sheetKey).getSourceImage() as HTMLImageElement;
-
-    const probe = document.createElement("canvas");
-    probe.width = img.width;
-    probe.height = img.height;
-    const pctx = probe.getContext("2d");
-    if (!pctx) continue;
-    pctx.drawImage(img, 0, 0);
-    const data = pctx.getImageData(0, 0, img.width, img.height).data;
+    const src = sheetPixels(scene, key);
+    if (!src) continue;
+    const { img, data } = src;
 
     const piece: (Box | null)[][] = sheet.rows.map(y =>
       sheet.cols.map(x => opaqueBounds(data, img.width, x, y, sheet.cell)));
@@ -187,35 +276,6 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
     const fill = [data[ci]!, data[ci + 1]!, data[ci + 2]!] as const;
     const plan = planNineSlice(frame, cornerDetailDepth(data, img.width, corner, fill), sheet.inset);
 
-    // Assemblage à taille réelle, puis réduction de l'image ENTIÈRE : réduire
-    // pièce par pièce désaligne les raccords aux arrondis.
-    const full = document.createElement("canvas");
-    full.width = plan.fullW;
-    full.height = plan.fullH;
-    const fctx = full.getContext("2d");
-    if (!fctx) continue;
-    fctx.imageSmoothingEnabled = false;
-    for (const q of plan.rects) fctx.drawImage(img, q.sx, q.sy, q.sw, q.sh, q.dx, q.dy, q.sw, q.sh);
-
-    // Les cinq pièces que le nine-slice ÉTIRE doivent être constantes le long de
-    // leur axe, sinon le grain de la planche devient une traînée large de tout le
-    // panneau (cf. `nineSliceFlatten.ts`). Les coins, eux, gardent l'art intact.
-    const assemble = fctx.getImageData(0, 0, plan.fullW, plan.fullH);
-    flattenStretched({ w: plan.fullW, h: plan.fullH, data: assemble.data }, plan.rects);
-    fctx.putImageData(assemble, 0, 0);
-
-    const outW = Math.max(1, Math.round(plan.fullW * plan.scale));
-    const outH = Math.max(1, Math.round(plan.fullH * plan.scale));
-    const tex = scene.textures.createCanvas(key, outW, outH);
-    if (!tex) continue;
-    const ctx = tex.getContext();
-    // Lissage à la RÉDUCTION seulement : sans lui, un facteur 0,5 jetterait une
-    // ligne sur deux et hacherait le contour. L'affichage, lui, reste NEAREST.
-    ctx.imageSmoothingEnabled = plan.scale !== 1;
-    ctx.drawImage(full, 0, 0, plan.fullW, plan.fullH, 0, 0, outW, outH);
-
-    INSETS.set(key, plan.insets);
-    tex.refresh();
-    tex.setFilter(NEAREST);
+    paintPlan(scene, key, img, plan, plan.scale, plan.insets);
   }
 }

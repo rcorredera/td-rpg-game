@@ -4,6 +4,7 @@ import { createRun, startNextWave, tick } from "../core/sim";
 import { BATTLEFIELD } from "../core/types";
 import type { ContentPack, Profile, RunState } from "../core/types";
 import { PLAY_SAFE_BOTTOM } from "../render/viewport";
+import { castleAnchor, CASTLE_HALF } from "../render/castle";
 import {
   allChapterStats, chapterStats, castleDamageOf, distanceToPath, enemyHpAtWave, pathLength,
   playableChapter, slotCoverage, towerBurstDps, towerDps, towerInvestment,
@@ -181,12 +182,11 @@ describe("cartes — lisibilité et zone jouable (ADR-028)", () => {
   const MIN_SLOT_TO_PATH = 55;
   // Deux dalles de 64 ont besoin d'au moins ça pour ne pas se chevaucher à l'écran.
   const MIN_SLOT_TO_SLOT = 75;
-  // Sprite du château (`GameScene.buildCastle`) : 124×124 centré sur
-  // `(min(end.x, GAME_W-62), min(end.y, GAME_H-70) - 6)`.
-  function castleCenter(end: { x: number; y: number }) {
-    return { x: Math.min(end.x, BATTLEFIELD.w - 62), y: Math.min(end.y, BATTLEFIELD.h - 70) - 6 };
-  }
-  const CASTLE_HALF = 62;
+  // Centre du sprite du château : IMPORTÉ de `render/castle.ts`, pas recopié.
+  // La formule vivait ici en double du code de rendu, et une TROISIÈME copie
+  // servait à poser la jauge de PV — laquelle avait déjà divergé de 26 unités
+  // (ADR-030). Un test qui recopie la règle qu'il vérifie ne vérifie rien.
+  const castleCenter = castleAnchor;
 
   it("ne pose aucun waypoint ni emplacement sous la limite jouable (HUD mobile)", () => {
     for (let i = 0; i < CONTENT.chapters.length; i++) {
