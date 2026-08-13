@@ -35,14 +35,23 @@ const FILES: Record<IconKey, string> = {
   castle: "ui-castle.svg",
 };
 
-/** Résolution de rasterisation. Les SVG sont vectoriels, mais Phaser les rasterise
- *  une fois au chargement : 128 px couvre le plus gros affichage (icône de carte
- *  agrandie par le plancher tactile sur mobile) sans flou. */
-const RASTER_PX = 128;
+/**
+ * Résolution de rasterisation. Les SVG sont vectoriels, mais Phaser les rasterise
+ * une fois au chargement — cette valeur est donc le plafond d'affichage NET.
+ *
+ * Exportée parce que c'est un plafond d'AFFICHAGE, pas un détail de chargement :
+ * `composeTile` agrandit l'icône jusqu'à la place disponible et doit s'arrêter
+ * là, sinon la tuile gagne en surface ce qu'elle perd en netteté.
+ *
+ * Portée de 128 à 192 avec la refonte des tuiles : la tuile principale du
+ * Campement offre 306 unités de zone utile, et un plafond à 128 y laissait 43 %
+ * de vide que rien d'autre ne pouvait combler. Coût : 7 icônes × 192² × 4 o ≈ 1 Mo.
+ */
+export const ICON_RASTER_PX = 192;
 
 /** Charge toutes les icônes d'UI. Idempotent entre scènes (cache Phaser). */
 export function preloadIcons(scene: Phaser.Scene): void {
   for (const key of Object.keys(FILES) as IconKey[]) {
-    scene.load.svg(ICON[key], `assets/icons/${FILES[key]}`, { width: RASTER_PX, height: RASTER_PX });
+    scene.load.svg(ICON[key], `assets/icons/${FILES[key]}`, { width: ICON_RASTER_PX, height: ICON_RASTER_PX });
   }
 }

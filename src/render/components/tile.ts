@@ -11,9 +11,10 @@
 
 import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
+import { ICON_RASTER_PX } from "../icons";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
-import { scaleFont } from "../viewport";
 import { uiFramedPanel } from "./panel";
+import { composeTile } from "./tileContent";
 
 export interface UiTileOpts {
   w: number;
@@ -28,6 +29,13 @@ export interface UiTileOpts {
   primary?: boolean;
   /** Avancement 0..1 — dessine une jauge en pied de tuile. */
   progress?: number;
+  /**
+   * Texture de fond, fortement assombrie sous le contenu — même traitement que
+   * les vignettes de chapitre (`uiLevelGrid`). Une grande tuile qui ne porte
+   * qu'une icône et deux lignes se creuse : l'aperçu du LIEU lui donne sa
+   * surface, et dit au passage où mène la tuile.
+   */
+  bgTexture?: string;
   /** Verrouillée : plus de relief au survol, plus de curseur main. */
   locked?: boolean;
   onSelect: () => void;
@@ -43,6 +51,14 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   });
   container.add(panel);
 
+  // Aperçu du lieu, en retrait du cadre pour que l'arrondi du pack reste net
+  // par-dessus (un masque géométrique travaille en coordonnées MONDE et se
+  // décale dès que la tuile vit dans un conteneur défilant — cf. `uiLevelGrid`).
+  if (opts.bgTexture && scene.textures.exists(opts.bgTexture)) {
+    const inset = 8;
+    container.add(scene.add.tileSprite(0, 0, w - inset * 2, h - inset * 2, opts.bgTexture).setAlpha(0.4));
+  }
+
   const highlight = scene.add.graphics();
   highlight.fillStyle(ACCENT.gold, 0.09);
   highlight.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
@@ -51,9 +67,6 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   highlight.setVisible(false);
   container.add(highlight);
 
-  // L'icône occupe une vraie part de la tuile : c'est elle qui se lit en premier
-  // sur un écran tenu à bout de bras, pas le libellé.
-  const glyph = Math.min(opts.primary ? 96 : 52, h * (opts.primary ? 0.42 : 0.38), w * 0.5);
   const titleSize = opts.primary ? 26 : 17;
   const subSize = opts.primary ? 14 : 11;
 
@@ -68,38 +81,38 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
       }).setOrigin(0.5, 0)
     : null;
 
-  // Empilement d'après les hauteurs RÉELLES : les polices sont remontées sur
-  // petit écran (ADR-015), des Y en dur feraient déborder le texte de la tuile.
-  const gap = 6;
-  const blockH = glyph + gap + title.height + (sub ? gap * 0.5 + sub.height : 0);
-  const top = -blockH / 2;
+  // Empilement d'après les hauteurs RÉELLES (les polices sont remontées sur petit
+  // écran, ADR-015) et d'après la place DISPONIBLE : `composeTile` est pur et
+  // testé, ce module ne fait que poser les objets aux positions qu'il renvoie.
+  const barH = 6;
+  const box = composeTile({
+    w, h, titleH: title.height, subH: sub?.height ?? 0,
+    maxGlyph: ICON_RASTER_PX, footerH: opts.progress !== undefined ? barH : 0,
+  });
 
-  container.add(scene.add.image(0, top + glyph / 2, opts.icon)
-    .setDisplaySize(glyph, glyph)
+  container.add(scene.add.image(0, box.iconCy, opts.icon)
+    .setDisplaySize(box.glyph, box.glyph)
     .setTint(opts.iconColor ?? ACCENT.goldSoft));
-  title.setY(top + glyph + gap);
+  title.setY(box.titleTop);
   container.add(title);
   if (sub) {
-    sub.setY(top + glyph + gap + title.height + gap * 0.5);
+    sub.setY(box.subTop);
     container.add(sub);
   }
 
   if (opts.progress !== undefined) {
-    const barW = w - 40, barH = 6, barY = h / 2 - 18;
+    const barW = w - Math.max(40, box.pad * 2);
     const bar = scene.add.graphics();
     bar.fillStyle(0x000000, 0.45);
-    bar.fillRoundedRect(-barW / 2, barY, barW, barH, 3);
+    bar.fillRoundedRect(-barW / 2, box.footerTop, barW, barH, 3);
     const filled = Math.max(0, Math.min(1, opts.progress));
     if (filled > 0) {
       bar.fillStyle(ACCENT.gold, 0.9);
-      bar.fillRoundedRect(-barW / 2, barY, Math.max(barH, barW * filled), barH, 3);
+      bar.fillRoundedRect(-barW / 2, box.footerTop, Math.max(barH, barW * filled), barH, 3);
     }
     container.add(bar);
   }
 
-  // `setInteractive({})` ne définit AUCUNE zone de clic et fait planter Phaser au
-  // premier pointeur (`input.hitAreaCallback is not a function`) : sans option de
-  // curseur, il faut l'appeler sans argument du tout.
   // `setInteractive({})` ne définit AUCUNE zone de clic et fait planter Phaser au
   // premier pointeur (`input.hitAreaCallback is not a function`) : sans option de
   // curseur, il faut l'appeler sans argument du tout.

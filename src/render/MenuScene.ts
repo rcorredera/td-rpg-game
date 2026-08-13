@@ -322,10 +322,19 @@ export class MenuScene extends Phaser.Scene {
     const z = menuZone(viewport());
     const layout = hubLayout(z.cx, z.cy, z.w, z.h, rest.length);
 
+    // La tuile principale montre le LIEU où l'on reprend. Sans lui, une tuile de
+    // 363×350 ne portait qu'une icône et deux lignes : le contenu occupait 43 %
+    // de sa hauteur, le reste était du vide. L'aperçu du biome lui donne sa
+    // surface et dit d'un coup d'œil où mène le bouton (même idiome que les
+    // vignettes de chapitre).
+    const nextChapter = CONTENT.chapters[Math.min(wonCount, total - 1)];
+    if (nextChapter) ensureTerrainTextures(this, nextChapter.biome);
+
     p.add(uiTile(this, layout.primary.x, layout.primary.y, {
       w: layout.primary.w, h: layout.primary.h,
       icon: primary!.icon, title: primary!.title, sub: primary!.sub,
       primary: true,
+      bgTexture: nextChapter ? grassTextureKey(nextChapter.biome) : undefined,
       progress: total > 0 ? wonCount / total : 0,
       onSelect: () => this.showView(primary!.view),
     }));
@@ -455,13 +464,18 @@ export class MenuScene extends Phaser.Scene {
     // La grille s'élargit avec l'écran : bornée à 700, elle laissait un tiers du
     // paysage inutilisé alors qu'elle est l'écran le plus consulté du jeu (ADR-025).
     const gz = levelGridZone(viewport());
-    const grid = uiLevelGrid(this, gz.cx, 6, tiles, gz.w);
+    // La grille reçoit aussi la HAUTEUR disponible : bornée à sa cellule plancher
+    // de 74, elle laissait 40 % de l'écran vide sous elle alors que les vignettes
+    // portent l'aperçu du biome — c'est justement ce qui gagne à être grand.
+    const GRID_TOP = 6, LORE_H = 44;
+    const gridH = Math.max(80, viewport().bottom - (top + 10) - 12 - GRID_TOP - LORE_H);
+    const grid = uiLevelGrid(this, gz.cx, GRID_TOP, tiles, gz.w, 5, gridH);
     c.add(grid.container);
 
     // Lore du prochain objectif (premier chapitre débloqué non conquis)
     const next = CONTENT.chapters.findIndex((_ch, i) => isUnlocked(i) && !this.profileSvc.chapterWon(i));
     const lore = next >= 0 ? CONTENT.chapters[next]!.lore : "La vallée respire. Pour l'instant.";
-    const loreY = 6 + grid.layout.totalH + 14;
+    const loreY = GRID_TOP + grid.layout.totalH + 14;
     const loreText = this.add.text(CX,loreY, lore.replace("\n", " "),
       { fontSize: "12px", color: TEXT.dim, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0);
     c.add(loreText);

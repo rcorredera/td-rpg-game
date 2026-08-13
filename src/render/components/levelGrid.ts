@@ -24,18 +24,38 @@ export interface GridLayout {
 }
 
 /**
- * Pure — répartit `count` tuiles dans une largeur disponible.
+ * Proportion maximale hauteur/largeur d'une cellule.
+ *
+ * La grille remplit la hauteur qu'on lui donne, mais une vignette de chapitre
+ * plus haute que large cesse de ressembler à une carte : deux rangées dans les
+ * ~380 unités libres de l'écran Histoire donneraient sinon des cellules de
+ * 172×185, en portrait.
+ */
+const MAX_ASPECT = 0.85;
+
+/**
+ * Pure — répartit `count` tuiles dans la place disponible.
  *
  * On vise `maxCols` colonnes mais on n'en garde jamais plus que nécessaire :
  * 3 chapitres sur 5 colonnes donneraient des tuiles perdues à droite. La
  * largeur de cellule s'ajuste ensuite pour remplir l'espace.
+ *
+ * `availH` est FACULTATIF : sans lui, la cellule garde sa hauteur plancher — et
+ * c'est précisément ce que faisait l'écran Histoire, qui posait 10 vignettes de
+ * 74 dans les 380 unités disponibles et laissait 40 % de l'écran vide sous la
+ * grille. Avec, la cellule grandit jusqu'à occuper la hauteur offerte.
  */
 export function gridLayout(
-  count: number, availW: number, maxCols: number, gap: number, cellH: number,
+  count: number, availW: number, maxCols: number, gap: number, minCellH: number,
+  availH?: number,
 ): GridLayout {
   const cols = Math.max(1, Math.min(maxCols, count));
   const rows = Math.ceil(count / Math.max(1, cols));
   const cellW = (availW - gap * (cols - 1)) / cols;
+  const grown = availH === undefined || rows === 0
+    ? minCellH
+    : (availH - gap * (rows - 1)) / rows;
+  const cellH = Math.max(minCellH, Math.min(grown, cellW * MAX_ASPECT));
   return {
     cols, rows, cellW, cellH,
     totalW: cols * cellW + gap * (cols - 1),
@@ -69,14 +89,17 @@ export interface UiLevelGrid {
 export function uiLevelGrid(
   scene: Phaser.Scene, cx: number, top: number,
   tiles: LevelTile[], availW: number, maxCols = 5,
+  /** Hauteur offerte à la grille — elle s'y étale au lieu de laisser du vide. */
+  availH?: number,
 ): UiLevelGrid {
   const gap = 10;
   // La tuile doit rester tapable ET loger son contenu : numéro, nom sur deux
   // lignes, étoiles. Les polices sont remontées sur petit écran (ADR-015), donc
   // une hauteur fixe faisait déborder le nom hors de la tuile.
   const numH = scaleFont(26), nameH = scaleFont(12);
-  const cellH = Math.max(touchSize(74), numH + nameH * 2 + 30);
-  const layout = gridLayout(tiles.length, availW, maxCols, gap, cellH);
+  const minCellH = Math.max(touchSize(74), numH + nameH * 2 + 30);
+  const layout = gridLayout(tiles.length, availW, maxCols, gap, minCellH, availH);
+  const cellH = layout.cellH;
   const container = scene.add.container(0, 0);
   const x0 = cx - layout.totalW / 2 + layout.cellW / 2;
 
