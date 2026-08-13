@@ -18,7 +18,11 @@ import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupC
 import { scaleFont, touchSize, viewport } from "./viewport";
 import { ICON, preloadIcons } from "./icons";
 import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
-import { uiButton, uiPanel } from "./components";
+import { decorativeEdgeVisible, uiButton, uiPanel } from "./components";
+import {
+  ensureUiSkinTextures, uiSkinActive, uiSkinInsets,
+  UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
+} from "./uiSkin";
 import { preloadSprites, TEX } from "./assets";
 import { ENEMY_SIZE_FALLBACK, enemyView, heroView, keepView, tileFor, towerView } from "./sprites";
 import { drawDirtPath, ensureTerrainTextures, grassTextureKey } from "./terrain";
@@ -41,6 +45,14 @@ const C = {
 
 // Champ de bataille : défini par le core (source unique), pas redéclaré ici.
 const GAME_W = BATTLEFIELD.w, GAME_H = BATTLEFIELD.h;
+
+/** Descente du libellé quand un bouton du HUD est enfoncé, en unités logiques.
+ *  Cale sur le décalage que la planche « pressed » du pack applique à la plaque. */
+const PRESS_DY = 3;
+
+/** Libellé posé sur une plaque du pack. Crème plutôt que doré : mesuré, l'or ne
+ *  garde que 0,26 d'écart de luminance sur le teal contre 0,43 pour le crème. */
+const HUD_LABEL = "#f7efe0";
 /** Voile des modales : volontairement plus grand que tout écran plausible, pour
  *  couvrir la vue quelle que soit sa taille sans avoir à le redimensionner. */
 const VEIL = 4000;
@@ -410,7 +422,14 @@ export class GameScene extends Phaser.Scene {
     // barre s'étale au lieu de laisser du vide sur les côtés (ADR-010).
     // La barre se dimensionne d'après ses boutons, pas l'inverse : sur mobile leur
     // plancher tactile dépasse la hauteur historique de 70 (ADR-011).
-    const btnH = touchSize(40);
+    //
+    // L'habillage du pack impose un plancher supplémentaire (son contour dessiné
+    // mange ~8 unités) : la barre grandit donc de 8 sur GRAND écran, et pas du tout
+    // sur mobile, où le plancher tactile est déjà au-dessus. `PLAY_SAFE_BOTTOM`
+    // (ADR-028) est calibré sur le pire cas mobile, il reste donc valable.
+    ensureUiSkinTextures(this);
+    const skin = uiSkinActive(this);
+    const btnH = touchSize(Math.max(40, skin ? 48 : 0));
     const iconS = touchSize(48);
     const barH = Math.max(70, Math.max(btnH, iconS) + 22);
     const cy = v.safeBottom - barH / 2;   // axe des contrôles
@@ -429,33 +448,94 @@ export class GameScene extends Phaser.Scene {
       const t = this.add.text(0, cy, label, { fontSize: `${size}px`, color: C.uiText, fontFamily: FONT_DISPLAY }).setOrigin(0, 0.5);
       this.hudTexts[key] = t; this.hud.add(t);
     };
-    // Bouton Kenney nine-slice (gold = action principale). La plaque s'élargit pour
-    // contenir son libellé, comme `uiButton`.
+    // Plaque nine-slice (gold = action principale), habillée par le pack quand il
+    // est chargé. Cette barre NE passe PAS par `uiButton` : ses boutons agissent à
+    // l'APPUI et non au relâchement (choix assumé, elle n'est pas défilante — cf.
+    // `.ai/pitfalls.md`). D'où la duplication de l'habillage ici, sans laquelle la
+    // barre restait grise au milieu d'une interface repeinte.
+    const plateKey = (gold: boolean) =>
+      skin ? (gold ? UI_SKIN_BTN_PRIMARY : UI_SKIN_BTN) : (gold ? "ui_btn_gold" : "ui_btn");
+    const plateInsets = (k: string) =>
+      skin ? uiSkinInsets(k) : { left: 14, right: 14, top: 14, bottom: 16 };
+    const pressedKey = (gold: boolean): string =>
+      skin ? (gold ? UI_SKIN_BTN_PRIMARY_PRESS : UI_SKIN_BTN_PRESS) : plateKey(gold);
+
+    /**
+     * Retour d'appui. La barre du jeu ne réagissait pas au doigt alors que tous
+     * les autres boutons le font (`uiButton`) : elle ne passe pas par ce
+     * composant, donc elle n'héritait ni de l'état enfoncé ni du mouvement.
+     *
+     * Le pack fournit une planche ENFONCÉE où la plaque est dessinée plus bas ;
+     * le libellé doit descendre avec elle, sinon il flotte au-dessus du creux.
+     * L'état est posé en ABSOLU depuis la position d'origine, jamais par
+     * incréments : un `pointerout` sans `pointerdown` ferait sinon dériver le
+     * texte à chaque passage.
+     */
+    const wirePress = (
+      plate: Phaser.GameObjects.NineSlice, keyUp: string, keyDown: string,
+      movers: readonly Phaser.GameObjects.Components.Transform[],
+    ): void => {
+      if (!skin) return;
+      const baseY = movers.map(m => m.y);
+      let pressed = false;
+      const set = (on: boolean): void => {
+        if (on === pressed) return;
+        pressed = on;
+        plate.setTexture(on ? keyDown : keyUp);
+        movers.forEach((m, i) => { m.y = baseY[i]! + (on ? PRESS_DY : 0); });
+      };
+      plate.on("pointerdown", () => set(true));
+      plate.on("pointerup", () => set(false));
+      plate.on("pointerout", () => set(false));
+    };
+
     const mkBtn = (key: string, x: number, w: number, label: string, cb: () => void, size = 14, gold = false) => {
-      const plate = this.add.nineslice(x, cy, gold ? "ui_btn_gold" : "ui_btn", undefined, w, btnH, 14, 14, 14, 16);
-      if (!gold) plate.setTint(UI_TINT.btn);
+      const k = plateKey(gold), pi = plateInsets(k);
+      const ins = Math.max(pi.left, pi.right, pi.top, pi.bottom);
+      const plate = this.add.nineslice(x, cy, k, undefined, w, btnH, pi.left, pi.right, pi.top, pi.bottom);
+      if (!skin && !gold) plate.setTint(UI_TINT.btn);
       plate.setInteractive({ cursor: CURSOR_POINT })
         .on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); cb(); });
       this.hudPlates[key] = plate; this.hud.add(plate);
       const t = this.add.text(x, cy - 2, label, {
-        fontSize: `${size}px`, color: gold ? "#3a2c12" : C.uiText, fontFamily: FONT_DISPLAY,
+        fontSize: `${size}px`, color: skin ? "#f7efe0" : gold ? "#3a2c12" : C.uiText, fontFamily: FONT_DISPLAY,
       }).setOrigin(0.5);
-      if (t.width + 20 > plate.width) plate.setSize(t.width + 20, btnH);
+      // Le contour dessiné du pack mange ~8 unités de chaque côté : sans marge
+      // élargie, le libellé touche le cadre.
+      // Même plancher de largeur que `uiButton` : deux coins de 37 doivent tenir
+      // côte à côte, sinon la plaque se replie sur elle-même.
+      const pad = skin ? 44 : 20;
+      const minW = skin ? 2 * ins + 4 : 0;
+      const wantW = Math.max(t.width + pad, minW);
+      if (wantW > plate.width) plate.setSize(wantW, btnH);
       this.hudTexts[key] = t; this.hud.add(t);
+      wirePress(plate, k, pressedKey(gold), [t]);
       return plate.width;
     };
     // Sorts : boutons-icônes carrés (cooldown affiché sous l'icône)
     const mkIconBtn = (key: string, x: number, icon: string, cb: () => void) => {
-      const plate = this.add.nineslice(x, cy, "ui_btn", undefined, iconS, iconS, 14, 14, 14, 16);
-      plate.setTint(UI_TINT.btn);
+      const k = plateKey(false), pi = plateInsets(k);
+      // Plancher : deux marges doivent tenir dans le côté, sinon les coins se recouvrent.
+      const side = Math.max(iconS, pi.left + pi.right + 2, pi.top + pi.bottom + 2);
+      const plate = this.add.nineslice(x, cy, k, undefined, side, side, pi.left, pi.right, pi.top, pi.bottom);
+      if (!skin) plate.setTint(UI_TINT.btn);
       plate.setInteractive({ cursor: CURSOR_POINT })
         .on("pointerdown", (_p: unknown, _x: unknown, _y: unknown, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); cb(); });
       this.hudPlates[key] = plate; this.hud.add(plate);
-      const glyph = iconS * 0.54;
-      const img = this.add.image(x, cy - iconS * 0.08, icon).setDisplaySize(glyph, glyph).setTint(0xf0e6d2);
+      // Icône et compteur SUPERPOSÉS, pas empilés. La zone plate d'une plaque du
+      // pack ne fait que ~32 unités (le reste est pris par les marges et par le
+      // relief dessiné sous le bouton) : y tasser une icône ET un chiffre les
+      // faisait déborder sur ce relief, où le chiffre devenait illisible. Le
+      // compteur remplace donc l'icône pendant la recharge, ce qui lève aussi
+      // l'ambiguïté — un bouton qui affiche un chiffre est un bouton indisponible.
+      const glyph = iconS * (skin ? 0.44 : 0.54);
+      const img = this.add.image(x, cy - (skin ? 0 : iconS * 0.08), icon)
+        .setDisplaySize(glyph, glyph).setTint(0xf0e6d2);
       this.hudIcons[key] = img; this.hud.add(img);
-      const cd = this.add.text(x, cy + iconS * 0.33, "", { fontSize: "10px", color: "#e8c252", fontFamily: FONT_DISPLAY }).setOrigin(0.5);
+      const cd = this.add.text(x, cy + (skin ? 0 : iconS * 0.33), "",
+        { fontSize: skin ? "15px" : "10px", color: skin ? HUD_LABEL : "#e8c252", fontFamily: FONT_DISPLAY }).setOrigin(0.5);
       this.hudTexts[key] = cd; this.hud.add(cd);
+      wirePress(plate, k, pressedKey(false), [img, cd]);
     };
 
     // --- Groupe gauche : état du run (lecture seule) ---
@@ -529,9 +609,11 @@ export class GameScene extends Phaser.Scene {
     const c = this.add.container(GAME_W / 2, GAME_H / 2).setDepth(3000);
     c.add(this.add.rectangle(0, 0, VEIL, VEIL, 0x000000, 0.5));
     c.add(uiPanel(this, 0, 0, 420, 190));
-    const edge = this.add.graphics();
-    edge.lineStyle(2, 0xc9a227, 1); edge.strokeRoundedRect(-210, -95, 420, 190, 14);
-    c.add(edge);
+    if (decorativeEdgeVisible(this)) {
+      const edge = this.add.graphics();
+      edge.lineStyle(2, 0xc9a227, 1); edge.strokeRoundedRect(-210, -95, 420, 190, 14);
+      c.add(edge);
+    }
     c.add(this.add.text(0, -55, "Abandonner la partie ?", { fontSize: "22px", color: C.uiText, fontFamily: FONT_DISPLAY }).setOrigin(0.5));
     c.add(this.add.text(0, -22, "La run sera perdue, aucun Éclat gagné.", { fontSize: "14px", color: "#a89878", fontFamily: FONT_BODY }).setOrigin(0.5));
     c.add(uiButton(this, -95, 45, "Quitter", { w: 130, h: 40, fontSize: 16, color: "#e8a87c" },
@@ -568,14 +650,25 @@ export class GameScene extends Phaser.Scene {
     const waveReady = r.phase === "building";
     this.hudTexts["nextWave"]?.setAlpha(waveReady ? 1 : 0.35);
     this.hudPlates["nextWave"]?.setAlpha(waveReady ? 1 : 0.35);
-    this.hudTexts["auto"]?.setText(this.autoWave ? "Auto ✓" : "Auto ✗").setColor(this.autoWave ? "#27ae60" : C.uiText);
-    this.hudTexts["speed"]?.setText(`x${r.speed}`).setColor(r.speed === 2 ? "#e8c252" : C.uiText);
+    // Couleur d'état SEULEMENT sur la plaque grise d'origine. Ces teintes avaient
+    // été choisies contre elle ; sur le teal du pack, l'écart de luminance tombe à
+    // 0,04 pour le vert (illisible) et 0,26 pour l'or, contre 0,43 pour le crème.
+    // L'état reste lisible sans elles : il est déjà porté par le glyphe.
+    const stateColor = (on: boolean, css: string): string =>
+      uiSkinActive(this) ? HUD_LABEL : on ? css : C.uiText;
+    this.hudTexts["auto"]?.setText(this.autoWave ? "Auto ✓" : "Auto ✗")
+      .setColor(stateColor(this.autoWave, "#27ae60"));
+    this.hudTexts["speed"]?.setText(`x${r.speed}`)
+      .setColor(stateColor(r.speed === 2, "#e8c252"));
     const skill = (key: string, readyAt: number) => {
       const left = readyAt - r.time;
       const onCd = left > 0;
       this.hudTexts[key]?.setText(onCd ? `${Math.ceil(left)}s` : "");
       this.hudPlates[key]?.setAlpha(onCd ? 0.45 : 1);
-      this.hudIcons[key]?.setAlpha(onCd ? 0.4 : 1);
+      // Sur l'habillage du pack, compteur et icône occupent le MÊME emplacement :
+      // l'icône s'efface donc complètement pendant la recharge au lieu de rester
+      // en filigrane sous le chiffre.
+      this.hudIcons[key]?.setAlpha(onCd ? (uiSkinActive(this) ? 0 : 0.4) : 1);
     };
     skill("ww", r.hero.whirlwindReady);
     skill("rally", r.hero.rallyReady);
@@ -706,9 +799,11 @@ export class GameScene extends Phaser.Scene {
     const overlay = this.add.container(GAME_W / 2, GAME_H / 2).setDepth(4000);
     overlay.add(this.add.rectangle(0, 0, VEIL, VEIL, 0x000000, 0.45));
     overlay.add(uiPanel(this, 0, 0, 420, 240));
-    const edge = this.add.graphics();
-    edge.lineStyle(2, 0xc9a227, 1); edge.strokeRoundedRect(-210, -120, 420, 240, 14);
-    overlay.add(edge);
+    if (decorativeEdgeVisible(this)) {
+      const edge = this.add.graphics();
+      edge.lineStyle(2, 0xc9a227, 1); edge.strokeRoundedRect(-210, -120, 420, 240, 14);
+      overlay.add(edge);
+    }
     overlay.add(this.add.text(0, -88, result.victory ? "Victoire !" : "Défaite", { fontSize: "30px", color: "#e8c252", fontFamily: FONT_DISPLAY }).setOrigin(0.5));
     if (result.victory) {
       const stars = "★".repeat(result.stars) + "☆".repeat(3 - result.stars);

@@ -7,9 +7,14 @@ import { UI_TINT } from "../theme";
 import { CURSOR_POINT, FONT_DISPLAY } from "../ui";
 import { touchSize } from "../viewport";
 import {
-  ensureUiSkinTextures, uiSkinActive, uiSkinInset, UI_SKIN_BTN, UI_SKIN_BTN_PRESS,
+  ensureUiSkinTextures, uiSkinActive, uiSkinInsets, UI_SKIN_BTN, UI_SKIN_BTN_PRESS,
   UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
 } from "../uiSkin";
+
+/** Hauteur minimale d'un bouton habillé par le pack : deux marges de nine-slice
+ *  doivent y tenir. La pièce du pack fait 47 de haut et la texture est réduite de
+ *  moitié (cf. `BTN_SCALE`), soit des marges de ~23 — d'où 48. */
+const SKIN_MIN_H = 48;
 
 export interface UiButtonOpts {
   w: number;
@@ -19,6 +24,10 @@ export interface UiButtonOpts {
   fontSize?: number;
   color?: string;
   disabled?: boolean;
+  /** Bouton-ICÔNE carré (bascule plein écran…) : il ne porte pas de libellé, donc
+   *  ni le plancher de hauteur ni la marge horizontale de l'habillage ne
+   *  s'appliquent — sinon un glyphe unique se retrouve dans une plaque de 66×56. */
+  compact?: boolean;
 }
 
 export interface UiButton {
@@ -36,10 +45,6 @@ export function uiButton(
   scene: Phaser.Scene, x: number, y: number, label: string,
   opts: UiButtonOpts, cb?: () => void,
 ): UiButton {
-  // Plancher tactile appliqué ici, une fois pour tous les appelants : une hauteur
-  // écrite à la main reste confortable sur grand écran mais devient inatteignable
-  // au doigt sur mobile (cf. `touchSize`, ADR-011).
-  const h = touchSize(opts.h ?? 36);
   const c = scene.add.container(x, y);
 
   // Boutons du pack Tiny Swords quand il est chargé : ils portent leur propre
@@ -48,15 +53,24 @@ export function uiButton(
   // ne pourrait pas devenir dorée ; le repli Kenney, lui, est gris et se teinte.
   ensureUiSkinTextures(scene);
   const skin = uiSkinActive(scene);
+
+  // Plancher tactile appliqué ici, une fois pour tous les appelants : une hauteur
+  // écrite à la main reste confortable sur grand écran mais devient inatteignable
+  // au doigt sur mobile (cf. `touchSize`, ADR-011).
+  //
+  // L'habillage du pack impose EN PLUS son propre plancher : deux marges de
+  // nine-slice doivent tenir dans la plaque, sinon les coins se recouvrent.
+  const h = touchSize(Math.max(opts.h ?? 36, skin ? SKIN_MIN_H : 0));
   const keyUp = skin
     ? (opts.gold ? UI_SKIN_BTN_PRIMARY : UI_SKIN_BTN)
     : (opts.gold ? "ui_btn_gold" : "ui_btn");
   const keyDown = skin
     ? (opts.gold ? UI_SKIN_BTN_PRIMARY_PRESS : UI_SKIN_BTN_PRESS)
     : keyUp;
-  const inset = skin ? uiSkinInset(keyUp) : 14;
+  const i = skin ? uiSkinInsets(keyUp) : { left: 14, right: 14, top: 14, bottom: 16 };
+  const inset = Math.max(i.left, i.right, i.top, i.bottom);
 
-  const img = scene.add.nineslice(0, 0, keyUp, undefined, touchSize(opts.w), h, inset, inset, inset, skin ? inset : 16);
+  const img = scene.add.nineslice(0, 0, keyUp, undefined, touchSize(opts.w), h, i.left, i.right, i.top, i.bottom);
   if (!skin && !opts.gold) img.setTint(UI_TINT.btn);
   const txt = scene.add.text(0, -2, label, {
     fontSize: `${opts.fontSize ?? 15}px`,
@@ -67,7 +81,12 @@ export function uiButton(
   // Le bouton s'élargit pour contenir son libellé : la police est remontée sur
   // petit écran (ADR-015), et une largeur demandée en dur laissait le texte
   // dépasser de la plaque.
-  const w = Math.max(img.width, txt.width + 22);
+  // Marge horizontale : le contour du pack mange ~8 unités de CHAQUE côté, donc
+  // 22 de marge totale collerait le libellé au cadre.
+  // Plancher de LARGEUR, pas seulement de hauteur : deux coins de 37 doivent tenir
+  // côte à côte, sinon Phaser les fait se chevaucher et la plaque se replie sur
+  // elle-même. Un libellé court comme « x1 » passait à deux pixels près.
+  const w = Math.max(img.width, txt.width + (skin && !opts.compact ? 46 : 22), skin ? 2 * inset + 2 : 0);
   if (w !== img.width) img.setSize(w, h);
   c.add([img, txt]);
   if (opts.disabled || !cb) {
@@ -75,10 +94,14 @@ export function uiButton(
     return { container: c, img, txt, w, h };
   }
   img.setInteractive({ cursor: CURSOR_POINT });
-  const restTint = skin ? 0xffffff : opts.gold ? 0xffffff : UI_TINT.btn;
-  const hoverTint = skin ? 0xd9e6ff : opts.gold ? 0xfff2cf : 0xa68c64;
-  img.on("pointerover", () => { c.setScale(1.04); img.setTint(hoverTint); });
-  img.on("pointerout", () => { c.setScale(1); img.setTint(restTint); });
+  // Survol : sur l'habillage du pack, la plaque porte déjà son propre reflet
+  // clair — la teinter par-dessus la DÉLAVE au lieu de l'éclairer (relevé au
+  // playtest). Le grossissement suffit à signaler le survol ; seul le repli
+  // Kenney, uniformément gris, gagne à être teinté.
+  const restTint = opts.gold ? 0xffffff : UI_TINT.btn;
+  const hoverTint = opts.gold ? 0xfff2cf : 0xa68c64;
+  img.on("pointerover", () => { c.setScale(1.04); if (!skin) img.setTint(hoverTint); });
+  img.on("pointerout", () => { c.setScale(1); if (!skin) img.setTint(restTint); });
 
   // L'action part au RELÂCHEMENT, pas à l'appui : dans une liste défilante, un
   // glissement commencé sur un bouton déclencherait sinon son action avant même

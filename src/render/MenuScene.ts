@@ -116,7 +116,7 @@ export class MenuScene extends Phaser.Scene {
     if (this.scale.fullscreen.available) {
       const s = touchSize(38);
       this.fsBtn = uiButton(this, viewport().safeRight - s / 2 - 10, s / 2 + 10,
-        this.scale.isFullscreen ? "⤡" : "⛶", { w: s, h: s, fontSize: 17 },
+        this.scale.isFullscreen ? "⤡" : "⛶", { w: s, h: s, fontSize: 17, compact: true },
         () => {
           if (this.scale.isFullscreen) this.scale.stopFullscreen();
           else this.scale.startFullscreen();

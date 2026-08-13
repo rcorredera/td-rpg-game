@@ -45,8 +45,12 @@ export const TEXT = {
   gold: UI_THEME.textAccent,   // titres, montants, accents
   dim: UI_THEME.textDim,       // sous-titres, texte secondaire, verrouillé
   light: UI_THEME.textLight,   // corps de texte principal
-  ok: "#27ae60",     // acquis / victoire / conquis
-  bad: "#c0392b",    // coût inabordable / défaite
+  // Éclaircis avec les panneaux : posées sur du parchemin, les versions saturées
+  // (#27ae60 / #c0392b) tombaient à 0,12 et 0,04 d'écart de luminance — le coût
+  // inabordable de l'Armurerie devenait illisible. Elles ne sont pas décoratives,
+  // elles PORTENT l'information « acquis » / « hors de portée ».
+  ok: "#5fd38a",     // acquis / victoire / conquis
+  bad: "#ef8f7d",    // coût inabordable / défaite
   warn: "#e8a87c",   // avertissement doux (quitter, groundOnly)
   sceau: "#c97ba2",  // monnaie Sceaux
   rift: "#b07cc6",   // Failles (texte)

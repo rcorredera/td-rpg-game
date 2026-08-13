@@ -4,7 +4,7 @@
 
 import Phaser from "phaser";
 import { ACCENT, UI_TINT } from "../theme";
-import { ensureUiSkinTextures, uiSkinActive, uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
+import { ensureUiSkinTextures, uiSkinActive, uiSkinInsets, UI_SKIN_PANEL } from "../uiSkin";
 
 /** Panneau nine-slice teinté (remplace les rectangles plats). */
 export function uiPanel(
@@ -16,10 +16,29 @@ export function uiPanel(
   // multipliant, elle peut virer ardoise, parchemin ou pourpre selon la palette.
   ensureUiSkinTextures(scene);
   const key = scene.textures.exists(UI_SKIN_PANEL) ? UI_SKIN_PANEL : "ui_panel";
-  const inset = key === UI_SKIN_PANEL ? uiSkinInset(key) : 14;
-  const p = scene.add.nineslice(x, y, key, undefined, w, h, inset, inset, inset, inset);
+  // Marges par CÔTÉ : les pièces du pack ne sont pas carrées (45 de large pour
+  // 47 de haut), une marge unique déformerait les angles.
+  const i = key === UI_SKIN_PANEL
+    ? uiSkinInsets(key)
+    : { left: 14, right: 14, top: 14, bottom: 14 };
+  const p = scene.add.nineslice(x, y, key, undefined, w, h, i.left, i.right, i.top, i.bottom);
   p.setTint(tint).setAlpha(alpha);
   return p;
+}
+
+/**
+ * Un liseré DÉCORATIF doit-il encore être tracé ?
+ *
+ * Avec l'habillage dessiné, le contour est DANS l'art. Reposer un trait doré
+ * par-dessus superpose deux courbes de rayons différents, qui divergent aux
+ * angles et se lisent comme des ÉQUERRES DÉTACHÉES (relevé au playtest sur les
+ * vignettes de chapitre et la fenêtre d'abandon).
+ *
+ * Les liserés porteurs d'INFORMATION — état verrouillé, victoire, option
+ * indisponible — ne passent pas par ici : ils restent toujours tracés.
+ */
+export function decorativeEdgeVisible(scene: Phaser.Scene): boolean {
+  return !uiSkinActive(scene);
 }
 
 export interface UiFramedPanelOpts {
