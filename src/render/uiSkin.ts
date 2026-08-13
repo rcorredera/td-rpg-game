@@ -19,6 +19,7 @@
 // et importer Phaser comme VALEUR y lit `window` dès le chargement, ce qui casse
 // les tests unitaires purs sous Vitest (cf. `.ai/pitfalls.md`).
 import type Phaser from "phaser";
+import { flattenStretched } from "./nineSliceFlatten";
 import { planNineSlice, type Insets, type SheetFrame } from "./nineSlicePlan";
 
 const SRC = "assets/tiny-swords/ui";
@@ -176,6 +177,13 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
     if (!fctx) continue;
     fctx.imageSmoothingEnabled = false;
     for (const q of plan.rects) fctx.drawImage(img, q.sx, q.sy, q.sw, q.sh, q.dx, q.dy, q.sw, q.sh);
+
+    // Les cinq pièces que le nine-slice ÉTIRE doivent être constantes le long de
+    // leur axe, sinon le grain de la planche devient une traînée large de tout le
+    // panneau (cf. `nineSliceFlatten.ts`). Les coins, eux, gardent l'art intact.
+    const assemble = fctx.getImageData(0, 0, plan.fullW, plan.fullH);
+    flattenStretched({ w: plan.fullW, h: plan.fullH, data: assemble.data }, plan.rects);
+    fctx.putImageData(assemble, 0, 0);
 
     const outW = Math.max(1, Math.round(plan.fullW * plan.scale));
     const outH = Math.max(1, Math.round(plan.fullH * plan.scale));

@@ -34,10 +34,20 @@ export interface SheetFrame {
   bottom: readonly [number, number, number];
 }
 
+/**
+ * Axes le long desquels le nine-slice ÉTIRERA la pièce à l'affichage.
+ *
+ * Ce n'est pas une décoration du plan : une pièce étirée le long d'un axe doit
+ * être CONSTANTE le long de cet axe, sinon le moindre pixel divergent devient une
+ * traînée large de tout le panneau (cf. `nineSliceFlatten.ts`).
+ */
+export type Stretch = "none" | "x" | "y" | "both";
+
 /** Un `drawImage` : rectangle source → rectangle destination, sans mise à l'échelle. */
 export interface PieceRect {
   sx: number; sy: number; sw: number; sh: number;
   dx: number; dy: number;
+  stretch: Stretch;
 }
 
 /** Marges de nine-slice, potentiellement différentes sur chaque côté : les pièces
@@ -113,7 +123,12 @@ export function planNineSlice(
       const sy = r === 0 ? frame.top[0]!
         : r === 1 ? frame.top[0]! + rh[0]!
         : frame.bottom[2]! - rh[2]!;
-      rects.push({ sx, sy, sw: cw[c]!, sh: rh[r]!, dx: dx[c]!, dy: dy[r]! });
+      // La colonne du milieu s'étire en X, la rangée du milieu en Y — les quatre
+      // coins ne s'étirent jamais et gardent donc l'art intact.
+      const stretch: Stretch = c === 1
+        ? (r === 1 ? "both" : "x")
+        : (r === 1 ? "y" : "none");
+      rects.push({ sx, sy, sw: cw[c]!, sh: rh[r]!, dx: dx[c]!, dy: dy[r]!, stretch });
     }
   }
 

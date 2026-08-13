@@ -91,6 +91,21 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   ⚠ Retoucher le ch.10 pour la lisibilité a de nouveau cassé son invariant de méta —
   toute retouche de `MapDef` sur un chapitre à garantie testée doit repasser
   `autoplay.test.ts`, pas seulement les tests géométriques.
+- **Tuiles et habillage (ADR-029) — FAIT** : deux défauts mesurés, corrigés par deux modules
+  purs. (1) Le grain du parchemin Tiny Swords partait en TRAÎNÉES — un nine-slice n'étire que
+  cinq de ses neuf pièces, et la bande gauche du parchemin avait 8 profils de ligne pour
+  8 lignes (contre 1 sur la planche des boutons, d'où l'impression que boutons et tuiles
+  venaient de deux jeux différents). `render/nineSliceFlatten.ts` rend toute pièce étirée
+  constante le long de son axe, par couleur DOMINANTE ; mesuré après : 1 profil partout.
+  (2) Le contenu des tuiles avait une taille FIXE dans une boîte dérivée de l'écran — 57 % de
+  vide dans la tuile « Histoire », jauge 82 unités sous le texte, 40 % de l'écran Histoire vide
+  sous la grille. `components/tileContent.ts` fait remplir la boîte (icône jusqu'à
+  `ICON_RASTER_PX`, porté 128 → 192) et `gridLayout` reçoit sa hauteur disponible.
+  Occupation après : secondaires 82 %, principale 75 % (+ aperçu du biome du prochain
+  chapitre en fond, même idiome que les vignettes). ⚠ RESTE : le pack a des bannières et des
+  rubans (`banner.png`, `ribbons-*.png`, `paper-special.png`) encore inutilisés, et les
+  panneaux restent sombres (`setTint` MULTIPLIE, cf. ADR-026) — la matière du parchemin ne
+  ressort toujours pas, seule sa bordure porte l'habillage.
 - **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups
