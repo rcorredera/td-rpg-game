@@ -68,9 +68,11 @@ ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, pré
 `render/components/tileContent.ts` (ADR-029) : composition VERTICALE du contenu d'une tuile (icône, titre, sous-titre, jauge), pure et testée. Le contenu remplit la boîte qu'on lui donne, l'icône absorbant la place restante jusqu'à `ICON_RASTER_PX`. Même famille que `hubLayout` : la mise en page a une règle métier, donc elle sort du composant.
 
 `render/icons.ts` (ADR-012) : registre des icônes d'UI — les écrans nomment un **rôle**
-(`story`, `armory`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
+(`story`, `bestiary`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
 qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji
-dans l'UI : leur rendu dépend de l'OS et leurs couleurs cassent la palette.
+dans l'UI : leur rendu dépend de l'OS et leurs couleurs cassent la palette. `EMBLEM` est le registre
+frère pour les rasters du pack : un rôle aussi, mais jamais teinté — l'armurerie porte désormais le
+bouclier `tiny-swords/ui/icon-06.png` (`ts_shield`) plutôt qu'une silhouette maison.
 
 ## Scènes (ADR-034)
 
