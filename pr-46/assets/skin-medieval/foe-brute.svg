@@ -1,0 +1,17 @@
+<!-- Brute — le tank : très large, petite tête enfoncée dans les épaules,
+     massue. La largeur seule doit suffire à l'identifier. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g stroke="#241a12" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M24 49v7M40 49v7" fill="none" stroke-width="8"/>
+    <path d="M48 38 57 24" fill="none" stroke-width="4"/>
+    <path d="M53 26a6 7 0 1 1 8 4 6 7 0 0 1-8-4z" fill="#8b5e34"/>
+    <ellipse cx="32" cy="39" rx="18" ry="13" fill="#6d3c25"/>
+    <ellipse cx="32" cy="32" rx="14" ry="7" fill="#9c5a3c"/>
+    <ellipse cx="32" cy="22" rx="9" ry="8" fill="#9c5a3c"/>
+  </g>
+  <ellipse cx="27.5" cy="21" rx="2.6" ry="2.2" fill="#f5b03a"/>
+  <ellipse cx="36.5" cy="21" rx="2.6" ry="2.2" fill="#f5b03a"/>
+  <circle cx="28" cy="21.2" r="1.2" fill="#241a12"/>
+  <circle cx="36" cy="21.2" r="1.2" fill="#241a12"/>
+  <path d="M27 26h10v2.6H27z" fill="#241a12"/>
+</svg>
