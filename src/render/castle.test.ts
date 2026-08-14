@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BATTLEFIELD } from "../core/types";
 import { castleAnchor, castleBarBox, CASTLE_HALF } from "./castle";
+import type { CastleBarBox, Point } from "./castle";
 
 // ============================================================
 // Défaut d'origine : la jauge de PV du Bastion était calée sur `end.x - 62`
@@ -14,7 +15,7 @@ import { castleAnchor, castleBarBox, CASTLE_HALF } from "./castle";
 // ============================================================
 
 /** Fins de chemin réelles : contre le bord droit, et bien à l'intérieur. */
-const FINS = [
+const FINS: Point[] = [
   { x: 980, y: 560 },
   { x: 960, y: 270 },
   { x: 820, y: 300 },
@@ -25,16 +26,16 @@ const FINS = [
 describe("ancrage du Bastion", () => {
   it("centre la jauge sur le sprite, quelle que soit la fin du chemin", () => {
     for (const end of FINS) {
-      const a = castleAnchor(end);
-      const b = castleBarBox(end);
+      const a: Point = castleAnchor(end);
+      const b: CastleBarBox = castleBarBox(end);
       expect(b.x + b.w / 2, `fin (${end.x},${end.y})`).toBeCloseTo(a.x, 6);
     }
   });
 
   it("pose la jauge AU-DESSUS du sprite, sans le chevaucher", () => {
     for (const end of FINS) {
-      const a = castleAnchor(end);
-      const b = castleBarBox(end);
+      const a: Point = castleAnchor(end);
+      const b: CastleBarBox = castleBarBox(end);
       expect(b.y + b.h, `fin (${end.x},${end.y})`).toBeLessThanOrEqual(a.y - CASTLE_HALF);
     }
   });
@@ -43,7 +44,7 @@ describe("ancrage du Bastion", () => {
     // Les chemins finissent au bord droit : un Bastion centré sur le waypoint
     // final déborderait du cadre.
     for (const end of FINS) {
-      const a = castleAnchor(end);
+      const a: Point = castleAnchor(end);
       expect(a.x + CASTLE_HALF, `fin (${end.x},${end.y})`).toBeLessThanOrEqual(BATTLEFIELD.w);
       expect(a.y + CASTLE_HALF).toBeLessThanOrEqual(BATTLEFIELD.h);
     }

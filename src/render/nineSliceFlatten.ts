@@ -33,12 +33,12 @@ export interface Rgba {
 }
 
 function read(img: PixelBuffer, x: number, y: number): Rgba {
-  const i = (y * img.w + x) * 4;
+  const i: number = (y * img.w + x) * 4;
   return { r: img.data[i]!, g: img.data[i + 1]!, b: img.data[i + 2]!, a: img.data[i + 3]! };
 }
 
 function write(img: PixelBuffer, x: number, y: number, c: Rgba): void {
-  const i = (y * img.w + x) * 4;
+  const i: number = (y * img.w + x) * 4;
   img.data[i] = c.r;
   img.data[i + 1] = c.g;
   img.data[i + 2] = c.b;
@@ -57,12 +57,12 @@ function write(img: PixelBuffer, x: number, y: number, c: Rgba): void {
  */
 export function dominantRgba(sample: readonly Rgba[]): Rgba {
   if (sample.length === 0) return { r: 0, g: 0, b: 0, a: 0 };
-  const counts = new Map<number, number>();
-  let best = sample[0]!;
-  let bestCount = 0;
+  const counts: Map<number, number> = new Map<number, number>();
+  let best: Rgba = sample[0]!;
+  let bestCount: number = 0;
   for (const c of sample) {
-    const key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
-    const n = (counts.get(key) ?? 0) + 1;
+    const key: number = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+    const n: number = (counts.get(key) ?? 0) + 1;
     counts.set(key, n);
     if (n > bestCount) {
       bestCount = n;
@@ -91,30 +91,30 @@ export function flattenStretched(img: PixelBuffer, rects: readonly PieceRect[]):
     if (rect.stretch === "both") {
       // Étirée dans les deux sens : une seule couleur peut survivre.
       const sample: Rgba[] = [];
-      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) sample.push(read(img, dx + x, dy + y));
-      const c = dominantRgba(sample);
-      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) write(img, dx + x, dy + y, c);
+      for (let y: number = 0; y < sh; y++) for (let x: number = 0; x < sw; x++) sample.push(read(img, dx + x, dy + y));
+      const c: Rgba = dominantRgba(sample);
+      for (let y: number = 0; y < sh; y++) for (let x: number = 0; x < sw; x++) write(img, dx + x, dy + y, c);
       continue;
     }
 
     if (rect.stretch === "x") {
       // Étirée en largeur : chaque LIGNE se réduit à sa dominante, ce qui préserve
       // le profil vertical de la bordure (liseré, reflet, remplissage).
-      for (let y = 0; y < sh; y++) {
+      for (let y: number = 0; y < sh; y++) {
         const sample: Rgba[] = [];
-        for (let x = 0; x < sw; x++) sample.push(read(img, dx + x, dy + y));
-        const c = dominantRgba(sample);
-        for (let x = 0; x < sw; x++) write(img, dx + x, dy + y, c);
+        for (let x: number = 0; x < sw; x++) sample.push(read(img, dx + x, dy + y));
+        const c: Rgba = dominantRgba(sample);
+        for (let x: number = 0; x < sw; x++) write(img, dx + x, dy + y, c);
       }
       continue;
     }
 
     // Étirée en hauteur : symétrique, chaque COLONNE se réduit à sa dominante.
-    for (let x = 0; x < sw; x++) {
+    for (let x: number = 0; x < sw; x++) {
       const sample: Rgba[] = [];
-      for (let y = 0; y < sh; y++) sample.push(read(img, dx + x, dy + y));
-      const c = dominantRgba(sample);
-      for (let y = 0; y < sh; y++) write(img, dx + x, dy + y, c);
+      for (let y: number = 0; y < sh; y++) sample.push(read(img, dx + x, dy + y));
+      const c: Rgba = dominantRgba(sample);
+      for (let y: number = 0; y < sh; y++) write(img, dx + x, dy + y, c);
     }
   }
 }

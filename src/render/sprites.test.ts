@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { CONTENT } from "../content/index";
 import { enemyView, heroView, keepView, SHEET_FRAME_MAX, tileFor, towerView, type SpriteRef, type TileKind } from "./sprites";
+import type { TowerView } from "./sprites";
 
 /** Une référence doit désigner soit une texture autonome (`key` seul), soit une
  *  frame de planche valide. Les deux formes coexistent depuis ADR-016. */
@@ -22,7 +23,7 @@ describe("registre de sprites (sprites.ts)", () => {
 
   it("mappe chaque tour de CONTENT vers une texture valide", () => {
     for (const defId of Object.keys(CONTENT.towers)) {
-      const v = towerView(defId);
+      const v: TowerView = towerView(defId);
       validRef(v.base);
       if (v.emblem) validRef(v.emblem);
     }
@@ -37,7 +38,7 @@ describe("registre de sprites (sprites.ts)", () => {
   it("donne une texture DISTINCTE à chaque ennemi", () => {
     // Deux ennemis partageant un sprite seraient indiscernables en jeu — c'est
     // précisément ce que le skin médiéval corrige.
-    const keys = Object.keys(CONTENT.enemies).map(id => enemyView(id).key);
+    const keys: string[] = Object.keys(CONTENT.enemies).map(id => enemyView(id).key);
     expect(new Set(keys).size).toBe(keys.length);
   });
 
@@ -52,8 +53,8 @@ describe("paliers visuels de tour (ADR-017)", () => {
     // L'amélioration doit se voir sur la carte : sans ça, le joueur ne distingue
     // pas une tour de rang 1 d'une tour maximale.
     for (const defId of Object.keys(CONTENT.towers)) {
-      const lvl1 = towerView(defId, 1).base.key;
-      const lvl3 = towerView(defId, 3).base.key;
+      const lvl1: string = towerView(defId, 1).base.key;
+      const lvl3: string = towerView(defId, 3).base.key;
       expect(lvl3).not.toBe(lvl1);
       // Niveau 2 reste au palier bas : le saut visuel marque le niveau max.
       expect(towerView(defId, 2).base.key).toBe(lvl1);
@@ -63,8 +64,8 @@ describe("paliers visuels de tour (ADR-017)", () => {
   });
 
   it("distingue deux spécialisations d'un même palier par la teinte", () => {
-    const plain = towerView("tower_catapult", 4, "spec_trebuchet");
-    const fire = towerView("tower_catapult", 4, "spec_greekfire");
+    const plain: TowerView = towerView("tower_catapult", 4, "spec_trebuchet");
+    const fire: TowerView = towerView("tower_catapult", 4, "spec_greekfire");
     expect(plain.base.key).toBe(fire.base.key);
     expect(fire.base.tint).toBeDefined();
     expect(plain.base.tint).not.toBe(fire.base.tint);

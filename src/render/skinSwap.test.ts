@@ -22,7 +22,7 @@
 
 import { describe, expect, it } from "vitest";
 
-const SOURCES = import.meta.glob("/src/render/**/*.ts", {
+const SOURCES: Record<string, string> = import.meta.glob("/src/render/**/*.ts", {
   query: "?raw", import: "default", eager: true,
 }) as Record<string, string>;
 
@@ -36,7 +36,7 @@ const SOURCES = import.meta.glob("/src/render/**/*.ts", {
  * Allonger cette liste doit rester un acte délibéré : si l'objet visé est un
  * nine-slice habillé, la bonne réponse est `uiSkinSetTexture`, pas une dérogation.
  */
-const DEROGATIONS = ["/src/render/uiSkin.ts", "/src/render/EntityLayer.ts"];
+const DEROGATIONS: string[] = ["/src/render/uiSkin.ts", "/src/render/EntityLayer.ts"];
 
 describe("habillage : changement de texture", () => {
   it("ne pose aucune texture sans reposer ses marges", () => {
@@ -57,7 +57,7 @@ describe("habillage : changement de texture", () => {
 
   it("surveille bien les fichiers attendus", () => {
     // Un glob qui ne remonte rien rendrait le test ci-dessus vert et inutile.
-    const surveilles = Object.keys(SOURCES).filter(
+    const surveilles: string[] = Object.keys(SOURCES).filter(
       f => !DEROGATIONS.includes(f) && !f.endsWith(".test.ts"));
     expect(surveilles).toContain("/src/render/GameScene.ts");
     expect(surveilles).toContain("/src/render/components/button.ts");

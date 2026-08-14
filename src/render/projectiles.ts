@@ -50,10 +50,10 @@ export function projectileFor(towerDefId: string): ProjectileStyle {
 export function projectilePoint(
   from: { x: number; y: number }, to: { x: number; y: number }, t: number, arc: number,
 ): { x: number; y: number } {
-  const k = Math.min(1, Math.max(0, t));
+  const k: number = Math.min(1, Math.max(0, t));
   // Parabole : nulle aux extrémités, maximale au milieu — le projectile part et
   // retombe exactement sur la cible, quel que soit l'arc.
-  const lift = arc * 4 * k * (1 - k);
+  const lift: number = arc * 4 * k * (1 - k);
   return {
     x: from.x + (to.x - from.x) * k,
     y: from.y + (to.y - from.y) * k - lift,

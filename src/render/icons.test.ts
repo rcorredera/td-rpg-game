@@ -3,7 +3,7 @@ import { EMBLEM, ICON } from "./icons";
 
 describe("registre d'icônes UI", () => {
   it("associe une texture distincte à chaque rôle", () => {
-    const keys = Object.values(ICON);
+    const keys: string[] = Object.values(ICON);
     expect(new Set(keys).size).toBe(keys.length);
     // Un mot composé est admis (`ui_star_empty`) : ce que la convention protège,
     // c'est le PRÉFIXE — aucune icône d'UI ne doit pouvoir entrer en collision
@@ -25,7 +25,7 @@ describe("registre d'icônes UI", () => {
     // monochrome que le rendu teinte pour porter un état, un emblème arrive du
     // pack avec ses couleurs. Les préfixer distinctement empêche de teinter l'un
     // en croyant manipuler l'autre.
-    const keys = Object.values(EMBLEM);
+    const keys: "ts_castle"[] = Object.values(EMBLEM);
     expect(new Set(keys).size).toBe(keys.length);
     for (const k of keys) expect(k).toMatch(/^ts_[a-z]+$/);
     expect(keys.some(k => Object.values(ICON).includes(k as never))).toBe(false);

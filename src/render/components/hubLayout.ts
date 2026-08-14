@@ -40,14 +40,14 @@ export interface HubLayout {
  * ne tiennent plus dans 540 de haut (débordement mesuré de 23 unités sous le
  * monde). Deux colonnes y donnent des tuiles de 242×167 au lieu de 880×42.
  */
-export const SIDE_BY_SIDE_MIN_WIDTH = 860;
+export const SIDE_BY_SIDE_MIN_WIDTH: number = 860;
 
-const GAP = 16;
+const GAP: number = 16;
 
 /** Sous le bandeau de titre (108) et son écart. */
-const HUB_TOP = 150;
+const HUB_TOP: number = 150;
 /** Marge basse : le dernier rang ne doit pas coller au bord du monde. */
-const BOTTOM_MARGIN = 40;
+const BOTTOM_MARGIN: number = 40;
 
 /**
  * Zone utile d'un écran de menu, ANCRÉE sur le centre du monde.
@@ -60,16 +60,18 @@ const BOTTOM_MARGIN = 40;
  * que la répartition RELATIVE à un centre passé en paramètre, jamais que ce centre
  * était le bon : la fonction pure était juste, son ancrage faux.
  */
-export function menuZone(v: { width: number; bottom: number }): {
-  cx: number; cy: number; w: number; h: number;
-} {
-  const w = Math.min(1180, v.width - 80);
-  const h = Math.max(220, Math.min(v.bottom - 30, WORLD_H - BOTTOM_MARGIN) - HUB_TOP);
+export interface MenuZone { cx: number; cy: number; w: number; h: number }
+
+export function menuZone(v: { width: number; bottom: number }): MenuZone {
+  const w: number = Math.min(1180, v.width - 80);
+  const h: number = Math.max(220, Math.min(v.bottom - 30, WORLD_H - BOTTOM_MARGIN) - HUB_TOP);
   return { cx: WORLD_W / 2, cy: HUB_TOP + h / 2, w, h };
 }
 
+export interface LevelGridZone { cx: number; w: number }
+
 /** Même ancrage pour la grille des chapitres, qui a la même largeur utile à 20 près. */
-export function levelGridZone(v: { width: number }): { cx: number; w: number } {
+export function levelGridZone(v: { width: number }): LevelGridZone {
   return { cx: WORLD_W / 2, w: Math.min(1180, v.width - 60) };
 }
 
@@ -83,20 +85,20 @@ export function levelGridZone(v: { width: number }): { cx: number; w: number } {
 export function hubLayout(
   cx: number, cy: number, w: number, h: number, count: number, minTile = 96,
 ): HubLayout {
-  const sideBySide = w >= SIDE_BY_SIDE_MIN_WIDTH;
+  const sideBySide: boolean = w >= SIDE_BY_SIDE_MIN_WIDTH;
 
   if (!sideBySide) {
     // Colonne unique : la principale garde un tiers de la hauteur, le reste se
     // partage entre les secondaires.
-    const primaryH = Math.max(minTile, h * 0.34);
-    const restH = h - primaryH - GAP;
+    const primaryH: number = Math.max(minTile, h * 0.34);
+    const restH: number = h - primaryH - GAP;
     // Le plancher tactile est une PRÉFÉRENCE, pas une garantie : il ne peut pas
     // être honoré en débordant de la zone. Écrit en `Math.max(minTile * 0.6, …)`,
     // il ne s'activait justement QUE lorsqu'il ne tenait pas — les tuiles sortaient
     // alors sous le bas de l'écran. Si ça ne rentre pas, c'est la zone qui gagne :
     // au caller de donner plus de place ou moins d'entrées.
-    const rowH = Math.max(1, (restH - GAP * (count - 1)) / Math.max(1, count));
-    const top = cy - h / 2;
+    const rowH: number = Math.max(1, (restH - GAP * (count - 1)) / Math.max(1, count));
+    const top: number = cy - h / 2;
     return {
       primary: { x: cx, y: top + primaryH / 2, w, h: primaryH },
       secondary: Array.from({ length: count }, (_, i) => ({
@@ -111,18 +113,18 @@ export function hubLayout(
   // Deux colonnes : la principale occupe la gauche sur toute la hauteur, les
   // secondaires forment une grille à droite. C'est la hiérarchie qui manquait —
   // l'action qui fait avancer le jeu doit se voir en premier.
-  const leftW = Math.round((w - GAP) * 0.42);
-  const rightW = w - GAP - leftW;
-  const left = cx - w / 2;
-  const cols = count <= 2 ? 1 : 2;
-  const rows = Math.ceil(count / cols);
-  const cellW = (rightW - GAP * (cols - 1)) / cols;
-  const cellH = (h - GAP * (rows - 1)) / rows;
+  const leftW: number = Math.round((w - GAP) * 0.42);
+  const rightW: number = w - GAP - leftW;
+  const left: number = cx - w / 2;
+  const cols: number = count <= 2 ? 1 : 2;
+  const rows: number = Math.ceil(count / cols);
+  const cellW: number = (rightW - GAP * (cols - 1)) / cols;
+  const cellH: number = (h - GAP * (rows - 1)) / rows;
 
   return {
     primary: { x: left + leftW / 2, y: cy, w: leftW, h },
     secondary: Array.from({ length: count }, (_, i) => {
-      const col = i % cols, row = Math.floor(i / cols);
+      const col: number = i % cols, row: number = Math.floor(i / cols);
       return {
         x: left + leftW + GAP + cellW / 2 + col * (cellW + GAP),
         y: cy - h / 2 + cellH / 2 + row * (cellH + GAP),

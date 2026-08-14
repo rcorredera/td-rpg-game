@@ -65,28 +65,28 @@ function clamp(v: number, lo: number, hi: number): number {
  * et c'est au calcul de disposition (`hubLayout`, `gridLayout`) de la corriger.
  */
 export function composeTile(o: TileContentInput): TileContentBox {
-  const pad = Math.max(clamp(o.h * 0.09, 8, 22), o.minPad ?? 0);
-  const gap = clamp(o.h * 0.035, 4, 10);
-  const subGap = gap * 0.5;
+  const pad: number = Math.max(clamp(o.h * 0.09, 8, 22), o.minPad ?? 0);
+  const gap: number = clamp(o.h * 0.035, 4, 10);
+  const subGap: number = gap * 0.5;
 
-  const zoneTop = -o.h / 2 + pad;
-  const zoneH = Math.max(0, o.h - 2 * pad);
+  const zoneTop: number = -o.h / 2 + pad;
+  const zoneH: number = Math.max(0, o.h - 2 * pad);
 
   // La jauge appartient au BLOC, elle n'est pas ancrée au bas de la tuile.
   // Ancrée, elle s'éloignait du texte de tout le vide résiduel — 82 unités
   // mesurées sur la tuile « Histoire ». Deux règles concurrentes (« bloc centré »
   // et « pied en bas ») ne peuvent pas tenir ensemble : il n'en reste qu'une.
-  const footerBlock = o.footerH > 0 ? gap + o.footerH : 0;
-  const textH = o.titleH + (o.subH > 0 ? subGap + o.subH : 0);
+  const footerBlock: number = o.footerH > 0 ? gap + o.footerH : 0;
+  const textH: number = o.titleH + (o.subH > 0 ? subGap + o.subH : 0);
   // Plafonds de PROPORTION en plus du plafond de résolution : depuis que le
   // panneau porte le cadre ouvragé du pack, c'est lui qui donne sa présence à la
   // tuile, et une icône qui occupait 55 % de la hauteur écrasait tout le reste.
-  const glyph = Math.max(0, Math.min(
+  const glyph: number = Math.max(0, Math.min(
     o.maxGlyph, o.w * 0.5, o.h * 0.42, zoneH - textH - footerBlock - gap,
   ));
 
-  const blockH = glyph + gap + textH + footerBlock;
-  const top = zoneTop + (zoneH - blockH) / 2;
+  const blockH: number = glyph + gap + textH + footerBlock;
+  const top: number = zoneTop + (zoneH - blockH) / 2;
 
   return {
     pad, gap, glyph,

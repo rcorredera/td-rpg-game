@@ -7,6 +7,7 @@
 
 import { SKIN_DIM_FACTOR, UI_THEME } from "./uiTheme";
 /** Palette médiévale (parchemin / forêt / pierre). */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const C = {
   // Terrain & décor (fallback procédural ; les tuiles Tiny prennent le relais en Phase 2)
   grass: 0x4a6741, path: 0xb59a6a, pathEdge: 0x8a7350,
@@ -22,6 +23,7 @@ export const C = {
 } as const;
 
 /** Couleurs sémantiques réutilisées (barres de PV, états). */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const STATUS = {
   hpGood: 0x27ae60, hpWarn: 0xe8c252, hpBad: 0xc0392b,
   burn: 0xe67e22, frostRing: 0x7ec8e3,
@@ -33,6 +35,7 @@ export const STATUS = {
 // thème de menu ne doit jamais toucher au terrain de jeu.
 
 /** Teintes appliquées aux éléments gris du pack Kenney UI (multiplication). */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const UI_TINT = {
   panel: UI_THEME.panel,        // panneau standard
   panelDim: UI_THEME.panelDim,  // panneau verrouillé/inactif
@@ -50,8 +53,8 @@ export const UI_TINT = {
  * la demande que son INTENTION — standard ou éteint.
  */
 export function skinPanelTint(requested: number): number {
-  const eteint = requested === UI_TINT.panelDim || requested === UI_THEME.lockedFill;
-  const t = UI_THEME.skinTint;
+  const eteint: boolean = requested === UI_TINT.panelDim || requested === UI_THEME.lockedFill;
+  const t: number = UI_THEME.skinTint;
   if (!eteint) return t;
   const ch = (shift: number) =>
     Math.round((((t >> shift) & 0xff) * SKIN_DIM_FACTOR));
@@ -60,6 +63,7 @@ export function skinPanelTint(requested: number): number {
 
 /** Couleurs de texte (chaînes CSS) — source unique pour tout render/, remplace
  *  les constantes locales dupliquées dans MenuScene/GameScene (ADR-007). */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const TEXT = {
   gold: UI_THEME.textAccent,   // titres, montants, accents
   dim: UI_THEME.textDim,       // sous-titres, texte secondaire, verrouillé
@@ -76,6 +80,7 @@ export const TEXT = {
 } as const;
 
 /** Teintes de bordure/accent (nombres, pour Graphics/nine-slice) — même principe que TEXT. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const ACCENT = {
   gold: UI_THEME.accent,          // bordure active/focus
   goldSoft: UI_THEME.accentSoft,  // survol

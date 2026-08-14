@@ -13,10 +13,10 @@ export interface LayoutCursor {
 
 /** Empile des éléments verticalement à partir de `startY` (le haut du premier élément). */
 export function layoutCursor(startY: number): LayoutCursor {
-  let y = startY;
+  let y: number = startY;
   return {
     next(height: number, gap = 8): number {
-      const centerY = y + height / 2;
+      const centerY: number = y + height / 2;
       y += height + gap;
       return centerY;
     },

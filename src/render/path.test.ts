@@ -19,9 +19,9 @@ describe("tracé des chemins — le rendu ne doit pas mentir sur la position des
   // route et le joueur ne peut plus anticiper ce que ses tours atteignent.
   // Bug réel : une spline de Catmull-Rom déviait de 64,7 px pour une route de 46.
   it("reste sur le chemin logique, sur CHAQUE voie de CHAQUE chapitre", () => {
-    const limit = PATH_WIDTH / 2;
+    const limit: number = PATH_WIDTH / 2;
     for (const { label, waypoints } of allPaths()) {
-      const dev = maxDeviation(roundedPath(waypoints, limit), waypoints);
+      const dev: number = maxDeviation(roundedPath(waypoints, limit), waypoints);
       expect(dev, `${label} : ${dev.toFixed(1)} px d'écart pour une demi-largeur de ${limit}`)
         .toBeLessThanOrEqual(limit);
     }
@@ -38,7 +38,7 @@ describe("tracé des chemins — le rendu ne doit pas mentir sur la position des
     // Les extrémités portent le sens : entrée des ennemis et château. Les arrondir
     // décalerait l'endroit où les unités apparaissent et où elles frappent.
     for (const { waypoints } of allPaths()) {
-      const out = roundedPath(waypoints, PATH_WIDTH / 2);
+      const out: Vec2[] = roundedPath(waypoints, PATH_WIDTH / 2);
       expect(out[0]).toEqual(waypoints[0]);
       expect(out[out.length - 1]).toEqual(waypoints[waypoints.length - 1]);
     }
@@ -48,11 +48,11 @@ describe("tracé des chemins — le rendu ne doit pas mentir sur la position des
     // Deux coins voisins dont les arrondis se chevauchent produiraient une boucle :
     // le rayon doit être borné par la moitié du plus court segment adjacent.
     const tight: Vec2[] = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 110, y: 0 }, { x: 110, y: 100 }];
-    const out = roundedPath(tight, 50);
+    const out: Vec2[] = roundedPath(tight, 50);
     expect(maxDeviation(out, tight)).toBeLessThanOrEqual(PATH_WIDTH / 2);
     // Aucune inversion : l'abscisse curviligne ne recule pas sur la partie horizontale.
-    const xs = out.filter(p => p.y < 1).map(p => p.x);
-    for (let i = 1; i < xs.length; i++) expect(xs[i]!).toBeGreaterThanOrEqual(xs[i - 1]! - 0.001);
+    const xs: number[] = out.filter(p => p.y < 1).map(p => p.x);
+    for (let i: number = 1; i < xs.length; i++) expect(xs[i]!).toBeGreaterThanOrEqual(xs[i - 1]! - 0.001);
   });
 
   it("laisse intacte une polyligne trop courte pour avoir un coin", () => {

@@ -8,8 +8,9 @@ import { ProfileService } from "./meta/profile";
 import { GameScene } from "./render/GameScene";
 import { MenuScene } from "./render/MenuScene";
 import { attachViewport, initialViewport, scaleFont, viewport } from "./render/viewport";
+import type { Viewport } from "./render/viewport";
 
-const profileSvc = new ProfileService(new LocalStorageSaveAdapter());
+const profileSvc: ProfileService = new ProfileService(new LocalStorageSaveAdapter());
 
 // Deux garanties appliquées à CHAQUE Text, au point de création plutôt qu'à
 // chaque appel dispersé dans les scènes :
@@ -22,13 +23,14 @@ const profileSvc = new ProfileService(new LocalStorageSaveAdapter());
 //    sur mobile paysage, un « 12px » tombait à ~7 px réels, illisible. `scaleFont`
 //    remonte l'échelle en préservant la hiérarchie, et ne mord pas sur grand écran
 //    (ADR-015).
+// eslint-disable-next-line @typescript-eslint/typedef -- signature interne de Phaser (surchargée), déjà capturée structurellement via `typeof origText` ci-dessous.
 const origText = Phaser.GameObjects.GameObjectFactory.prototype.text;
 Phaser.GameObjects.GameObjectFactory.prototype.text = function (this: Phaser.GameObjects.GameObjectFactory, ...args: Parameters<typeof origText>) {
-  const t = origText.apply(this, args);
+  const t: Phaser.GameObjects.Text = origText.apply(this, args);
   t.setResolution(Math.max(1, viewport().zoom));
-  const asked = Number.parseFloat(String(t.style.fontSize));
+  const asked: number = Number.parseFloat(String(t.style.fontSize));
   if (Number.isFinite(asked)) {
-    const px = scaleFont(asked);
+    const px: number = scaleFont(asked);
     if (px > asked) t.setFontSize(px);
   }
   return t;
@@ -38,7 +40,7 @@ Phaser.GameObjects.GameObjectFactory.prototype.text = function (this: Phaser.Gam
 // chaque Text à la création — une police arrivée après donne le fallback figé.
 async function loadFonts(): Promise<void> {
   try {
-    const faces = [
+    const faces: FontFace[] = [
       new FontFace("Cinzel", 'url("fonts/Cinzel.ttf")', { weight: "400 900" }),
       new FontFace("Alegreya", 'url("fonts/Alegreya.ttf")', { weight: "400 900" }),
     ];
@@ -49,8 +51,8 @@ async function loadFonts(): Promise<void> {
 }
 
 void loadFonts().then(() => {
-  const v0 = initialViewport();
-  const game = new Phaser.Game({
+  const v0: Viewport = initialViewport();
+  const game: Phaser.Game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
     // Le framebuffer couvre la fenêtre ENTIÈRE, à la densité réelle du device : plus

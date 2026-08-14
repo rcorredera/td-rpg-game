@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dominantRgba, flattenStretched, type PixelBuffer, type Rgba } from "./nineSliceFlatten";
 import { planNineSlice, type SheetFrame } from "./nineSlicePlan";
+import type { NineSlicePlan, PieceRect } from "./nineSlicePlan";
 
 // ============================================================
 // Le défaut que ce fichier rend impossible : une pièce de nine-slice qui VARIE le
@@ -19,11 +20,11 @@ const PAPER: SheetFrame = {
 };
 
 function buffer(w: number, h: number, at: (x: number, y: number) => Rgba): PixelBuffer {
-  const data = new Uint8ClampedArray(w * h * 4);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const c = at(x, y);
-      const i = (y * w + x) * 4;
+  const data: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(w * h * 4);
+  for (let y: number = 0; y < h; y++) {
+    for (let x: number = 0; x < w; x++) {
+      const c: Rgba = at(x, y);
+      const i: number = (y * w + x) * 4;
       data[i] = c.r; data[i + 1] = c.g; data[i + 2] = c.b; data[i + 3] = c.a;
     }
   }
@@ -31,31 +32,31 @@ function buffer(w: number, h: number, at: (x: number, y: number) => Rgba): Pixel
 }
 
 function pixel(img: PixelBuffer, x: number, y: number): string {
-  const i = (y * img.w + x) * 4;
+  const i: number = (y * img.w + x) * 4;
   return `${img.data[i]},${img.data[i + 1]},${img.data[i + 2]},${img.data[i + 3]}`;
 }
 
 /** Bruit reproductible : le grain moucheté du parchemin, sans dépendre du hasard. */
 function grain(x: number, y: number): Rgba {
-  const n = (x * 7 + y * 13) % 11;
+  const n: number = (x * 7 + y * 13) % 11;
   return n < 3
     ? { r: 226, g: 208, b: 194, a: 255 }   // moucheture
     : { r: 238, g: 225, b: 198, a: 255 };  // remplissage
 }
 
 describe("aplatissement des pièces étirées", () => {
-  const plan = planNineSlice(PAPER, 3, 16);
+  const plan: NineSlicePlan = planNineSlice(PAPER, 3, 16);
 
   it("rend chaque pièce constante le long de son axe d'étirement", () => {
-    const img = buffer(plan.fullW, plan.fullH, grain);
+    const img: PixelBuffer = buffer(plan.fullW, plan.fullH, grain);
     flattenStretched(img, plan.rects);
 
     for (const [i, r] of plan.rects.entries()) {
       if (r.stretch === "none") continue;
-      const enX = r.stretch === "x" || r.stretch === "both";
-      const enY = r.stretch === "y" || r.stretch === "both";
-      for (let y = 0; y < r.sh; y++) {
-        for (let x = 0; x < r.sw; x++) {
+      const enX: boolean = r.stretch === "x" || r.stretch === "both";
+      const enY: boolean = r.stretch === "y" || r.stretch === "both";
+      for (let y: number = 0; y < r.sh; y++) {
+        for (let x: number = 0; x < r.sw; x++) {
           if (enX) {
             expect(pixel(img, r.dx + x, r.dy + y), `pièce ${i} (${r.stretch}) : varie en X en (${x},${y})`)
               .toBe(pixel(img, r.dx, r.dy + y));
@@ -70,15 +71,15 @@ describe("aplatissement des pièces étirées", () => {
   });
 
   it("ne touche à aucun des quatre coins", () => {
-    const avant = buffer(plan.fullW, plan.fullH, grain);
-    const apres = buffer(plan.fullW, plan.fullH, grain);
+    const avant: PixelBuffer = buffer(plan.fullW, plan.fullH, grain);
+    const apres: PixelBuffer = buffer(plan.fullW, plan.fullH, grain);
     flattenStretched(apres, plan.rects);
 
     // Les coins portent TOUT le dessin du pack : contour, arrondi, ornement.
     // Les aplatir reviendrait à jeter l'habillage qu'on cherche à poser.
     for (const r of plan.rects.filter(p => p.stretch === "none")) {
-      for (let y = 0; y < r.sh; y++) {
-        for (let x = 0; x < r.sw; x++) {
+      for (let y: number = 0; y < r.sh; y++) {
+        for (let x: number = 0; x < r.sw; x++) {
           expect(pixel(apres, r.dx + x, r.dy + y), `coin modifié en (${x},${y})`)
             .toBe(pixel(avant, r.dx + x, r.dy + y));
         }
@@ -92,15 +93,15 @@ describe("aplatissement des pièces étirées", () => {
     // fréquent passerait un test où la tache tombe ailleurs.
     const fond: Rgba = { r: 238, g: 225, b: 198, a: 255 };
     const tache: Rgba = { r: 22, g: 28, b: 46, a: 255 };
-    const img = buffer(plan.fullW, plan.fullH, () => fond);
+    const img: PixelBuffer = buffer(plan.fullW, plan.fullH, () => fond);
     for (const r of plan.rects) {
       if (r.stretch === "none") continue;
-      const enX = r.stretch === "x" || r.stretch === "both";
-      for (let y = 0; y < r.sh; y++) {
-        for (let x = 0; x < r.sw; x++) {
+      const enX: boolean = r.stretch === "x" || r.stretch === "both";
+      for (let y: number = 0; y < r.sh; y++) {
+        for (let x: number = 0; x < r.sw; x++) {
           // Deux pixels sur les huit du prélèvement : minoritaire, mais en tête.
           if (enX ? x < 2 : y < 2) {
-            const i = ((r.dy + y) * img.w + r.dx + x) * 4;
+            const i: number = ((r.dy + y) * img.w + r.dx + x) * 4;
             img.data[i] = tache.r; img.data[i + 1] = tache.g;
             img.data[i + 2] = tache.b; img.data[i + 3] = tache.a;
           }
@@ -124,9 +125,9 @@ describe("aplatissement des pièces étirées", () => {
       { r: 242, g: 234, b: 219, a: 255 },
       { r: 238, g: 225, b: 198, a: 255 },
     ];
-    const haut = plan.rects.find(r => r.stretch === "x")!;
-    const img = buffer(plan.fullW, plan.fullH, (x, y) => {
-      const base = teintes[Math.min(y, teintes.length - 1)]!;
+    const haut: PieceRect = plan.rects.find(r => r.stretch === "x")!;
+    const img: PixelBuffer = buffer(plan.fullW, plan.fullH, (x, y) => {
+      const base: Rgba = teintes[Math.min(y, teintes.length - 1)]!;
       // Parasite minoritaire, posé sur les deux premières colonnes de la bande.
       return x - haut.dx >= 0 && x - haut.dx < 2 ? { r: 1, g: 2, b: 3, a: 255 } : base;
     });
@@ -146,7 +147,7 @@ describe("aplatissement des pièces étirées", () => {
       { r: 255, g: 0, b: 255, a: 255 },
       { r: 100, g: 100, b: 100, a: 255 },
     ];
-    const d = dominantRgba(echantillon);
+    const d: Rgba = dominantRgba(echantillon);
     expect(echantillon.some(c => c.r === d.r && c.g === d.g && c.b === d.b && c.a === d.a)).toBe(true);
     expect(d).toEqual({ r: 0, g: 255, b: 0, a: 255 });
   });

@@ -4,7 +4,7 @@ import { C, STATUS, TEXT } from "./theme";
 
 /** Luminance perçue (0..1) — sert à juger contraste et clarté. */
 function luminance(rgb: number): number {
-  const r = ((rgb >> 16) & 0xff) / 255, g = ((rgb >> 8) & 0xff) / 255, b = (rgb & 0xff) / 255;
+  const r: number = ((rgb >> 16) & 0xff) / 255, g: number = ((rgb >> 8) & 0xff) / 255, b: number = (rgb & 0xff) / 255;
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 const fromCss = (css: string) => parseInt(css.replace("#", ""), 16);
@@ -37,16 +37,16 @@ describe("thèmes d'interface", () => {
     // Garder l'ancien comparant aurait donné des tests verts garantissant la
     // lisibilité d'une couleur que plus aucun écran n'affiche.
     for (const t of Object.values(UI_THEMES)) {
-      const gap = luminance(fromCss(t.textLight)) - luminance(renderedPanel(t));
+      const gap: number = luminance(fromCss(t.textLight)) - luminance(renderedPanel(t));
       expect(gap, `thème « ${t.id} » : contraste texte/panneau`).toBeGreaterThan(0.45);
-      const dimGap = luminance(fromCss(t.textDim)) - luminance(renderedPanel(t));
+      const dimGap: number = luminance(fromCss(t.textDim)) - luminance(renderedPanel(t));
       expect(dimGap, `thème « ${t.id} » : contraste texte secondaire`).toBeGreaterThan(0.15);
       // L'ACCENT (titres, libellés dorés) n'était pas gardé — seuls `textLight` et
       // `textDim` l'étaient. En éclaircissant les panneaux pour que la matière du
       // parchemin ressorte, l'or de « Braise » s'est retrouvé sur un panneau de
       // même dominante chaude : lisibilité en chute sans qu'aucun test ne bronche.
       // Un titre doit se détacher PLUS franchement que du texte secondaire.
-      const accentGap = luminance(fromCss(t.textAccent)) - luminance(renderedPanel(t));
+      const accentGap: number = luminance(fromCss(t.textAccent)) - luminance(renderedPanel(t));
       // Seuil calé au-dessus du cas réel qui a motivé ce test (0,348 pour un
       // panneau « Braise » trop clair) : un seuil qui laisse passer le défaut
       // qu'on vient de corriger ne garantit rien.
@@ -62,7 +62,7 @@ describe("thèmes d'interface", () => {
     // sans qu'un seul test bronche. Même seuil que le texte secondaire.
     for (const t of Object.values(UI_THEMES)) {
       for (const [nom, css] of [["acquis", TEXT.ok], ["inabordable", TEXT.bad]] as const) {
-        const gap = Math.abs(luminance(fromCss(css)) - luminance(renderedPanel(t)));
+        const gap: number = Math.abs(luminance(fromCss(css)) - luminance(renderedPanel(t)));
         expect(gap, `thème « ${t.id} » : contraste ${nom}/panneau`).toBeGreaterThan(0.15);
       }
     }
@@ -86,7 +86,7 @@ describe("thèmes d'interface", () => {
 
   it("propose plusieurs directions réellement différentes", () => {
     // Deux thèmes trop proches ne servent à rien : on doit pouvoir trancher à l'œil.
-    const backdrops = new Set(Object.values(UI_THEMES).map(t => t.backdrop));
+    const backdrops: Set<number> = new Set(Object.values(UI_THEMES).map(t => t.backdrop));
     expect(backdrops.size).toBe(Object.keys(UI_THEMES).length);
   });
 });

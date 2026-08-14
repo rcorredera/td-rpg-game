@@ -20,7 +20,7 @@ describe("tokens de thème (theme.ts)", () => {
 
   it("aucune valeur en double au sein d'un même groupe (tokens redondants)", () => {
     for (const group of [TEXT, ACCENT]) {
-      const values = Object.values(group);
+      const values: (string | number)[] = Object.values(group);
       expect(new Set(values).size).toBe(values.length);
     }
   });

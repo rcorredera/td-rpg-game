@@ -12,7 +12,7 @@ import { ICON } from "../icons";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
 import { touchSize } from "../viewport";
 import { uiFramedPanel, uiPanelPad } from "./panel";
-import { rowColors, type RowState } from "./listRow";
+import { rowColors, type RowColors, type RowState } from "./listRow";
 import { uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
 
 export interface GridLayout {
@@ -33,7 +33,7 @@ export interface GridLayout {
  * ~380 unités libres de l'écran Histoire donneraient sinon des cellules de
  * 172×185, en portrait.
  */
-const MAX_ASPECT = 0.85;
+const MAX_ASPECT: number = 0.85;
 
 /**
  * Pure — répartit `count` tuiles dans la place disponible.
@@ -51,13 +51,13 @@ export function gridLayout(
   count: number, availW: number, maxCols: number, gap: number, minCellH: number,
   availH?: number,
 ): GridLayout {
-  const cols = Math.max(1, Math.min(maxCols, count));
-  const rows = Math.ceil(count / Math.max(1, cols));
-  const cellW = (availW - gap * (cols - 1)) / cols;
-  const grown = availH === undefined || rows === 0
+  const cols: number = Math.max(1, Math.min(maxCols, count));
+  const rows: number = Math.ceil(count / Math.max(1, cols));
+  const cellW: number = (availW - gap * (cols - 1)) / cols;
+  const grown: number = availH === undefined || rows === 0
     ? minCellH
     : (availH - gap * (rows - 1)) / rows;
-  const cellH = Math.max(minCellH, Math.min(grown, cellW * MAX_ASPECT));
+  const cellH: number = Math.max(minCellH, Math.min(grown, cellW * MAX_ASPECT));
   return {
     cols, rows, cellW, cellH,
     totalW: cols * cellW + gap * (cols - 1),
@@ -69,7 +69,7 @@ export function gridLayout(
  * Nombre de lignes RÉSERVÉES au nom de chapitre. « Les Faubourgs en cendres » en
  * occupe deux ; au-delà, le nom est tronqué plutôt que de mordre les étoiles.
  */
-export const NAME_LINES = 2;
+export const NAME_LINES: number = 2;
 
 export interface LevelCellOpts {
   /** Hauteur de la cellule. */
@@ -113,9 +113,9 @@ export function levelCellMinH(o: Omit<LevelCellOpts, "h">): number {
  * lignes. Deux règles qui ne se parlent pas finissent toujours par se croiser.
  */
 export function levelCellLayout(o: LevelCellOpts): LevelCellBox {
-  const numTop = -o.h / 2 + o.pad;
-  const nameTop = numTop + o.numH + o.gap;
-  const starCy = o.h / 2 - o.pad - o.starSize / 2;
+  const numTop: number = -o.h / 2 + o.pad;
+  const nameTop: number = numTop + o.numH + o.gap;
+  const starCy: number = o.h / 2 - o.pad - o.starSize / 2;
   return { numTop, nameTop, starCy, nameMaxH: starCy - o.starSize / 2 - o.gap - nameTop };
 }
 
@@ -148,7 +148,7 @@ export function uiLevelGrid(
   /** Hauteur offerte à la grille — elle s'y étale au lieu de laisser du vide. */
   availH?: number,
 ): UiLevelGrid {
-  const gap = 10;
+  const gap: number = 10;
   // La tuile doit rester tapable ET loger son contenu : numéro, nom sur deux
   // lignes, étoiles. Les polices sont remontées sur petit écran (ADR-015), donc
   // une hauteur fixe faisait déborder le nom hors de la tuile.
@@ -159,36 +159,36 @@ export function uiLevelGrid(
   // La sonde reçoit la taille DEMANDÉE : `scene.add.text` applique déjà
   // `scaleFont` (main.ts, ADR-015). La repasser ici la compterait deux fois.
   const sonde = (size: number, famille: string): number => {
-    const t = scene.add.text(0, 0, "Ag", { fontSize: `${size}px`, fontFamily: famille });
-    const h = t.height;
+    const t: Phaser.GameObjects.Text = scene.add.text(0, 0, "Ag", { fontSize: `${size}px`, fontFamily: famille });
+    const h: number = t.height;
     t.destroy();
     return h;
   };
-  const numH = sonde(26, FONT_DISPLAY);
-  const lineH = sonde(12, FONT_BODY);
-  const cellGap = 4;
+  const numH: number = sonde(26, FONT_DISPLAY);
+  const lineH: number = sonde(12, FONT_BODY);
+  const cellGap: number = 4;
   // L'étoile suit la POLICE, pas la cellule. Dérivée de `cellH` (× 0,13) elle
   // entrait dans une boucle : la hauteur de cellule dépend de la bande d'étoiles,
   // qui dépendrait de la hauteur de cellule. Et une note se lit à côté d'un nom,
   // donc c'est bien à ce nom qu'elle doit être calée.
-  const starSize = Math.max(12, Math.round(lineH * 0.8));
-  const minCellH = Math.max(
+  const starSize: number = Math.max(12, Math.round(lineH * 0.8));
+  const minCellH: number = Math.max(
     touchSize(74),
     levelCellMinH({ pad: uiPanelPad(scene), numH, lineH, starSize, gap: cellGap }),
   );
-  const layout = gridLayout(tiles.length, availW, maxCols, gap, minCellH, availH);
-  const cellH = layout.cellH;
-  const container = scene.add.container(0, 0);
-  const x0 = cx - layout.totalW / 2 + layout.cellW / 2;
+  const layout: GridLayout = gridLayout(tiles.length, availW, maxCols, gap, minCellH, availH);
+  const cellH: number = layout.cellH;
+  const container: Phaser.GameObjects.Container = scene.add.container(0, 0);
+  const x0: number = cx - layout.totalW / 2 + layout.cellW / 2;
 
   tiles.forEach((t, i) => {
-    const col = i % layout.cols;
-    const row = Math.floor(i / layout.cols);
-    const x = x0 + col * (layout.cellW + gap);
-    const y = top + cellH / 2 + row * (cellH + gap);
-    const colors = rowColors(t.state);
+    const col: number = i % layout.cols;
+    const row: number = Math.floor(i / layout.cols);
+    const x: number = x0 + col * (layout.cellW + gap);
+    const y: number = top + cellH / 2 + row * (cellH + gap);
+    const colors: RowColors = rowColors(t.state);
 
-    const cell = scene.add.container(x, y);
+    const cell: Phaser.GameObjects.Container = scene.add.container(x, y);
     const { container: panel } = uiFramedPanel(scene, 0, 0, {
       w: layout.cellW, h: cellH, tint: colors.fill, borderColor: colors.border, radius: 10,
     });
@@ -204,7 +204,7 @@ export function uiLevelGrid(
       // Retrait dérivé de la marge RÉELLE de l'habillage : à 7 unités, l'aperçu
       // recouvrait le liseré doré du panneau ouvragé du pack, qui court à ~9 du
       // bord. Une valeur en dur redevient fausse au premier changement de planche.
-      const inset = Math.max(7, uiSkinInset(UI_SKIN_PANEL) * 0.6);
+      const inset: number = Math.max(7, uiSkinInset(UI_SKIN_PANEL) * 0.6);
       cell.add(scene.add.tileSprite(
         0, 0, layout.cellW - inset * 2, cellH - inset * 2, t.biomeTexture,
       ).setAlpha(0.4));
@@ -213,16 +213,16 @@ export function uiLevelGrid(
     // Numéro, nom et étoiles placés par UN seul calcul : c'est ce qui garantit
     // qu'ils ne se croisent pas. La marge vient de l'ORNEMENT, pas d'un chiffre —
     // à 6 unités du bord, le numéro se posait sur la volute d'angle (marge 22).
-    const box = levelCellLayout({
+    const box: LevelCellBox = levelCellLayout({
       h: cellH, pad: uiPanelPad(scene), numH, lineH, starSize, gap: cellGap,
     });
-    const num = scene.add.text(0, box.numTop, String(t.index), {
+    const num: Phaser.GameObjects.Text = scene.add.text(0, box.numTop, String(t.index), {
       fontSize: "26px", color: t.state === "locked" ? TEXT.dim : TEXT.gold, fontFamily: FONT_DISPLAY,
     }).setOrigin(0.5, 0);
     // `maxLines` : le nom ne peut PLUS déborder de la bande qui lui est réservée,
     // quelle que soit la longueur qu'on donnera un jour à un chapitre. Sans lui,
     // la garantie de `levelCellLayout` ne tiendrait qu'aux noms d'aujourd'hui.
-    const name = scene.add.text(0, box.nameTop, t.name, {
+    const name: Phaser.GameObjects.Text = scene.add.text(0, box.nameTop, t.name, {
       fontSize: "12px", color: colors.titleColor, fontFamily: FONT_BODY,
       align: "center", maxLines: NAME_LINES,
       wordWrap: { width: layout.cellW - uiPanelPad(scene) * 2 },
@@ -235,12 +235,12 @@ export function uiLevelGrid(
       // d'aspect d'un appareil à l'autre et échappent à la palette — exactement
       // ce qu'on s'interdit pour les emojis. Le pack Tiny Swords n'offre rien qui
       // note un niveau, elles sont donc dessinées pour le projet.
-      const s = t.stars ?? 0;
-      const size = starSize;
-      const gapS = Math.round(size * 0.28);
-      const y = box.starCy;
-      for (let k = 0; k < 3; k++) {
-        const gagnee = k < s;
+      const s: number = t.stars ?? 0;
+      const size: number = starSize;
+      const gapS: number = Math.round(size * 0.28);
+      const y: number = box.starCy;
+      for (let k: number = 0; k < 3; k++) {
+        const gagnee: boolean = k < s;
         // L'étoile non gagnée garde l'OR, en transparence. Teintée avec
         // `ACCENT.locked`, elle avait la luminance du panneau et disparaissait :
         // le joueur ne voyait plus qu'il manquait des étoiles, il croyait qu'il
@@ -253,8 +253,8 @@ export function uiLevelGrid(
     }
 
     if (t.onSelect) {
-      const zone = scene.add.zone(0, 0, layout.cellW, cellH).setInteractive({ cursor: CURSOR_POINT });
-      const hl = scene.add.graphics();
+      const zone: Phaser.GameObjects.Zone = scene.add.zone(0, 0, layout.cellW, cellH).setInteractive({ cursor: CURSOR_POINT });
+      const hl: Phaser.GameObjects.Graphics = scene.add.graphics();
       hl.fillStyle(ACCENT.gold, 0.09);
       hl.fillRoundedRect(-layout.cellW / 2, -cellH / 2, layout.cellW, cellH, 10);
       hl.setVisible(false);

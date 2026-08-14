@@ -10,7 +10,7 @@
 // Ce module mesure les deux. PUR : dérive tout de `ContentPack` + `UNLOCKS`.
 // ============================================================
 
-import type { ContentPack } from "../core/types";
+import type { ContentPack, PlayableChapter, RewardRules } from "../core/types";
 import type { UnlockDef } from "../core/types";
 import { playableChapter } from "./datasheet";
 
@@ -20,14 +20,14 @@ export function shardsForRun(
   chapterIndex: number,
   opts: { victory?: boolean; castleHpPct?: number; wavesCleared?: number } = {},
 ): number {
-  const ch = playableChapter(c, chapterIndex);
-  const victory = opts.victory ?? true;
-  const waves = opts.wavesCleared ?? ch.waves.length;
-  const r = c.rewards;
-  const base = waves * r.shardsPerWave;
-  const hpBonus = victory ? Math.round((opts.castleHpPct ?? 1) * r.shardsCastleBonus) : 0;
-  const victoryBonus = victory ? r.shardsVictoryBonus : 0;
-  const mult = r.shardsChapterMult?.[chapterIndex] ?? 1;
+  const ch: PlayableChapter = playableChapter(c, chapterIndex);
+  const victory: boolean = opts.victory ?? true;
+  const waves: number = opts.wavesCleared ?? ch.waves.length;
+  const r: RewardRules = c.rewards;
+  const base: number = waves * r.shardsPerWave;
+  const hpBonus: number = victory ? Math.round((opts.castleHpPct ?? 1) * r.shardsCastleBonus) : 0;
+  const victoryBonus: number = victory ? r.shardsVictoryBonus : 0;
+  const mult: number = r.shardsChapterMult?.[chapterIndex] ?? 1;
   return Math.max(waves > 0 ? r.shardsFloor : 0, Math.round((base + hpBonus + victoryBonus) * mult));
 }
 
@@ -53,10 +53,10 @@ export interface SinkBreakdown {
 }
 
 export function sinks(c: ContentPack, unlocks: UnlockDef[]): SinkBreakdown {
-  const unlockCost = unlocks.reduce((a, u) => a + u.cost, 0);
-  const perTower = c.forge.upgradeCosts.reduce((a, b) => a + b, 0);
-  const forgeCost = perTower * Object.keys(c.towers).length;
-  const sceauxCost = Object.values(c.hero.skills)
+  const unlockCost: number = unlocks.reduce((a, u) => a + u.cost, 0);
+  const perTower: number = c.forge.upgradeCosts.reduce((a, b) => a + b, 0);
+  const forgeCost: number = perTower * Object.keys(c.towers).length;
+  const sceauxCost: number = Object.values(c.hero.skills)
     .reduce((a, sk) => a + sk.upgradeCosts.reduce((x, y) => x + y, 0), 0);
   return {
     unlocks: unlockCost,
@@ -88,12 +88,12 @@ export interface EconomyHealth {
 
 /** `blockSecondsPerRun` : médiane MESURÉE au banc (14 à 50 s selon le chapitre), pas une hypothèse — la valeur optimiste d'origine faisait croire le puits de Sceaux trois fois plus vite rempli qu'il ne l'est. */
 export function economyHealth(c: ContentPack, unlocks: UnlockDef[], blockSecondsPerRun = 35): EconomyHealth {
-  const playable = c.chapters.flatMap((ch, i) => (ch.playable ? [i] : []));
-  const shardsPerChapter = playable.map(i => shardsForRun(c, i));
-  const first = shardsPerChapter[0] ?? 0;
-  const last = shardsPerChapter[shardsPerChapter.length - 1] ?? 0;
-  const s = sinks(c, unlocks);
-  const perRunSceaux = sceauxForRun(c, blockSecondsPerRun);
+  const playable: number[] = c.chapters.flatMap((ch, i) => (ch.playable ? [i] : []));
+  const shardsPerChapter: number[] = playable.map(i => shardsForRun(c, i));
+  const first: number = shardsPerChapter[0] ?? 0;
+  const last: number = shardsPerChapter[shardsPerChapter.length - 1] ?? 0;
+  const s: SinkBreakdown = sinks(c, unlocks);
+  const perRunSceaux: number = sceauxForRun(c, blockSecondsPerRun);
   return {
     sinks: s,
     shardsPerChapter,

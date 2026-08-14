@@ -12,6 +12,7 @@
 import type Phaser from "phaser";
 
 /** Rôle d'icône → clé de texture Phaser. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const ICON = {
   story: "ui_scroll",
   rift: "ui_portal",
@@ -62,6 +63,7 @@ const FILES: Record<IconKey, string> = {
  * porte un état (verrouillé, Faille). Un emblème du pack, lui, arrive avec ses
  * couleurs et son relief ; le teinter reviendrait à les jeter.
  */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const EMBLEM = { bastion: "ts_castle" } as const;
 
 export type EmblemKey = keyof typeof EMBLEM;
@@ -82,7 +84,7 @@ const EMBLEM_FILES: Record<EmblemKey, string> = {
  * Campement offre 306 unités de zone utile, et un plafond à 128 y laissait 43 %
  * de vide que rien d'autre ne pouvait combler. Coût : 7 icônes × 192² × 4 o ≈ 1 Mo.
  */
-export const ICON_RASTER_PX = 192;
+export const ICON_RASTER_PX: number = 192;
 
 /** Charge toutes les icônes d'UI. Idempotent entre scènes (cache Phaser). */
 export function preloadIcons(scene: Phaser.Scene): void {

@@ -12,7 +12,7 @@ export { UI_TINT } from "./theme";
 
 // Le pack Kenney UI n'est plus embarqué en entier : seuls les fichiers réellement
 // chargés sont versionnés, à plat et renommés par usage (11 Mo → 4 fichiers).
-const P = "assets/kenney-ui";
+const P: string = "assets/kenney-ui";
 
 // L'échelle de rendu vit désormais dans render/viewport.ts (ADR-010) : elle est
 // recalculée à chaque resize/rotation au lieu d'être figée au boot, et le
@@ -20,8 +20,8 @@ const P = "assets/kenney-ui";
 
 /** Polices embarquées (public/fonts, OFL) — chargées dans main.ts avant le boot Phaser.
  *  Cinzel : capitales gravées (titres, boutons, chiffres). Alegreya : textes courants. */
-export const FONT_DISPLAY = '"Cinzel", "Times New Roman", serif';
-export const FONT_BODY = '"Alegreya", Georgia, serif';
+export const FONT_DISPLAY: string = '"Cinzel", "Times New Roman", serif';
+export const FONT_BODY: string = '"Alegreya", Georgia, serif';
 
 // ---- Curseurs ------------------------------------------------------------
 // Les PNG de curseurs des packs (30px, dessinés petit) sont flous à l'écran.
@@ -29,7 +29,7 @@ export const FONT_BODY = '"Alegreya", Georgia, serif';
 // servi en image-set 2x quand le navigateur le supporte.
 
 function goldGradient(ctx: CanvasRenderingContext2D, y0: number, y1: number): CanvasGradient {
-  const g = ctx.createLinearGradient(0, y0, 0, y1);
+  const g: CanvasGradient = ctx.createLinearGradient(0, y0, 0, y1);
   g.addColorStop(0, "#f6e7c0");
   g.addColorStop(0.45, "#e3bd6d");
   g.addColorStop(1, "#b9842f");
@@ -89,9 +89,9 @@ function drawHandCursor(ctx: CanvasRenderingContext2D): void {
 }
 
 function renderCursorPng(draw: (ctx: CanvasRenderingContext2D) => void, scale: number): string {
-  const cv = document.createElement("canvas");
+  const cv: HTMLCanvasElement = document.createElement("canvas");
   cv.width = cv.height = 32 * scale;
-  const ctx = cv.getContext("2d");
+  const ctx: CanvasRenderingContext2D | null = cv.getContext("2d");
   if (!ctx) return "";
   ctx.scale(scale, scale);
   draw(ctx);
@@ -100,26 +100,26 @@ function renderCursorPng(draw: (ctx: CanvasRenderingContext2D) => void, scale: n
 
 /** Valeur CSS `cursor` : image-set 1x/2x si supporté (sondé), sinon url() simple. */
 function cursorCss(draw: (ctx: CanvasRenderingContext2D) => void, hx: number, hy: number, fallback: string): string {
-  const x1 = renderCursorPng(draw, 1);
-  const x2 = renderCursorPng(draw, 2);
+  const x1: string = renderCursorPng(draw, 1);
+  const x2: string = renderCursorPng(draw, 2);
   if (!x1) return fallback;
-  const probe = document.createElement("span");
+  const probe: HTMLSpanElement = document.createElement("span");
   for (const fn of ["image-set", "-webkit-image-set"]) {
-    const v = `${fn}(url("${x2}") 2x, url("${x1}") 1x) ${hx} ${hy}, ${fallback}`;
+    const v: string = `${fn}(url("${x2}") 2x, url("${x1}") 1x) ${hx} ${hy}, ${fallback}`;
     probe.style.cursor = v;
     if (probe.style.cursor) return v;
   }
   return `url("${x1}") ${hx} ${hy}, ${fallback}`;
 }
 
-const hasDom = typeof document !== "undefined";
-export const CURSOR_DEFAULT = hasDom ? cursorCss(drawArrowCursor, 5, 3, "auto") : "auto";
-export const CURSOR_POINT = hasDom ? cursorCss(drawHandCursor, 14, 3, "pointer") : "pointer";
+const hasDom: boolean = typeof document !== "undefined";
+export const CURSOR_DEFAULT: string = hasDom ? cursorCss(drawArrowCursor, 5, 3, "auto") : "auto";
+export const CURSOR_POINT: string = hasDom ? cursorCss(drawHandCursor, 14, 3, "pointer") : "pointer";
 
 /** Abonne une scène aux changements de viewport (resize, rotation) et se désabonne
  *  automatiquement à son arrêt — sinon une scène morte continuerait à se re-layouter. */
 export function onSceneResize(scene: Phaser.Scene, fn: (v: Viewport) => void): void {
-  const off = onViewportChange(fn);
+  const off: () => void = onViewportChange(fn);
   // Noms d'évènements en littéraux, PAS `Phaser.Scenes.Events.*` : y toucher en
   // tant que valeur force le chargement de Phaser, qui lit `window` à l'import —
   // et casse les tests unitaires purs de components/ sous Vitest (cf .ai/pitfalls.md).

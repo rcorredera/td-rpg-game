@@ -32,18 +32,18 @@ const STILL: UnitPose = { dy: 0, tilt: 0, scaleX: 1, scaleY: 1 };
  * peu et s'écrase beaucoup, un gobelin fait l'inverse.
  */
 export function walkPose(timeMs: number, phase: number, speed: number, weight: number): UnitPose {
-  const cycle = 620 / Math.max(0.35, speed);        // plus rapide = pas plus courts
-  const t = ((timeMs / cycle) + phase) % 1;
-  const step = Math.sin(t * Math.PI * 2 * 2);        // deux appuis par cycle
-  const bounce = Math.abs(Math.sin(t * Math.PI * 2)); // hauteur du rebond
+  const cycle: number = 620 / Math.max(0.35, speed);        // plus rapide = pas plus courts
+  const t: number = ((timeMs / cycle) + phase) % 1;
+  const step: number = Math.sin(t * Math.PI * 2 * 2);        // deux appuis par cycle
+  const bounce: number = Math.abs(Math.sin(t * Math.PI * 2)); // hauteur du rebond
 
-  const light = 1 - Math.min(1, weight);
+  const light: number = 1 - Math.min(1, weight);
   // Le rebond a DEUX appuis par cycle, donc une période de 0,5 : deux unités
   // déphasées d'exactement 0,5 auraient une pose identique. Un balancement lent
   // 1-périodique s'y ajoute pour que chaque phase donne un mouvement unique.
-  const sway = Math.sin(t * Math.PI * 2);
-  const lift = -(2 + 2.6 * light) * bounce - sway * 0.6;
-  const squash = 1 - 0.06 * weight * bounce;
+  const sway: number = Math.sin(t * Math.PI * 2);
+  const lift: number = -(2 + 2.6 * light) * bounce - sway * 0.6;
+  const squash: number = 1 - 0.06 * weight * bounce;
   return {
     dy: lift,
     tilt: step * 0.05 * (0.4 + light) + sway * 0.012,
@@ -59,8 +59,8 @@ export function walkPose(timeMs: number, phase: number, speed: number, weight: n
  * qui distingue immédiatement un volant d'un marcheur.
  */
 export function flyPose(timeMs: number, phase: number): UnitPose {
-  const float = Math.sin(timeMs / 420 + phase * 6.3);
-  const flap = Math.sin(timeMs / 95 + phase * 6.3);
+  const float: number = Math.sin(timeMs / 420 + phase * 6.3);
+  const flap: number = Math.sin(timeMs / 95 + phase * 6.3);
   return {
     dy: float * 4.5 - 2,
     tilt: float * 0.07,
@@ -71,7 +71,7 @@ export function flyPose(timeMs: number, phase: number): UnitPose {
 
 /** Pose d'une unité immobile — bloquée au contact, ou à l'arrêt. */
 export function idlePose(timeMs: number, phase: number): UnitPose {
-  const breath = Math.sin(timeMs / 700 + phase * 6.3);
+  const breath: number = Math.sin(timeMs / 700 + phase * 6.3);
   return { dy: breath * 0.8, tilt: 0, scaleX: 1 - 0.012 * breath, scaleY: 1 + 0.012 * breath };
 }
 

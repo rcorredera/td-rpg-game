@@ -16,18 +16,26 @@ import { ensureTerrainTextures, grassTextureKey } from "./terrain";
 import { enemyView, towerView } from "./sprites";
 import { preloadSprites } from "./assets";
 import { ACCENT, TEXT } from "./theme";
+import type { Viewport } from "./viewport";
+import type { BestRun, EnemyDef, Profile, RallyLevel, SkillTrack, TowerDef, TowerLevelStats, WhirlwindLevel } from "../core/types";
+import type { UiModal } from "./components/modal";
+import type { UiSectionHeader } from "./components/sectionHeader";
+import type { UiButton } from "./components/button";
+import type { UiListRow } from "./components/listRow";
+import type { HubLayout, TileBox } from "./components/hubLayout";
+import type { UiLevelGrid } from "./components/levelGrid";
 import {
   hubLayout, layoutCursor, levelGridZone, menuZone,
   decorativeEdgeVisible, uiButton, uiChip, uiLevelGrid, uiListRow, uiModal, uiPanel, uiPanelPad, uiTile,
   uiScrollList, uiSectionHeader,
-  type LayoutCursor, type RowState, type UiChip, type UiScrollList,
+  type LayoutCursor, type LevelGridZone, type LevelTile, type MenuZone, type RowState, type UiChip, type UiScrollList,
 } from "./components";
 
 type View = "home" | "story" | "rifts" | "shop" | "chronicles" | "bestiary";
 type ShopTab = "arsenal" | "forge" | "hero";
 
-const TXT = { fontFamily: FONT_BODY };
-const TITLE = { fontFamily: FONT_DISPLAY };
+const TXT: { fontFamily: string } = { fontFamily: FONT_BODY };
+const TITLE: { fontFamily: string } = { fontFamily: FONT_DISPLAY };
 
 /** Centre horizontal du repère logique. Il était écrit en dur (`400` = l'ancien
  *  800/2) à une vingtaine d'endroits et a SURVÉCU au passage du champ de bataille
@@ -35,10 +43,10 @@ const TITLE = { fontFamily: FONT_DISPLAY };
  *  Invisible en paysage mobile — le débord latéral l'absorbe — mais flagrant dès
  *  que la largeur visible vaut celle du monde (desktop 16:10). Ne jamais réécrire
  *  un centre en dur : `hubZone`/`levelGridZone` le dérivent, et un test le garantit. */
-const CX = WORLD_W / 2;
-const GOLD = "#e8c252", DIM = "#a89878", OK = "#27ae60", LIGHT = "#f0e6d2", SCEAU = "#c97ba2";
+const CX: number = WORLD_W / 2;
+const GOLD: string = "#e8c252", DIM: string = "#a89878", OK: string = "#27ae60", LIGHT: string = "#f0e6d2", SCEAU: string = "#c97ba2";
 
-const LORE_INTRO = [
+const LORE_INTRO: string = [
   "Les hordes du Roi-Charogne ont franchi les marches du Nord.",
   "Village après village, la vallée brûle. Il ne reste qu'une place forte",
   "sur leur route : le Bastion — et vous, Chevalier, pour le tenir.",
@@ -68,7 +76,7 @@ export class MenuScene extends Phaser.Scene {
     // Le fond couvre la vue entière, pas seulement la zone de jeu : sur un écran
     // large, le débord doit rester habillé plutôt que noir (ADR-010). Grain +
     // vignette générés sur canvas plutôt qu'un aplat (ADR-014).
-    const v = viewport();
+    const v: Viewport = viewport();
     addBackdrop(this, v);
     // Le campement n'a pas d'état volatil : au resize/rotation, on rebâtit l'écran
     // à neuf plutôt que de repositionner chaque élément un par un.
@@ -90,8 +98,8 @@ export class MenuScene extends Phaser.Scene {
    *  tel — halo derrière le titre, filets à filerets et non un simple trait, et un
    *  écart net avec le sous-titre. Avant, tout le texte avait le même poids. */
   private buildMasthead(v: { left: number; width: number }) {
-    const cx = CX;
-    const g = this.add.graphics().setDepth(-50);
+    const cx: number = CX;
+    const g: Phaser.GameObjects.Graphics = this.add.graphics().setDepth(-50);
 
     // Bandeau sombre derrière l'en-tête : détache le titre du grain du fond.
     g.fillStyle(0x0d0906, 0.45);
@@ -106,7 +114,7 @@ export class MenuScene extends Phaser.Scene {
 
     // Filets latéraux, effilés vers l'extérieur : encadrent le sous-titre.
     for (const dir of [-1, 1]) {
-      const x0 = cx + dir * 74, x1 = cx + dir * 168;
+      const x0: number = cx + dir * 74, x1: number = cx + dir * 168;
       g.lineStyle(1, ACCENT.gold, 0.5);
       g.lineBetween(x0, 82, x1, 82);
       g.fillStyle(ACCENT.goldSoft, 0.75);
@@ -117,7 +125,7 @@ export class MenuScene extends Phaser.Scene {
     // de la hauteur. Le passage en plein écran EXIGE un geste utilisateur, d'où ce
     // bouton — il ne peut pas être déclenché au chargement.
     if (this.scale.fullscreen.available) {
-      const s = touchSize(38);
+      const s: number = touchSize(38);
       // Icône du REGISTRE et non un glyphe Unicode : « ⤡ » n'est pas dans Cinzel,
       // il tombait sur la police du système et son encre, décentrée dans la boîte
       // de texte, faisait paraître le bouton de travers en plein écran (ADR-012).
@@ -133,15 +141,15 @@ export class MenuScene extends Phaser.Scene {
   /** Écarte les deux chips d'après leur largeur RÉELLE. Des X en dur les faisaient
    *  se chevaucher dès que la police est remontée sur petit écran (ADR-015). */
   private spreadCurrencies() {
-    const gap = 34;
-    const wa = this.chipShards.text.width, wb = this.chipSceaux.text.width;
-    const total = wa + gap + wb;
+    const gap: number = 34;
+    const wa: number = this.chipShards.text.width, wb: number = this.chipSceaux.text.width;
+    const total: number = wa + gap + wb;
     this.chipShards.container.setX(CX - total / 2 + wa / 2);
     this.chipSceaux.container.setX(CX + total / 2 - wb / 2);
   }
 
   private refreshCurrencies() {
-    const p = this.profileSvc.get();
+    const p: Profile = this.profileSvc.get();
     this.chipShards.setText(`Éclats : ${p.shards}`);
     this.chipSceaux.setText(`Sceaux : ${p.sceaux}`);
     if (this.chipShards.container.scene) this.spreadCurrencies();
@@ -150,7 +158,7 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Intro lore (première visite) ----------
 
   private showIntro() {
-    const modal = uiModal(this, {
+    const modal: UiModal = uiModal(this, {
       w: 600, h: 340,
       title: "An 312 du Vieux Royaume",
       body: LORE_INTRO,
@@ -184,10 +192,10 @@ export class MenuScene extends Phaser.Scene {
   private box(x: number, y: number, w: number, h: number, fill: number, stroke: number, r = 10,
               target?: Phaser.GameObjects.Container): Phaser.GameObjects.Graphics {
     // fill historique (0x22…/0x2b…) → teinte sombre ; on garde la sémantique des appels existants
-    const t = target ?? this.panel!;
-    const tint = fill === 0x221b12 ? UI_TINT.panelDim : UI_TINT.panel;
+    const t: Phaser.GameObjects.Container = target ?? this.panel!;
+    const tint: number = fill === 0x221b12 ? UI_TINT.panelDim : UI_TINT.panel;
     t.add(uiPanel(this, x, y, w, h, tint));
-    const g = this.add.graphics();
+    const g: Phaser.GameObjects.Graphics = this.add.graphics();
     // Le panneau du pack porte son propre cadre : un liseré vectoriel par-dessus
     // le double (ADR-030). Même règle que `uiFramedPanel`, appliquée ici aussi —
     // ce helper sert les Chroniques et les fiches du Bestiaire.
@@ -205,9 +213,9 @@ export class MenuScene extends Phaser.Scene {
     // L'en-tête se place SOUS les chips de monnaie, mesurées : le bouton retour
     // grandit avec le plancher tactile et la police, et un Y en dur le faisait
     // remonter par-dessus « Éclats » (constaté sur appareil réel).
-    const chipsBottom = this.chipShards.container.y + this.chipShards.text.height / 2;
-    const y = chipsBottom + 12 + touchSize(30) / 2;
-    const h = uiSectionHeader(this, { title, y, onBack: () => this.showView("home") });
+    const chipsBottom: number = this.chipShards.container.y + this.chipShards.text.height / 2;
+    const y: number = chipsBottom + 12 + touchSize(30) / 2;
+    const h: UiSectionHeader = uiSectionHeader(this, { title, y, onBack: () => this.showView("home") });
     this.panel!.add(h.container);
     return h.bottom;
   }
@@ -217,16 +225,16 @@ export class MenuScene extends Phaser.Scene {
   private tabs<T extends string>(
     top: number, defs: { id: T; label: string }[], active: T, onPick: (id: T) => void,
   ): number {
-    const h = touchSize(32);
-    const gap = 14;
-    const cy = top + 10 + h / 2;
+    const h: number = touchSize(32);
+    const gap: number = 14;
+    const cy: number = top + 10 + h / 2;
     // Les boutons s'élargissent pour contenir leur libellé (ADR-015) : on les crée
     // d'abord, puis on les positionne d'après leur largeur RÉELLE. Calculer les X
     // avant les faisait se toucher dès que la police est remontée.
-    const made = defs.map(t => uiButton(this, 0, cy, t.label,
+    const made: UiButton[] = defs.map(t => uiButton(this, 0, cy, t.label,
       { w: touchSize(130), h, gold: active === t.id, fontSize: 15 }, () => onPick(t.id)));
-    const totalW = made.reduce((s, b) => s + b.w, 0) + gap * (made.length - 1);
-    let x = CX - totalW / 2;
+    const totalW: number = made.reduce((s, b) => s + b.w, 0) + gap * (made.length - 1);
+    let x: number = CX - totalW / 2;
     made.forEach((b) => {
       b.container.setX(x + b.w / 2);
       x += b.w + gap;
@@ -237,9 +245,9 @@ export class MenuScene extends Phaser.Scene {
 
   /** Zone défilante occupant tout l'espace restant sous `top`, jusqu'au bas de l'écran. */
   private scrollArea(top: number): UiScrollList {
-    const v = viewport();
-    const y = top + 10;
-    const scroll = uiScrollList(this, { x: v.left, y, w: v.width, h: Math.max(80, v.bottom - y - 12) });
+    const v: Viewport = viewport();
+    const y: number = top + 10;
+    const scroll: UiScrollList = uiScrollList(this, { x: v.left, y, w: v.width, h: Math.max(80, v.bottom - y - 12) });
     this.panel!.add(scroll.content);
     return scroll;
   }
@@ -262,31 +270,31 @@ export class MenuScene extends Phaser.Scene {
     // 160 à 800 : le texte du Bestiaire commençait 50 unités HORS de son panneau,
     // un reste du monde 800×600 que le passage en 960×540 (ADR-027) n'avait pas
     // rattrapé. La marge, elle, vient de l'ornement du pack (ADR-030).
-    const cardW = 640;
-    const pad = Math.max(14, uiPanelPad(this)), lead = 4;
-    const cardLeft = CX - cardW / 2;
-    const artW = portrait ? 76 : 0;
-    const textX = cardLeft + pad + artW;
-    const wrapMax = cardW - pad * 2 - artW;
-    const objs = lines.map(l => this.add.text(0, 0, l.text, {
+    const cardW: number = 640;
+    const pad: number = Math.max(14, uiPanelPad(this)), lead: number = 4;
+    const cardLeft: number = CX - cardW / 2;
+    const artW: number = portrait ? 76 : 0;
+    const textX: number = cardLeft + pad + artW;
+    const wrapMax: number = cardW - pad * 2 - artW;
+    const objs: Phaser.GameObjects.Text[] = lines.map(l => this.add.text(0, 0, l.text, {
       fontSize: `${l.size}px`, color: l.color, ...TXT, lineSpacing: 2,
       ...(l.wrap ? { wordWrap: { width: Math.min(l.wrap, wrapMax) } } : {}),
     }));
-    const inner = objs.reduce((s, o, i) => s + o.height + (i ? lead : 0), 0);
-    const h = Math.max(inner + pad * 2, portrait ? 78 : 0);
-    const y = cursor.next(h, 10);
+    const inner: number = objs.reduce((s, o, i) => s + o.height + (i ? lead : 0), 0);
+    const h: number = Math.max(inner + pad * 2, portrait ? 78 : 0);
+    const y: number = cursor.next(h, 10);
     this.box(CX, y, cardW, h, fill, stroke, 10, c);
 
     if (portrait) {
-      const size = Math.min(62, h - 14);
-      const img = this.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key).setDisplaySize(size, size);
+      const size: number = Math.min(62, h - 14);
+      const img: Phaser.GameObjects.Image = this.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key).setDisplaySize(size, size);
       // Créature non découverte : silhouette noire, comme un Pokédex — on voit la
       // forme sans révéler l'unité.
       if (!portrait.known) img.setTint(0x120d09);
       c.add(img);
     }
 
-    let ty = y - h / 2 + pad;
+    let ty: number = y - h / 2 + pad;
     objs.forEach((o) => {
       o.setPosition(textX, ty);
       ty += o.height + lead;
@@ -301,7 +309,7 @@ export class MenuScene extends Phaser.Scene {
     title: string, desc: string, trailingLabel: string, trailingColor: string,
     cb: (() => void) | null, state: RowState = "normal",
   ) {
-    const r = uiListRow(this, CX, 0, {
+    const r: UiListRow = uiListRow(this, CX, 0, {
       w: 640, title, desc, state,
       trailing: cb ? { label: trailingLabel, onClick: cb } : { label: trailingLabel, color: trailingColor },
     });
@@ -312,10 +320,10 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Hub ----------
 
   private buildHome() {
-    const p = this.panel!;
-    const wonCount = this.profileSvc.get().chaptersWon.length;
-    const total = CONTENT.chapters.length;
-    const storyDone = this.profileSvc.storyCompleted();
+    const p: Phaser.GameObjects.Container = this.panel!;
+    const wonCount: number = this.profileSvc.get().chaptersWon.length;
+    const total: number = CONTENT.chapters.length;
+    const storyDone: boolean = this.profileSvc.storyCompleted();
     const entries: {
       icon: string; title: string; sub: string; view: View;
       /** Emblème raster du pack — affiché tel quel, sans teinte. */
@@ -341,8 +349,8 @@ export class MenuScene extends Phaser.Scene {
     // aller. La disposition est calculée par `hubLayout`, pur et testé, et son
     // ANCRAGE (centre + zone utile) par `menuZone` — les deux le sont désormais.
     const [primary, ...rest] = entries;
-    const z = menuZone(viewport());
-    const layout = hubLayout(z.cx, z.cy, z.w, z.h, rest.length);
+    const z: MenuZone = menuZone(viewport());
+    const layout: HubLayout = hubLayout(z.cx, z.cy, z.w, z.h, rest.length);
 
     p.add(uiTile(this, layout.primary.x, layout.primary.y, {
       w: layout.primary.w, h: layout.primary.h,
@@ -353,7 +361,7 @@ export class MenuScene extends Phaser.Scene {
     }));
 
     rest.forEach((e, i) => {
-      const box = layout.secondary[i]!;
+      const box: TileBox = layout.secondary[i]!;
       p.add(uiTile(this, box.x, box.y, {
         w: box.w, h: box.h,
         icon: e.icon, title: e.title, sub: e.sub,
@@ -370,24 +378,24 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Bestiaire (découverte progressive) ----------
 
   private buildBestiary() {
-    const top = this.header("Bestiaire");
-    const tabsY = this.tabs(top, [
+    const top: number = this.header("Bestiaire");
+    const tabsY: number = this.tabs(top, [
       { id: "creatures", label: "Créatures" },
       { id: "defenses", label: "Défenses" },
     ], this.bestiaryTab, (id) => { this.bestiaryTab = id; this.showView("bestiary"); });
 
     // Liste défilante : le Bestiaire grandit à chaque créature ajoutée, il ne peut
     // plus dépendre de ce qui « tient » dans 600 px (ADR-013).
-    const scroll = this.scrollArea(tabsY);
-    const c = scroll.content;
-    const cursor = layoutCursor(0);
+    const scroll: UiScrollList = this.scrollArea(tabsY);
+    const c: Phaser.GameObjects.Container = scroll.content;
+    const cursor: LayoutCursor = layoutCursor(0);
 
     if (this.bestiaryTab === "defenses") { this.buildDefensePages(cursor, c, scroll); return; }
 
-    const seen = this.profileSvc.get().bestiary;
-    const enemies = Object.values(CONTENT.enemies);
+    const seen: string[] = this.profileSvc.get().bestiary;
+    const enemies: EnemyDef[] = Object.values(CONTENT.enemies);
     enemies.forEach((e) => {
-      const known = seen.includes(e.id);
+      const known: boolean = seen.includes(e.id);
       if (!known) {
         this.lorePage(cursor, c, [
           { text: "???", size: 17, color: DIM },
@@ -395,7 +403,7 @@ export class MenuScene extends Phaser.Scene {
         ], 0x4a3f2e, 0x221b12, { key: enemyView(e.id).key, known: false });
         return;
       }
-      const stats = [
+      const stats: string = [
         `❤ ${e.hp} PV`, `Vitesse ${e.speed}`, `◆ ${e.goldReward}`,
         `Base -${e.damageToCastle} PV`, e.meleeDps > 0 ? `⚔ ${e.meleeDps}/s` : "⚔ inoffensif au contact",
       ].join("    ");
@@ -403,7 +411,7 @@ export class MenuScene extends Phaser.Scene {
       // un Bestiaire qui les tait laisse le joueur découvrir sur le tas qu'une tour
       // ne sert à rien contre cette créature — et « connaître l'ennemi » est sa
       // promesse (ADR-022).
-      const traits = [
+      const traits: string[] = [
         e.flying ? "volant" : "",
         e.armor ? `cuirassé ${e.armor}` : "",
         e.slowImmune ? "insensible au froid" : "",
@@ -422,14 +430,14 @@ export class MenuScene extends Phaser.Scene {
 
   /** Onglet Défenses : explique le rôle et les différences de chaque tour. */
   private buildDefensePages(cursor: LayoutCursor, c: Phaser.GameObjects.Container, scroll: UiScrollList) {
-    const towers = Object.values(CONTENT.towers);
+    const towers: TowerDef[] = Object.values(CONTENT.towers);
     towers.forEach((t) => {
-      const locked = t.requiresUnlock !== null && !this.profileSvc.get().unlocks.includes(t.requiresUnlock);
+      const locked: boolean = t.requiresUnlock !== null && !this.profileSvc.get().unlocks.includes(t.requiresUnlock);
       // Rôle tactique : LA ligne qui différencie les tours
-      const role = t.splashRadius > 0 ? `Dégâts de zone (rayon ${t.splashRadius})` : "Monocible";
-      const target = t.groundOnly ? "⚠ ne touche PAS les volants" : "vise sol et volants";
-      const slow = t.slow ? ` · ralentit (vitesse ×${t.slow.factor} pendant ${t.slow.duration}s)` : "";
-      const l1 = t.levels[0]!, l3 = t.levels[t.levels.length - 1]!;
+      const role: string = t.splashRadius > 0 ? `Dégâts de zone (rayon ${t.splashRadius})` : "Monocible";
+      const target: string = t.groundOnly ? "⚠ ne touche PAS les volants" : "vise sol et volants";
+      const slow: string = t.slow ? ` · ralentit (vitesse ×${t.slow.factor} pendant ${t.slow.duration}s)` : "";
+      const l1: TowerLevelStats = t.levels[0]!, l3: TowerLevelStats = t.levels[t.levels.length - 1]!;
       this.lorePage(cursor, c, [
         { text: `${t.name}${locked ? "  (verrouillée — Arsenal)" : ""}`, size: 17, color: locked ? DIM : GOLD },
         { text: t.lore, size: 11, color: DIM, wrap: 560 },
@@ -446,7 +454,7 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Histoire (chapitres) ----------
 
   private buildStory() {
-    const top = this.header("Histoire");
+    const top: number = this.header("Histoire");
 
     // Déblocage séquentiel : conquérir le chapitre précédent pour ouvrir le suivant
     const isUnlocked = (i: number) => CONTENT.chapters[i]!.playable && (i === 0 || this.profileSvc.chapterWon(i - 1));
@@ -454,15 +462,15 @@ export class MenuScene extends Phaser.Scene {
     // Grille plutôt que liste : les chapitres sont des items courts et nombreux.
     // En paysage, une liste verticale gâche la largeur et déborde dès 10 entrées,
     // là où une grille les montre tous d'un coup (ADR-013).
-    const scroll = this.scrollArea(top);
-    const c = scroll.content;
+    const scroll: UiScrollList = this.scrollArea(top);
+    const c: Phaser.GameObjects.Container = scroll.content;
     // Les textures de sol sont générées à la demande côté jeu (ADR-023) ; l'écran
     // Histoire en a besoin aussi pour l'aperçu des vignettes.
     for (const ch of CONTENT.chapters) ensureTerrainTextures(this, ch.biome);
 
-    const tiles = CONTENT.chapters.map((ch, i) => {
-      const won = this.profileSvc.chapterWon(i);
-      const unlocked = isUnlocked(i);
+    const tiles: LevelTile[] = CONTENT.chapters.map((ch, i) => {
+      const won: boolean = this.profileSvc.chapterWon(i);
+      const unlocked: boolean = isUnlocked(i);
       return {
         index: i + 1,
         name: unlocked || won ? ch.name : "???",
@@ -477,20 +485,20 @@ export class MenuScene extends Phaser.Scene {
     });
     // La grille s'élargit avec l'écran : bornée à 700, elle laissait un tiers du
     // paysage inutilisé alors qu'elle est l'écran le plus consulté du jeu (ADR-025).
-    const gz = levelGridZone(viewport());
+    const gz: LevelGridZone = levelGridZone(viewport());
     // La grille reçoit aussi la HAUTEUR disponible : bornée à sa cellule plancher
     // de 74, elle laissait 40 % de l'écran vide sous elle alors que les vignettes
     // portent l'aperçu du biome — c'est justement ce qui gagne à être grand.
-    const GRID_TOP = 6, LORE_H = 44;
-    const gridH = Math.max(80, viewport().bottom - (top + 10) - 12 - GRID_TOP - LORE_H);
-    const grid = uiLevelGrid(this, gz.cx, GRID_TOP, tiles, gz.w, 5, gridH);
+    const GRID_TOP: number = 6, LORE_H: number = 44;
+    const gridH: number = Math.max(80, viewport().bottom - (top + 10) - 12 - GRID_TOP - LORE_H);
+    const grid: UiLevelGrid = uiLevelGrid(this, gz.cx, GRID_TOP, tiles, gz.w, 5, gridH);
     c.add(grid.container);
 
     // Lore du prochain objectif (premier chapitre débloqué non conquis)
-    const next = CONTENT.chapters.findIndex((_ch, i) => isUnlocked(i) && !this.profileSvc.chapterWon(i));
-    const lore = next >= 0 ? CONTENT.chapters[next]!.lore : "La vallée respire. Pour l'instant.";
-    const loreY = GRID_TOP + grid.layout.totalH + 14;
-    const loreText = this.add.text(CX,loreY, lore.replace("\n", " "),
+    const next: number = CONTENT.chapters.findIndex((_ch, i) => isUnlocked(i) && !this.profileSvc.chapterWon(i));
+    const lore: string = next >= 0 ? CONTENT.chapters[next]!.lore : "La vallée respire. Pour l'instant.";
+    const loreY: number = GRID_TOP + grid.layout.totalH + 14;
+    const loreText: Phaser.GameObjects.Text = this.add.text(CX,loreY, lore.replace("\n", " "),
       { fontSize: "12px", color: TEXT.dim, ...TXT, align: "center", wordWrap: { width: 600 } }).setOrigin(0.5, 0);
     c.add(loreText);
     scroll.setContentHeight(loreY + loreText.height + 12);
@@ -499,13 +507,13 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Failles infinies (mode séparé, teaser v1) ----------
 
   private buildRifts() {
-    const p = this.panel!;
+    const p: Phaser.GameObjects.Container = this.panel!;
     this.header("Failles infinies");
     if (!this.profileSvc.storyCompleted()) {
       p.add(this.add.text(CX,290,
         "Les Failles ne s'ouvrent qu'aux vainqueurs.\n\nAchevez l'Histoire — terrassez le Roi-Charogne —\net leur seuil vous sera révélé.",
         { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-      const locked = uiChip(this, CX, 410, {
+      const locked: UiChip = uiChip(this, CX, 410, {
         text: `${this.profileSvc.get().chaptersWon.length}/${CONTENT.chapters.length} chapitres conquis`,
         fontSize: 16, color: TEXT.dim, pill: true,
       });
@@ -517,7 +525,7 @@ export class MenuScene extends Phaser.Scene {
     p.add(this.add.text(CX,280,
       "Au-delà des terres connues, les Failles déversent\ndes hordes sans fin. Nul n'en est revenu —\nseuls les noms des plus endurants survivent,\ngravés dans les Chroniques.",
       { fontSize: "17px", color: TEXT.light, ...TXT, align: "center", lineSpacing: 8 }).setOrigin(0.5));
-    const soon = uiChip(this, CX + 8, 400, { text: "Bientôt", fontSize: 20, color: TEXT.rift, pill: true });
+    const soon: UiChip = uiChip(this, CX + 8, 400, { text: "Bientôt", fontSize: 20, color: TEXT.rift, pill: true });
     p.add(soon.container);
     p.add(this.add.image(CX + 8 - soon.text.width / 2 - 20, 400, ICON.rift).setDisplaySize(21, 21).setTint(0xb07cc6));
     p.add(this.add.text(CX,460, "Mode v1 : scaling agressif, modificateurs de Faille, leaderboard.",
@@ -527,15 +535,15 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Armurerie (Arsenal / Forge / Héros) ----------
 
   private buildShop() {
-    const top = this.header("Armurerie");
-    const tabsY = this.tabs(top, [
+    const top: number = this.header("Armurerie");
+    const tabsY: number = this.tabs(top, [
       { id: "arsenal" as ShopTab, label: "Arsenal" },
       { id: "forge" as ShopTab, label: "Forge" },
       { id: "hero" as ShopTab, label: "Héros" },
     ], this.currentShopTab, (id) => { this.currentShopTab = id; this.showView("shop"); });
 
-    const scroll = this.scrollArea(tabsY);
-    const cursor = layoutCursor(0);
+    const scroll: UiScrollList = this.scrollArea(tabsY);
+    const cursor: LayoutCursor = layoutCursor(0);
     if (this.currentShopTab === "arsenal") this.buildArsenalRows(cursor, scroll.content);
     else if (this.currentShopTab === "forge") this.buildForgeRows(cursor, scroll.content);
     else this.buildHeroRows(cursor, scroll.content);
@@ -543,12 +551,12 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private buildArsenalRows(cursor: LayoutCursor, c: Phaser.GameObjects.Container) {
-    const p = this.profileSvc.get();
+    const p: Profile = this.profileSvc.get();
     UNLOCKS.forEach((u) => {
-      const owned = p.unlocks.includes(u.id);
+      const owned: boolean = p.unlocks.includes(u.id);
       // « Inabordable » : cadre atténué et coût en rouge tant que les Éclats manquent
       // (état prévu au GDD, jamais rendu jusqu'ici).
-      const affordable = p.shards >= u.cost;
+      const affordable: boolean = p.shards >= u.cost;
       this.row(cursor, c, u.name, u.desc,
         owned ? "Acquis" : `${u.cost} ◆`,
         owned ? OK : affordable ? GOLD : TEXT.bad,
@@ -558,21 +566,21 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private buildForgeRows(cursor: LayoutCursor, c: Phaser.GameObjects.Container) {
-    const prof = this.profileSvc.get();
-    const unlocks = prof.unlocks;
-    const pct = Math.round(CONTENT.forge.damageMultPerLevel * 100);
-    const maxLvl = CONTENT.forge.upgradeCosts.length;
+    const prof: Profile = this.profileSvc.get();
+    const unlocks: string[] = prof.unlocks;
+    const pct: number = Math.round(CONTENT.forge.damageMultPerLevel * 100);
+    const maxLvl: number = CONTENT.forge.upgradeCosts.length;
     Object.values(CONTENT.towers).forEach((t) => {
-      const locked = t.requiresUnlock !== null && !unlocks.includes(t.requiresUnlock);
-      const lvl = this.profileSvc.forgeLevel(t.id);
-      const cost = this.profileSvc.forgeNextCost(t.id);
-      const stars = "★".repeat(lvl) + "☆".repeat(maxLvl - lvl);
+      const locked: boolean = t.requiresUnlock !== null && !unlocks.includes(t.requiresUnlock);
+      const lvl: number = this.profileSvc.forgeLevel(t.id);
+      const cost: number | null = this.profileSvc.forgeNextCost(t.id);
+      const stars: string = "★".repeat(lvl) + "☆".repeat(maxLvl - lvl);
       if (locked) {
         this.row(cursor, c, `${t.name}  ${stars}`, "Débloquez d'abord cette tour (Arsenal).", "Verrouillé", DIM, null, "locked");
       } else if (cost === null) {
         this.row(cursor, c, `${t.name}  ${stars}`, `+${pct}% dégâts par niveau — niveau maximum atteint.`, "Max", OK, null, "done");
       } else {
-        const affordable = prof.shards >= cost;
+        const affordable: boolean = prof.shards >= cost;
         this.row(cursor, c, `${t.name}  ${stars}`, `+${pct}% dégâts permanents par niveau (actuel : +${lvl * pct}%).`,
           `${cost} ◆`, affordable ? GOLD : TEXT.bad,
           affordable ? () => { if (this.profileSvc.buyForge(t.id)) { this.refreshCurrencies(); this.showView("shop"); } } : null,
@@ -591,28 +599,28 @@ export class MenuScene extends Phaser.Scene {
       {
         id: "whirlwind", name: "Tournoiement",
         desc: lvl => {
-          const s = CONTENT.hero.skills.whirlwind.levels[lvl - 1]!;
+          const s: WhirlwindLevel = CONTENT.hero.skills.whirlwind.levels[lvl - 1]!;
           return `AoE au contact : ${s.damage} dégâts, rayon ${s.radius}, recharge ${s.cooldownS}s.`;
         },
       },
       {
         id: "rally", name: "Ralliement",
         desc: lvl => {
-          const s = CONTENT.hero.skills.rally.levels[lvl - 1]!;
+          const s: RallyLevel = CONTENT.hero.skills.rally.levels[lvl - 1]!;
           return `Cadence des tours proches ×${s.fireRateMult} pendant ${s.durationS}s, recharge ${s.cooldownS}s.`;
         },
       },
     ];
 
     skills.forEach((sk) => {
-      const def = CONTENT.hero.skills[sk.id];
-      const lvl = this.profileSvc.skillLevel(sk.id);
-      const cost = this.profileSvc.skillNextCost(sk.id);
-      const title = `${sk.name} — niv. ${lvl}/${def.levels.length}`;
+      const def: SkillTrack<WhirlwindLevel> | SkillTrack<RallyLevel> = CONTENT.hero.skills[sk.id];
+      const lvl: number = this.profileSvc.skillLevel(sk.id);
+      const cost: number | null = this.profileSvc.skillNextCost(sk.id);
+      const title: string = `${sk.name} — niv. ${lvl}/${def.levels.length}`;
       if (cost === null) {
         this.row(cursor, c, title, sk.desc(lvl), "Max", OK, null, "done");
       } else {
-        const affordable = this.profileSvc.get().sceaux >= cost;
+        const affordable: boolean = this.profileSvc.get().sceaux >= cost;
         this.row(cursor, c, title, sk.desc(lvl), `${cost} ⚜`, affordable ? SCEAU : TEXT.bad,
           affordable ? () => { if (this.profileSvc.buySkill(sk.id)) { this.refreshCurrencies(); this.showView("shop"); } } : null,
           affordable ? "normal" : "unaffordable");
@@ -626,33 +634,33 @@ export class MenuScene extends Phaser.Scene {
   // ---------- Chroniques (meilleurs runs, futur leaderboard) ----------
 
   private buildChronicles() {
-    const top = this.header("Chroniques");
-    const runs = this.profileSvc.get().bestRuns;
+    const top: number = this.header("Chroniques");
+    const runs: BestRun[] = this.profileSvc.get().bestRuns;
     if (runs.length === 0) {
       this.panel!.add(this.add.text(CX,top + 120, "Les Chroniques sont vierges.\nLe Roi-Charogne n'attendra pas — partez au combat !",
         { fontSize: "16px", color: DIM, ...TXT, align: "center", lineSpacing: 6 }).setOrigin(0.5));
       return;
     }
-    const scroll = this.scrollArea(top);
-    const c = scroll.content;
-    const cursor = layoutCursor(0);
+    const scroll: UiScrollList = this.scrollArea(top);
+    const c: Phaser.GameObjects.Container = scroll.content;
+    const cursor: LayoutCursor = layoutCursor(0);
     c.add(this.add.text(CX,cursor.next(24), `Vos ${runs.length} plus hauts faits`, { fontSize: "14px", color: DIM, ...TXT }).setOrigin(0.5));
     // Colonnes DÉRIVÉES de la rangée, jamais posées en absolu. Les quatre X
     // valaient 120 / 170 / 500 / 680 : des restes du monde 800×600 centré sur 400.
     // Après le passage en 960×540 (ADR-027), la rangée va de 180 à 780 — le rang
     // « #1 » tombait donc 60 unités HORS du panneau et le libellé se posait sur sa
     // volute d'angle. Le centre avait été corrigé partout, ces quatre-là non.
-    const rowW = 600;
-    const pad = uiPanelPad(this);
-    const left = CX - rowW / 2 + pad;
-    const right = CX + rowW / 2 - pad;
+    const rowW: number = 600;
+    const pad: number = uiPanelPad(this);
+    const left: number = CX - rowW / 2 + pad;
+    const right: number = CX + rowW / 2 - pad;
     runs.forEach((r, i) => {
-      const y = cursor.next(touchSize(44), 8);
-      const date = new Date(r.dateISO).toLocaleDateString("fr-FR");
+      const y: number = cursor.next(touchSize(44), 8);
+      const date: string = new Date(r.dateISO).toLocaleDateString("fr-FR");
       this.box(CX, y, rowW, touchSize(44), 0x2b2118, r.victory ? 0x27ae60 : 0x6b5a3e, 8, c);
-      const rang = this.add.text(left, y, `#${i + 1}`, { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0, 0.5);
+      const rang: Phaser.GameObjects.Text = this.add.text(left, y, `#${i + 1}`, { fontSize: "15px", color: GOLD, ...TXT }).setOrigin(0, 0.5);
       c.add(rang);
-      const chap = r.chapter !== undefined ? `Ch.${r.chapter + 1} — ` : "";
+      const chap: string = r.chapter !== undefined ? `Ch.${r.chapter + 1} — ` : "";
       c.add(this.add.text(left + rang.width + 12, y, `${chap}${r.waves} vague${r.waves > 1 ? "s" : ""} — ${r.kills} kills`,
         { fontSize: "15px", color: LIGHT, ...TXT }).setOrigin(0, 0.5));
       c.add(this.add.text(CX + rowW * 0.12, y, r.victory ? "Victoire" : "Défaite",

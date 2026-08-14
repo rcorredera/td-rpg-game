@@ -24,10 +24,10 @@ export interface UiChip {
 }
 
 export function uiChip(scene: Phaser.Scene, x: number, y: number, opts: UiChipOpts): UiChip {
-  const container = scene.add.container(x, y);
-  const icon = opts.icon;
-  const label = icon ? `${icon} ${opts.text}` : opts.text;
-  const text = scene.add.text(0, 0, label, {
+  const container: Phaser.GameObjects.Container = scene.add.container(x, y);
+  const icon: string | undefined = opts.icon;
+  const label: string = icon ? `${icon} ${opts.text}` : opts.text;
+  const text: Phaser.GameObjects.Text = scene.add.text(0, 0, label, {
     fontSize: `${opts.fontSize ?? 14}px`,
     color: opts.color ?? TEXT.light,
     fontFamily: FONT_BODY,

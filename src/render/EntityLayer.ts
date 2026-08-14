@@ -12,7 +12,7 @@ import type { SpriteRef } from "./sprites";
 
 /** Applique une SpriteRef (texture+frame+teinte) à un sprite, seulement si elle a changé. */
 function applyRef(s: Phaser.GameObjects.Sprite, ref: SpriteRef): void {
-  const sig = `${ref.key}:${ref.frame ?? "-"}:${ref.tint ?? -1}`;
+  const sig: string = `${ref.key}:${ref.frame ?? "-"}:${ref.tint ?? -1}`;
   if (s.getData("sig") === sig) return;
   s.setData("sig", sig);
   // `frame` absent = texture autonome (skin médiéval) ; présent = planche.
@@ -43,13 +43,13 @@ export class SpriteLayer<T> {
     place: (s: Phaser.GameObjects.Sprite, t: T) => void,
     onGone?: (s: Phaser.GameObjects.Sprite) => void,
   ): void {
-    const seen = new Set<number>();
+    const seen: Set<number> = new Set<number>();
     for (const it of items) {
-      const k = keyOf(it);
+      const k: number = keyOf(it);
       seen.add(k);
-      let s = this.sprites.get(k);
+      let s: Phaser.GameObjects.Sprite | undefined = this.sprites.get(k);
       if (!s) {
-        const ref = refOf(it);
+        const ref: SpriteRef = refOf(it);
         s = (ref.frame === undefined
           ? this.scene.add.sprite(0, 0, ref.key)
           : this.scene.add.sprite(0, 0, ref.key, ref.frame)).setDepth(this.depth);
