@@ -8,6 +8,7 @@
 
 import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
+import { ICON } from "../icons";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
 import { scaleFont, touchSize } from "../viewport";
 import { uiFramedPanel, uiPanelPad } from "./panel";
@@ -151,10 +152,26 @@ export function uiLevelGrid(
     cell.add([num, name]);
 
     if (t.state === "done") {
+      // Trois étoiles du REGISTRE d'icônes (ADR-012), et non les glyphes Unicode
+      // « ★ / ☆ » : ceux-là sont rendus par la police du système, donc changent
+      // d'aspect d'un appareil à l'autre et échappent à la palette — exactement
+      // ce qu'on s'interdit pour les emojis. Le pack Tiny Swords n'offre rien qui
+      // note un niveau, elles sont donc dessinées pour le projet.
       const s = t.stars ?? 0;
-      cell.add(scene.add.text(0, cellH / 2 - pad - 7, "★".repeat(s) + "☆".repeat(3 - s), {
-        fontSize: "13px", color: TEXT.gold, fontFamily: FONT_BODY,
-      }).setOrigin(0.5));
+      const size = Math.max(12, Math.round(cellH * 0.13));
+      const gapS = Math.round(size * 0.28);
+      const y = cellH / 2 - pad - size / 2;
+      for (let k = 0; k < 3; k++) {
+        const gagnee = k < s;
+        // L'étoile non gagnée garde l'OR, en transparence. Teintée avec
+        // `ACCENT.locked`, elle avait la luminance du panneau et disparaissait :
+        // le joueur ne voyait plus qu'il manquait des étoiles, il croyait qu'il
+        // n'y en avait pas du tout.
+        cell.add(scene.add.image((k - 1) * (size + gapS), y, gagnee ? ICON.star : ICON.starEmpty)
+          .setDisplaySize(size, size)
+          .setTint(ACCENT.goldSoft)
+          .setAlpha(gagnee ? 1 : 0.3));
+      }
     }
 
     if (t.onSelect) {

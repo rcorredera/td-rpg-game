@@ -20,6 +20,12 @@ export const ICON = {
   chronicles: "ui_banner",
   locked: "ui_lock",
   castle: "ui_castle",
+  // Note de chapitre. Elle s'affichait en glyphes Unicode « ★ / ☆ », donc rendue
+  // par la police du SYSTÈME — exactement ce qu'ADR-012 proscrit pour les emojis,
+  // et pour la même raison : l'aspect change d'un appareil à l'autre et échappe à
+  // la palette. Le pack Tiny Swords n'offre rien de tel, on la dessine donc.
+  star: "ui_star",
+  starEmpty: "ui_star_empty",
 } as const;
 
 export type IconKey = keyof typeof ICON;
@@ -33,6 +39,23 @@ const FILES: Record<IconKey, string> = {
   chronicles: "ui-banner.svg",
   locked: "ui-lock.svg",
   castle: "ui-castle.svg",
+  star: "ui-star.svg",
+  starEmpty: "ui-star-empty.svg",
+};
+
+/**
+ * Emblèmes RASTER venus du pack Tiny Swords — pixel art couleur, jamais teinté.
+ *
+ * Séparés des icônes : celles-ci sont des silhouettes monochromes dont la couleur
+ * porte un état (verrouillé, Faille). Un emblème du pack, lui, arrive avec ses
+ * couleurs et son relief ; le teinter reviendrait à les jeter.
+ */
+export const EMBLEM = { bastion: "ts_castle" } as const;
+
+export type EmblemKey = keyof typeof EMBLEM;
+
+const EMBLEM_FILES: Record<EmblemKey, string> = {
+  bastion: "tiny-swords/buildings/castle-blue.png",
 };
 
 /**
@@ -53,5 +76,8 @@ export const ICON_RASTER_PX = 192;
 export function preloadIcons(scene: Phaser.Scene): void {
   for (const key of Object.keys(FILES) as IconKey[]) {
     scene.load.svg(ICON[key], `assets/icons/${FILES[key]}`, { width: ICON_RASTER_PX, height: ICON_RASTER_PX });
+  }
+  for (const key of Object.keys(EMBLEM_FILES) as EmblemKey[]) {
+    scene.load.image(EMBLEM[key], `assets/${EMBLEM_FILES[key]}`);
   }
 }
