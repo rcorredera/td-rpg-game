@@ -18,6 +18,28 @@ import {
  *  moitié (cf. `BTN_SCALE`), soit des marges de ~23 — d'où 48. */
 const SKIN_MIN_H: number = 48;
 
+/** Décalage vertical du libellé/icône d'un bouton habillé enfoncé. Cale sur
+ *  l'écart de hauteur entre planche au repos et planche enfoncée du pack
+ *  (52×52 contre 48×41, mesuré ADR-032) : sans lui le libellé reste centré sur
+ *  la hauteur au repos et flotte au-dessus du creux. */
+export const SKIN_PRESS_DY: number = 3;
+
+/**
+ * Bascule un bouton habillé du pack entre repos et enfoncé — texture
+ * (`uiSkinSetTexture`) ET libellé/icône qui doit suivre la plaque plus plate.
+ * Point d'entrée UNIQUE du « push » du pack, partagé par `uiButton` et la barre
+ * du HUD (ADR-035) : la planche enfoncée porte déjà le signal d'appui telle que
+ * dessinée par l'artiste ; composer une mise à l'échelle par-dessus le double
+ * et désynchronise le libellé du creux qu'elle dessine.
+ */
+export function skinPressVisual(
+  scene: Phaser.Scene, plate: Phaser.GameObjects.NineSlice, keyUp: string, keyDown: string,
+  movers: readonly Phaser.GameObjects.Components.Transform[], baseY: readonly number[], on: boolean,
+): void {
+  uiSkinSetTexture(scene, plate, on ? keyDown : keyUp, plate.width, plate.height);
+  movers.forEach((m, i) => { m.y = baseY[i]! + (on ? SKIN_PRESS_DY : 0); });
+}
+
 export interface UiButtonOpts {
   w: number;
   h?: number;
@@ -133,23 +155,27 @@ export function uiButton(
   // défilement et le clic est abandonné.
   const DRAG_SLOP: number = 10;
   let downAt: Vec2 | null = null;
+  // État enfoncé : sur l'habillage du pack, la planche dessinée porte déjà le
+  // signal (skinPressVisual) — un scale-squish ajouté par-dessus le doublerait.
+  // Le squish reste le SEUL signal du repli Kenney, qui n'a pas de planche
+  // enfoncée à afficher.
+  const movers: readonly Phaser.GameObjects.Components.Transform[] = icon ? [icon] : txt ? [txt] : [];
+  const baseY: readonly number[] = movers.map(m => m.y);
   img.on("pointerdown", (p: Phaser.Input.Pointer, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
     ev?.stopPropagation?.();
     downAt = { x: p.x, y: p.y };
-    c.setScale(0.96);
-    // JAMAIS `setTexture` nu : Phaser garderait les marges de découpe de la
-    // texture précédente, et la planche enfoncée n'a pas la même géométrie.
-    if (skin) uiSkinSetTexture(scene, img, keyDown, w, h);
+    if (skin) skinPressVisual(scene, img, keyUp, keyDown, movers, baseY, true);
+    else c.setScale(0.96);
   });
   img.on("pointerup", (p: Phaser.Input.Pointer, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
     ev?.stopPropagation?.();
     c.setScale(1.04);
-    if (skin) uiSkinSetTexture(scene, img, keyUp, w, h);
+    if (skin) skinPressVisual(scene, img, keyUp, keyDown, movers, baseY, false);
     const from: Vec2 | null = downAt;
     downAt = null;
     if (!from || Math.hypot(p.x - from.x, p.y - from.y) > DRAG_SLOP) return;
     cb();
   });
-  img.on("pointerout", () => { downAt = null; if (skin) uiSkinSetTexture(scene, img, keyUp, w, h); });
+  img.on("pointerout", () => { downAt = null; if (skin) skinPressVisual(scene, img, keyUp, keyDown, movers, baseY, false); });
   return { container: c, img, txt, w, h };
 }

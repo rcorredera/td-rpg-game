@@ -153,6 +153,14 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   Tiny Swords sont des ressources, `kenney-ui` n'a que deux boutons et un panneau ; aucune flèche,
   aucun chevron, aucun symbole de plein écran. À remplacer en priorité quand des assets arrivent
   (une ligne par icône dans `render/icons.ts`).
+- **Push unique des boutons habillés (ADR-035) — FAIT** : relevé par le PO au repos, `uiButton`
+  (le composant de base) et la barre du HUD de run rendaient l'appui différemment — l'un cumulait
+  planche enfoncée du pack ET scale-squish (0,96/1,04, hérité d'avant l'habillage), l'autre
+  n'affichait que la planche + un décalage de libellé de 3 px, validé en playtest mobile (ADR-032).
+  `skinPressVisual` (`components/button.ts`) est désormais le point d'entrée unique des deux ;
+  `uiButton` ne garde le scale-squish qu'en repli Kenney, sans planche enfoncée à afficher. Vérifié
+  en pilotant `window.__game` (capture indisponible en session) : appui simulé sur « ⟵ Camp » et sur
+  un bouton du HUD donnent désormais la même transition de texture et le même décalage de libellé.
 - **Marges intérieures et abscisses en dur (suite ADR-030) — FAIT** : le contenu se posait sur les
   volutes d'angle (numéro de chapitre à 6 unités du bord pour une marge de 22) et les colonnes
   des Chroniques/du Bestiaire/des Failles gardaient des abscisses en dur héritées du monde 800 —
