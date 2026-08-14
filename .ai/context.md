@@ -129,6 +129,12 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   (132×60), réduction proportionnelle bornée à 26 %% de la tuile, largeur dimensionnée sur une
   marge SÛRE mesurée (là où le corps plat commence) et non sur la marge de découpe. `composeTile`
   reçoit un plancher de marge (`uiPanelPad`) : mesuré après, marge minimale 22 partout contre 15.
+  Suite : la tuile principale porte le BASTION du pack (`buildings/castle-blue.png`, raster non
+  teinté) au lieu du parchemin plat, sa jauge d'avancement est la châsse en bois du pack
+  (`bar-big-base`, remplissage dessiné car celui du pack est rouge et `setTint` MULTIPLIE), et les
+  notes de chapitre passent des glyphes Unicode « ★/☆ » — rendus par la police système, donc hors
+  palette — à deux icônes du registre. Le pack n'offre RIEN qui note un niveau, elles sont
+  dessinées pour le projet.
 - **Marges intérieures et abscisses en dur (suite ADR-030) — FAIT** : le contenu se posait sur les
   volutes d'angle (numéro de chapitre à 6 unités du bord pour une marge de 22) et les colonnes
   des Chroniques/du Bestiaire/des Failles gardaient des abscisses en dur héritées du monde 800 —

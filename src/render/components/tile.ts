@@ -14,6 +14,7 @@ import { ACCENT, TEXT } from "../theme";
 import { ICON_RASTER_PX } from "../icons";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
 import { uiFramedPanel, uiPanelPad } from "./panel";
+import { uiProgress, uiProgressHeight } from "./progress";
 import { uiRibbon, uiRibbonAvailable, uiRibbonHeight, type RibbonTone } from "./ribbon";
 import { composeTile } from "./tileContent";
 
@@ -30,6 +31,8 @@ export interface UiTileOpts {
   primary?: boolean;
   /** Avancement 0..1 — dessine une jauge en pied de tuile. */
   progress?: number;
+  /** Emblème RASTER du pack : ni teinte, ni ombre, proportions gardées. */
+  rawIcon?: boolean;
   /** Couleur du ruban de titre — le sens, pas le goût. */
   ribbonTone?: RibbonTone;
   /** Verrouillée : plus de relief au survol, plus de curseur main. */
@@ -84,7 +87,7 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   // Empilement d'après les hauteurs RÉELLES (les polices sont remontées sur petit
   // écran, ADR-015) et d'après la place DISPONIBLE : `composeTile` est pur et
   // testé, ce module ne fait que poser les objets aux positions qu'il renvoie.
-  const barH = 6;
+  const barH = Math.max(6, uiProgressHeight(scene));
   const box = composeTile({
     w, h, titleH: titleBlockH, subH: sub?.height ?? 0,
     maxGlyph: ICON_RASTER_PX, footerH: opts.progress !== undefined ? barH : 0,
@@ -95,13 +98,19 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   // (ADR-012) : posées à grande taille sur l'ardoise ouvragée du pack, elles
   // lisaient comme un aplat de remplissage. Un double sombre décalé leur rend
   // l'épaisseur que l'art du pack a partout ailleurs, sans changer d'iconographie.
-  const shadow = 3;
-  container.add(scene.add.image(shadow, box.iconCy + shadow, opts.icon)
-    .setDisplaySize(box.glyph, box.glyph)
-    .setTint(0x0b0f1a).setAlpha(0.45));
-  container.add(scene.add.image(0, box.iconCy, opts.icon)
-    .setDisplaySize(box.glyph, box.glyph)
-    .setTint(opts.iconColor ?? ACCENT.goldSoft));
+  // Un emblème du pack (`raw`) arrive avec son relief : ni ombre, ni teinte.
+  if (!opts.rawIcon) {
+    const shadow = 3;
+    container.add(scene.add.image(shadow, box.iconCy + shadow, opts.icon)
+      .setDisplaySize(box.glyph, box.glyph)
+      .setTint(0x0b0f1a).setAlpha(0.45));
+  }
+  const emblem = scene.add.image(0, box.iconCy, opts.icon);
+  // Un raster du pack garde ses PROPORTIONS : l'étirer au carré écraserait le
+  // Bastion, dont la planche fait 320×280.
+  if (opts.rawIcon) emblem.setScale(box.glyph / Math.max(emblem.width, emblem.height));
+  else emblem.setDisplaySize(box.glyph, box.glyph).setTint(opts.iconColor ?? ACCENT.goldSoft);
+  container.add(emblem);
   const ruban = uiRibbon(
     scene, 0, box.titleTop + titleBlockH / 2, title.width, w - box.pad * 2,
     opts.locked ? "off" : opts.ribbonTone ?? "normal", ribbonH,
@@ -118,16 +127,8 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   }
 
   if (opts.progress !== undefined) {
-    const barW = w - Math.max(40, box.pad * 2);
-    const bar = scene.add.graphics();
-    bar.fillStyle(0x000000, 0.45);
-    bar.fillRoundedRect(-barW / 2, box.footerTop, barW, barH, 3);
-    const filled = Math.max(0, Math.min(1, opts.progress));
-    if (filled > 0) {
-      bar.fillStyle(ACCENT.gold, 0.9);
-      bar.fillRoundedRect(-barW / 2, box.footerTop, Math.max(barH, barW * filled), barH, 3);
-    }
-    container.add(bar);
+    const barW = w - box.pad * 2;
+    container.add(uiProgress(scene, 0, box.footerTop, barW, opts.progress).objects);
   }
 
   // `setInteractive({})` ne définit AUCUNE zone de clic et fait planter Phaser au

@@ -10,7 +10,7 @@ import { CONTENT, UNLOCKS } from "../content/index";
 import type { ProfileService, SkillId } from "../meta/profile";
 import { FONT_BODY, FONT_DISPLAY, onSceneResize, preloadUi, setupCamera, UI_TINT } from "./ui";
 import { touchSize, viewport, WORLD_W } from "./viewport";
-import { ICON, preloadIcons } from "./icons";
+import { EMBLEM, ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
 import { ensureTerrainTextures, grassTextureKey } from "./terrain";
 import { enemyView, towerView } from "./sprites";
@@ -313,11 +313,16 @@ export class MenuScene extends Phaser.Scene {
     const wonCount = this.profileSvc.get().chaptersWon.length;
     const total = CONTENT.chapters.length;
     const storyDone = this.profileSvc.storyCompleted();
-    const entries: { icon: string; title: string; sub: string; view: View; rift?: boolean }[] = [
+    const entries: {
+      icon: string; title: string; sub: string; view: View;
+      /** Emblème raster du pack — affiché tel quel, sans teinte. */
+      raw?: boolean;
+      rift?: boolean;
+    }[] = [
       // Sous-titres COURTS : une tuile n'est pas une rangée de liste, la phrase y
       // passe à la ligne et écrase l'icône. On y met l'état, pas la description —
       // le détail appartient à l'écran qu'elle ouvre (ADR-025).
-      { icon: ICON.story, title: "Histoire", sub: wonCount > 0 ? `${wonCount} / ${total} chapitres conquis` : "Chapitre 1 · La Route du Bastion", view: "story" },
+      { icon: EMBLEM.bastion, raw: true, title: "Histoire", sub: wonCount > 0 ? `${wonCount} / ${total} chapitres conquis` : "Chapitre 1 · La Route du Bastion", view: "story" },
       {
         icon: storyDone ? ICON.rift : ICON.locked, title: "Failles infinies",
         sub: storyDone ? "Bientôt" : "Achevez l'Histoire",
@@ -338,7 +343,7 @@ export class MenuScene extends Phaser.Scene {
 
     p.add(uiTile(this, layout.primary.x, layout.primary.y, {
       w: layout.primary.w, h: layout.primary.h,
-      icon: primary!.icon, title: primary!.title, sub: primary!.sub,
+      icon: primary!.icon, rawIcon: primary!.raw, title: primary!.title, sub: primary!.sub,
       primary: true,
       progress: total > 0 ? wonCount / total : 0,
       onSelect: () => this.showView(primary!.view),

@@ -56,3 +56,37 @@ mordait sur le cadre.
   sortent de la même planche, à trois rangées différentes.
 - Restent inutilisés : la bannière (`banner.png`) pour les pages de lore du
   Bestiaire, et les rangées rouge/jaune des rubans, sans emploi actuel.
+
+## Suite — emblème, jauge et notes (2026-08-14)
+
+Le ruban validé, trois éléments détonnaient encore avec lui. Inventaire de ce que
+le pack pouvait réellement fournir, fait avant de coder :
+
+| besoin | dans le pack ? | décision |
+|---|---|---|
+| jauge d'avancement | **oui** — `bar-big-base.png` | châsse du pack, remplissage dessiné |
+| emblème « Histoire » | **oui** — `buildings/castle-blue.png` | le Bastion, raster non teinté |
+| note 1-3 étoiles | **non** — rien qui note un niveau | deux icônes dessinées pour le projet |
+
+**La jauge** reprend le partage déjà retenu pour les PV du Bastion (ADR-030) :
+l'ornement vient du pack, la couleur reste au jeu. Le pack livre bien un
+remplissage (`bar-big-fill.png`) mais il est rouge, et `setTint` MULTIPLIE — on ne
+peut le faire virer à l'or. Le remplissage est donc dessiné dans la gorge, en
+retrait de la ferrure mesurée sur la planche.
+
+**L'emblème de la tuile principale** devient le Bastion du pack. Les icônes du
+dossier `ui/` sont des ressources (bois, or, viande, épées) qui ne couvrent aucune
+de nos rubriques ; le château, lui, est le symbole même du jeu et la tuile
+« Histoire » est celle qui représente un LIEU. C'est un mélange assumé — pixel art
+couleur sur la tuile principale, silhouettes dorées sur les quatre secondaires —
+qui suit le rang des tuiles d'ADR-025. `UiTileOpts.rawIcon` marque un emblème du
+pack : ni teinte, ni ombre portée, et mise à l'échelle qui préserve ses
+proportions (la planche fait 320×280, la forcer au carré l'écraserait).
+
+**Les notes de chapitre** quittent les glyphes Unicode `★`/`☆`. Ceux-ci sont rendus
+par la police du système : aspect variable d'un appareil à l'autre et hors de la
+palette — précisément ce qu'ADR-012 proscrit pour les emojis, sans que personne
+n'ait fait le rapprochement. Deux SVG rejoignent le registre (`star`,
+`starEmpty`). L'étoile non obtenue garde l'OR en transparence : teintée avec
+`ACCENT.locked`, elle avait la luminance du panneau et disparaissait — le joueur
+ne voyait plus qu'il en manquait, il croyait qu'il n'y en avait pas.

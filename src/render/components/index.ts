@@ -5,6 +5,7 @@
 export * from "./layout";
 export * from "./panel";
 export * from "./ribbon";
+export * from "./progress";
 export * from "./button";
 export * from "./modal";
 export * from "./tabBar";

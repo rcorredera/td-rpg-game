@@ -82,6 +82,7 @@ const RIBBON_ROW = { teal: 64, red: 192, yellow: 320, purple: 448, grey: 576 } a
 
 const STRIPS = {
   ts_bar: { file: "bar-small-base.png", cols: [0, 128, 256], row: 0, cell: 64 },
+  ts_bar_big: { file: "bar-big-base.png", cols: [0, 128, 256], row: 0, cell: 64 },
   // Rubans de titre. Le teal et le rouge sont EXACTEMENT ceux des boutons du pack :
   // c'est ce qui raccroche visuellement les tuiles aux commandes, ce qui manquait.
   ts_ribbon: { file: "ribbons-small.png", cols: [0, 128, 256], row: RIBBON_ROW.teal, cell: 64 },
@@ -90,6 +91,7 @@ const STRIPS = {
 } satisfies Record<string, StripSheet>;
 
 export const UI_SKIN_BAR = "ts_bar" satisfies keyof typeof STRIPS;
+export const UI_SKIN_BAR_BIG = "ts_bar_big" satisfies keyof typeof STRIPS;
 export const UI_SKIN_RIBBON = "ts_ribbon" satisfies keyof typeof STRIPS;
 export const UI_SKIN_RIBBON_RIFT = "ts_ribbon_rift" satisfies keyof typeof STRIPS;
 export const UI_SKIN_RIBBON_OFF = "ts_ribbon_off" satisfies keyof typeof STRIPS;
