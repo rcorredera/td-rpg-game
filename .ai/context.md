@@ -122,7 +122,13 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   noire sur écran large (`safeLeft` = −114 à 2,2:1, borné à 0 désormais). La jauge du
   Bastion porte maintenant la châsse du pack (`bar-small-base`, bande à TROIS tranches via
   `planStrip`). ⚠ RESTE inutilisé : rubans (`ribbons-*.png`) pour les titres, bannière
-  (`banner.png`) pour le lore — la prochaine passe.
+  - **Rubans de titre (ADR-031) — FAIT** : les titres de tuile portent un ruban du pack, dans les
+  MÊMES couleurs que ses boutons (teal `rgb(65,145,157)` des deux côtés, mesuré) — c'est ce qui
+  raccroche enfin les tuiles aux commandes. Couleur porteuse de sens : teal par défaut, pourpre
+  pour les Failles, gris pour une entrée verrouillée. Variante ARRONDIE (130×54) et non en pointe
+  (132×60), réduction proportionnelle bornée à 26 %% de la tuile, largeur dimensionnée sur une
+  marge SÛRE mesurée (là où le corps plat commence) et non sur la marge de découpe. `composeTile`
+  reçoit un plancher de marge (`uiPanelPad`) : mesuré après, marge minimale 22 partout contre 15.
 - **Marges intérieures et abscisses en dur (suite ADR-030) — FAIT** : le contenu se posait sur les
   volutes d'angle (numéro de chapitre à 6 unités du bord pour une marge de 22) et les colonnes
   des Chroniques/du Bestiaire/des Failles gardaient des abscisses en dur héritées du monde 800 —

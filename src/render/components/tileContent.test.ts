@@ -68,6 +68,21 @@ describe("composition du contenu d'une tuile", () => {
     }
   });
 
+  it("respecte la marge imposée par l'habillage", () => {
+    // La marge proportionnelle vaut 15 sur une tuile de 167, alors que la volute
+    // d'angle du panneau ouvragé en occupe 22 : le contenu se posait dessus, et
+    // le ruban de titre mordait sur le cadre. La marge de l'habillage est un
+    // PLANCHER, pas une suggestion.
+    for (const g of GABARITS) {
+      for (const minPad of [0, 10, 22, 30]) {
+        const b = composeTile({ ...g, minPad });
+        expect(b.pad, `${g.w}×${g.h}, plancher ${minPad}`).toBeGreaterThanOrEqual(minPad);
+        // …et le contenu reste dedans.
+        expect(b.iconCy - b.glyph / 2).toBeGreaterThanOrEqual(-g.h / 2 + minPad - 0.001);
+      }
+    }
+  });
+
   it("centre le bloc dans sa zone utile", () => {
     for (const g of GABARITS) {
       const b = composeTile(g);
