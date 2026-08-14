@@ -70,6 +70,24 @@ ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, pré
 qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji
 dans l'UI : leur rendu dépend de l'OS et leurs couleurs cassent la palette.
 
+## Scènes (ADR-034)
+
+`render/GameScene.ts` et `render/MenuScene.ts` ne portent plus que le lifecycle Phaser, l'input, et
+l'orchestration de leur boucle update/draw — leur contenu vit dans des modules dédiés, chacun
+recevant la scène en paramètre explicite (`scene: Phaser.Scene`) plutôt que de capturer `this`,
+comme le fait déjà `render/components/` (ADR-007).
+
+`render/menu/` : un fichier par écran du Campement (`homeView.ts`, `storyView.ts`, `riftsView.ts`,
+`shopView.ts`, `bestiaryView.ts`, `chroniclesView.ts`), chacun une fonction `buildXxx(ctx: MenuCtx)`
+— `MenuCtx` (`menu/types.ts`) porte la scène, le panel courant et les points d'entrée vers l'état de
+`MenuScene` (`navigate`, `refreshCurrencies`). Les constructions partagées (panneau, en-tête,
+onglets, liste défilante, fiche de lore, rangée) vivent dans `menu/helpers.ts`.
+
+`render/game/` : `terrain.ts` (décor statique, jauge du Bastion, chemins de Faille), `hud.ts`
+(barre d'actions du run), `modals.ts` (confirmation de sortie, écran de fin de run), `slotMenu.ts`
+(menu contextuel construire/améliorer/vendre), `entities.ts` (placement et overlay des tours,
+ennemis, héros), `fx.ts` (effets transitoires et projectiles en vol).
+
 ## Mobile / viewport (ADR-010)
 
 Cible **paysage**. `render/viewport.ts` est la source unique de vérité sur l'écran :

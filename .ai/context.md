@@ -215,6 +215,12 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   boutons-icônes (game-icons, CC-BY → crédit obligatoire, voir public/assets/README.md),
   deltas chiffrés sur upgrades et specs. Socle de widgets dans `render/components/` (ADR-007)
   + `layoutCursor` pour l'empilement vertical.
+- **Découpage des scènes (ADR-034) — FAIT** : `GameScene.ts` (1379 → 331 lignes) et `MenuScene.ts`
+  (672 → 180 lignes) ne portent plus que le lifecycle Phaser, l'input et l'orchestration de la
+  boucle update/draw — leur contenu vit désormais dans `render/game/` (terrain, HUD, modales,
+  menu de slot, entités, FX) et `render/menu/` (un fichier par écran du Campement), sur le même
+  principe que `render/components/` (scène passée en paramètre explicite, jamais capturée via
+  `this`). Refactor pur, aucun changement de gameplay ni d'équilibrage.
 - **Viewport (ADR-010)** : cible **paysage**, le jeu remplit l'écran entier (avant : 35 % de la
   surface sur mobile portrait, le reste en bandes noires). `render/viewport.ts` = source unique
   (framebuffer, zoom, rectangle visible, encoches), réactif au resize/rotation ; invite « tournez
