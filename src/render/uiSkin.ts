@@ -73,7 +73,13 @@ interface StripSheet {
   cols: readonly [number, number, number];
   /** Ordonnée de la rangée à prélever. */
   row: number;
+  /** Largeur de la fenêtre de mesure (`opaqueBounds`). */
   cell: number;
+  /** Hauteur de la fenêtre, si différente de `cell`. Les planches déjà
+   *  branchées ont des pièces CARRÉES ; `ribbons-big.png` a des ailes de
+   *  fanion plus LARGES que hautes (~98×59 mesuré) — une fenêtre carrée à 98
+   *  empiéterait sur la rangée de couleur suivante, distante de 128 seulement. */
+  cellH?: number;
 }
 
 /**
@@ -96,6 +102,12 @@ const STRIPS = {
   ts_ribbon: { file: "ribbons-small.png", cols: [0, 128, 256], row: RIBBON_ROW.teal, cell: 64 },
   ts_ribbon_rift: { file: "ribbons-small.png", cols: [0, 128, 256], row: RIBBON_ROW.purple, cell: 64 },
   ts_ribbon_off: { file: "ribbons-small.png", cols: [0, 128, 256], row: RIBBON_ROW.grey, cell: 64 },
+  // Grande variante, réservée à la tuile PRINCIPALE (« Bastion ») — seul le ton
+  // normal (teal) est décliné en grand, les autres tons n'y apparaissent jamais
+  // (ADR-035). Colonnes mesurées : ailes à x=[30,128)/[320,417), corps
+  // x=[192,256) — pas le même pas que la petite planche (320 de large contre
+  // 448), donc pas les mêmes offsets.
+  ts_ribbon_big: { file: "ribbons-big.png", cols: [0, 192, 320], row: RIBBON_ROW.teal, cell: 128, cellH: 64 },
 } satisfies Record<string, StripSheet>;
 
 // eslint-disable-next-line @typescript-eslint/typedef -- `satisfies` garde un type littéral précis ; l'annoter le réélargirait.
@@ -108,6 +120,8 @@ export const UI_SKIN_RIBBON = "ts_ribbon" satisfies keyof typeof STRIPS;
 export const UI_SKIN_RIBBON_RIFT = "ts_ribbon_rift" satisfies keyof typeof STRIPS;
 // eslint-disable-next-line @typescript-eslint/typedef -- `satisfies` garde un type littéral précis ; l'annoter le réélargirait.
 export const UI_SKIN_RIBBON_OFF = "ts_ribbon_off" satisfies keyof typeof STRIPS;
+// eslint-disable-next-line @typescript-eslint/typedef -- `satisfies` garde un type littéral précis ; l'annoter le réélargirait.
+export const UI_SKIN_RIBBON_BIG = "ts_ribbon_big" satisfies keyof typeof STRIPS;
 
 export type UiSkinKey = keyof typeof SHEETS;
 
@@ -225,13 +239,20 @@ function sameColor(a: Rgb, b: Rgb): boolean {
   return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) < 60;
 }
 
-/** Bornes opaques dans un rectangle de la planche, ou `null` si tout est vide. */
+/**
+ * Bornes opaques dans un rectangle de la planche, ou `null` si tout est vide.
+ *
+ * Fenêtre `sizeW`×`sizeH` — pas forcément CARRÉE : les ailes de fanion de
+ * `ribbons-big.png` font ~98×59 alors que le pas entre deux couleurs ne vaut
+ * que 128 en hauteur comme en largeur — une fenêtre carrée à 98 empièterait de
+ * 34 px sur la rangée de couleur suivante et fausserait la mesure.
+ */
 function opaqueBounds(
-  data: Uint8ClampedArray, sheetW: number, x0: number, y0: number, size: number,
+  data: Uint8ClampedArray, sheetW: number, x0: number, y0: number, sizeW: number, sizeH: number,
 ): Box | null {
-  let minX: number = x0 + size, minY: number = y0 + size, maxX: number = x0 - 1, maxY: number = y0 - 1;
-  for (let y: number = y0; y < y0 + size; y++) {
-    for (let x: number = x0; x < x0 + size; x++) {
+  let minX: number = x0 + sizeW, minY: number = y0 + sizeH, maxX: number = x0 - 1, maxY: number = y0 - 1;
+  for (let y: number = y0; y < y0 + sizeH; y++) {
+    for (let x: number = x0; x < x0 + sizeW; x++) {
       if (data[(y * sheetW + x) * 4 + 3]! <= 40) continue;
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
@@ -338,7 +359,8 @@ function ensureStripTextures(scene: Phaser.Scene): void {
     const src: SheetPixels | null = sheetPixels(scene, strip.file);
     if (!src) continue;
 
-    const piece: (Box | null)[] = strip.cols.map(x => opaqueBounds(src.data, src.img.width, x, strip.row, strip.cell));
+    const piece: (Box | null)[] = strip.cols.map(x =>
+      opaqueBounds(src.data, src.img.width, x, strip.row, strip.cell, strip.cellH ?? strip.cell));
     if (piece.some(p => p === null)) continue;
     const found: Box[] = piece as Box[];
     // Hauteur COMMUNE aux trois pièces : un embout plus haut que le corps
@@ -417,7 +439,7 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
     const { img, data } = src;
 
     const piece: (Box | null)[][] = sheet.rows.map(y =>
-      sheet.cols.map(x => opaqueBounds(data, img.width, x, y, sheet.cell)));
+      sheet.cols.map(x => opaqueBounds(data, img.width, x, y, sheet.cell, sheet.cell)));
     const corner: Box | null | undefined = piece[0]![0];
     const centre: Box | null | undefined = piece[1]![1];
     if (!corner || !centre) continue;

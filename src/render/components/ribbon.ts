@@ -14,7 +14,7 @@ import { fitInsets } from "../nineSlicePlan";
 import type { Insets } from "../nineSlicePlan";
 import {
   ensureUiSkinTextures, uiSkinInsets, uiSkinSafeInsets,
-  UI_SKIN_RIBBON, UI_SKIN_RIBBON_OFF, UI_SKIN_RIBBON_RIFT,
+  UI_SKIN_RIBBON, UI_SKIN_RIBBON_BIG, UI_SKIN_RIBBON_OFF, UI_SKIN_RIBBON_RIFT,
 } from "../uiSkin";
 import type { SafeInsets } from "../uiSkin";
 
@@ -27,15 +27,25 @@ const KEY: Record<RibbonTone, string> = {
   off: UI_SKIN_RIBBON_OFF,
 };
 
+/**
+ * Résout la clé de texture d'un ruban. `big` n'est honoré que pour le ton
+ * "normal" — seule variante déclinée en grand (ADR-035, tuile PRINCIPALE
+ * uniquement) ; les autres tons retombent sur la petite planche.
+ */
+export function uiRibbonKey(scene: Phaser.Scene, tone: RibbonTone, big: boolean = false): string {
+  if (big && tone === "normal" && scene.textures.exists(UI_SKIN_RIBBON_BIG)) return UI_SKIN_RIBBON_BIG;
+  return KEY[tone];
+}
+
 /** Le ruban est-il disponible ? (planche chargée et composée) */
 export function uiRibbonAvailable(scene: Phaser.Scene): boolean {
   ensureUiSkinTextures(scene);
   return scene.textures.exists(UI_SKIN_RIBBON);
 }
 
-/** Hauteur naturelle du ruban, telle que dessinée. Le texte s'y centre. */
-export function uiRibbonHeight(scene: Phaser.Scene): number {
-  const t: Phaser.Textures.Texture = scene.textures.get(UI_SKIN_RIBBON);
+/** Hauteur naturelle d'UNE clé de ruban, telle que dessinée. Le texte s'y centre. */
+export function uiRibbonHeight(scene: Phaser.Scene, key: string = UI_SKIN_RIBBON): number {
+  const t: Phaser.Textures.Texture = scene.textures.get(key);
   return t.key === "__MISSING" ? 0 : t.getSourceImage().height;
 }
 
@@ -53,13 +63,13 @@ const TEXT_AIR: number = 8;
  */
 export function uiRibbon(
   scene: Phaser.Scene, x: number, y: number, textW: number, maxW: number,
-  tone: RibbonTone = "normal", maxH = Infinity,
+  tone: RibbonTone = "normal", maxH = Infinity, big: boolean = false,
 ): Phaser.GameObjects.NineSlice | null {
   if (!uiRibbonAvailable(scene)) return null;
-  const key: string = KEY[tone];
+  const key: string = uiRibbonKey(scene, tone, big);
   const ins: Insets = uiSkinInsets(key);
   const safe: SafeInsets = uiSkinSafeInsets(key);
-  const nativeH: number = uiRibbonHeight(scene);
+  const nativeH: number = uiRibbonHeight(scene, key);
   // Réduction PROPORTIONNELLE (`setScale`) et non un étirement vertical : les
   // embouts se déformeraient. Le pack est du pixel art, on ne l'agrandit jamais.
   const k: number = Math.min(1, maxH / nativeH);
