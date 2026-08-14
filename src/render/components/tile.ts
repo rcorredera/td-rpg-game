@@ -15,7 +15,7 @@ import { ICON_RASTER_PX } from "../icons";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
 import { uiFramedPanel, uiPanelPad } from "./panel";
 import { uiProgress, uiProgressHeight } from "./progress";
-import { uiRibbon, uiRibbonAvailable, uiRibbonHeight, type RibbonTone } from "./ribbon";
+import { uiRibbon, uiRibbonAvailable, uiRibbonHeight, uiRibbonKey, type RibbonTone } from "./ribbon";
 import { composeTile } from "./tileContent";
 import type { TileContentBox } from "./tileContent";
 import type { Vec2 } from "../../core/types";
@@ -80,9 +80,15 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   // déborderait du bloc calculé.
   // Borné à un quart de la tuile : à sa taille native (54), le ruban mangeait la
   // moitié de la zone utile d'une tuile secondaire et l'emblème tombait à 45.
+  // Tuile PRINCIPALE : grande variante de la planche (ADR-035) — sa hauteur
+  // native diffère, donc la clé doit être résolue AVANT de mesurer, sous peine
+  // de composer le bloc sur la hauteur de la PETITE planche puis d'y dessiner
+  // la grande (même défaut qu'ADR-032 : deux mesures qui ne se parlent pas).
   const RIBBON_SHARE: number = 0.26;
+  const ribbonTone: RibbonTone = opts.locked ? "off" : opts.ribbonTone ?? "normal";
+  const ribbonKey: string = uiRibbonKey(scene, ribbonTone, opts.primary);
   const ribbonH: number = uiRibbonAvailable(scene)
-    ? Math.min(uiRibbonHeight(scene), h * RIBBON_SHARE)
+    ? Math.min(uiRibbonHeight(scene, ribbonKey), h * RIBBON_SHARE)
     : 0;
   const titleBlockH: number = Math.max(title.height, ribbonH);
 
@@ -115,7 +121,7 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   container.add(emblem);
   const ruban: Phaser.GameObjects.NineSlice | null = uiRibbon(
     scene, 0, box.titleTop + titleBlockH / 2, title.width, w - box.pad * 2,
-    opts.locked ? "off" : opts.ribbonTone ?? "normal", ribbonH,
+    ribbonTone, ribbonH, opts.primary,
   );
   if (ruban) container.add(ruban);
   // Origine CENTRÉE une fois posé sur le ruban : aligner son haut le décalerait

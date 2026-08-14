@@ -161,6 +161,25 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   `uiButton` ne garde le scale-squish qu'en repli Kenney, sans planche enfoncée à afficher. Vérifié
   en pilotant `window.__game` (capture indisponible en session) : appui simulé sur « ⟵ Camp » et sur
   un bouton du HUD donnent désormais la même transition de texture et le même décalage de libellé.
+- **Icônes Armurerie/Chroniques et jauge Histoire — FAIT** : les silhouettes maison de ces deux
+  tuiles ont été remplacées par des rasters du pack (`EMBLEM.armory` = bouclier `icon-06.png`,
+  `EMBLEM.chronicles` = épées croisées `icon-05.png`, sans teinte). La jauge de la tuile Histoire
+  utilisait un simple rectangle plat ; `bar-big-fill.png` (remplissage natif du pack) est rouge et
+  `setTint` ne peut jamais le désaturer (ADR-014) — `render/colorRemap.ts` (nouveau module pur,
+  testé) reteint par LUMINANCE plutôt que par teinte, ce qui garde le relief (reflet, ombre) du
+  dessin en changeant sa couleur vers l'or. ⚠ Bug réel corrigé dans la foulée : la texture
+  recomposée gardait la marge transparente du canevas source (64×64, 24 px peints) — `setDisplaySize`
+  étirait ce vide EN MÊME TEMPS que le motif, réduisant tout remplissage à un mince trait. `opaqueBBox`
+  + `cropBuffer` (`colorRemap.ts`) recadrent la texture sur son contenu réellement peint avant de
+  l'enregistrer — leçon générale pour tout futur raster recomposé du pack.
+- **Grande planche de ruban pour la tuile Bastion (ADR-036) — FAIT** : `ribbons-big.png`, en
+  réserve depuis ADR-032, habille désormais le titre de la tuile PRINCIPALE (les tuiles
+  secondaires gardent la petite planche). Ses ailes de fanion (~98×59) sont plus larges que hautes
+  sur un pas de grille carré (128) — `opaqueBounds` (`uiSkin.ts`) ne savait mesurer qu'une fenêtre
+  CARRÉE, généralisé en `sizeW`×`sizeH`. `uiRibbonKey` résout la clé de ruban une seule fois,
+  appelée par `tile.ts` AVANT de mesurer la hauteur du bloc de titre et par `uiRibbon` pour
+  dessiner — les deux DOIVENT s'accorder sur la même clé, sinon même défaut qu'ADR-032 (mise en
+  page calculée sur une planche, dessin d'une autre).
 - **Marges intérieures et abscisses en dur (suite ADR-030) — FAIT** : le contenu se posait sur les
   volutes d'angle (numéro de chapitre à 6 unités du bord pour une marge de 22) et les colonnes
   des Chroniques/du Bestiaire/des Failles gardaient des abscisses en dur héritées du monde 800 —

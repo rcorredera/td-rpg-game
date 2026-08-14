@@ -30,16 +30,16 @@ retirés (glyphe blanc sur transparent, teintable par Phaser).
 Extrait du pack gratuit **Tiny Swords** (Pixel Frog, CC0 ; redistribution du pack brut interdite,
 usage dans un jeu autorisé sans crédit). 59 fichiers retenus sur 462.
 
-| Sous-dossier | Fichiers | Usage prévu |
+| Sous-dossier | Fichiers | Usage |
 |---|---|---|
-| `ui/` | `paper-*` (planches **9-slice** 3×3), `ribbons-*` (3-slice), `banner*`, `bar-*` (base + remplissage), `btn-*` (bleu/rouge, normal + enfoncé), `icon-01..12` | Modales, bandeaux de titre, barres de vie, boutons |
-| `buildings/` | `castle-blue`, `archery-blue`, `tower-{blue,purple,red}` | Donjon ; paliers visuels de tour |
-| `fx/` | `explosion-*`, `fire-*`, `dust-*`, `water-splash` | Impacts catapulte, feu grégeois |
-| `decor/` | `rock-*`, `bush-*` (planches animées 8 frames), `clouds-*` | Habillage des biomes (ADR-023) |
+| `ui/` | `paper-*`, `btn-*`, `bar-*`, `ribbons-small`/`ribbons-big`, `icon-05`/`icon-06` | **branchés** — modales, jauges, boutons, rubans de titre, emblèmes Chroniques/Armurerie (ADR-032/035/036) |
+| `ui/` (reste) | `banner*`, `icon-{01,02,03,04,07..12}` | réserve — bandeaux de titre, pas encore d'usage trouvé pour les 10 autres icônes-ressources |
+| `buildings/` | `castle-blue`, `archery-blue`, `tower-{blue,purple,red}` | `castle-blue` **branché** (emblème Histoire, ADR-031) ; le reste en réserve — donjon, paliers visuels de tour |
+| `fx/` | `explosion-*`, `fire-*`, `dust-*`, `water-splash` | réserve — impacts catapulte, feu grégeois |
+| `decor/` | `rock-*`, `bush-*` (planches animées 8 frames), `clouds-*` | réserve — habillage des biomes (ADR-023) |
 
-Rien n'est encore branché : ces fichiers sont exemptés du test d'orphelins via la liste
-`RESERVE`. **Cette exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir
-supprimé.
+Ce qui reste en réserve est exempté du test d'orphelins via la liste `RESERVE`. **Cette
+exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir branché ou supprimé.
 
 ### Écarté du pack, et pourquoi
 
