@@ -8,6 +8,7 @@
 
 import Phaser from "phaser";
 import { ACCENT } from "../theme";
+import { ICON } from "../icons";
 
 /** Pure — décalage borné : 0 = haut, négatif = on descend dans le contenu.
  *  Exportée pour test unitaire (aucun DOM, aucun Phaser). */
@@ -17,6 +18,54 @@ export function clampScroll(offset: number, contentH: number, viewH: number): nu
   // mais une position de défilement négative-zéro n'a aucun sens et fait échouer
   // toute comparaison stricte (Object.is distingue -0 de 0).
   return Math.min(0, Math.max(-max, offset)) + 0;
+}
+
+/** Tolérance sous laquelle un reste de défilement ne mérite plus d'être signalé. */
+const RESTE_MIN = 0.5;
+
+export interface ScrollHints {
+  /** Du contenu reste au-dessus / en dessous de la fenêtre. */
+  up: boolean;
+  down: boolean;
+}
+
+/**
+ * Pure — y a-t-il encore à voir au-dessus, en dessous ?
+ *
+ * C'est la seule information dont l'affordance a besoin, et la sortir du rendu
+ * la rend vérifiable : « la liste défile » ne doit pas se déduire d'une capture.
+ */
+export function scrollHints(offset: number, contentH: number, viewH: number): ScrollHints {
+  const max = Math.max(0, contentH - viewH);
+  const o = clampScroll(offset, contentH, viewH);
+  return { up: -o > RESTE_MIN, down: max + o > RESTE_MIN };
+}
+
+export interface Rect { x: number; y: number; w: number; h: number }
+
+/** Largeur de la gouttière de défilement et sa marge au bord de la fenêtre. */
+const BAR_W = 5;
+const BAR_PAD = 4;
+
+/**
+ * Pure — gouttière et curseur de défilement, `null` s'il n'y a rien à faire
+ * défiler.
+ *
+ * Les deux rectangles sont TOUJOURS à l'intérieur de `view`. C'est la garantie
+ * qui manquait : la barre se dessinait à `x + w + 4`, or la fenêtre du campement
+ * occupe toute la largeur de l'écran — l'indicateur tombait donc 4 unités
+ * DEHORS. Aucun défilement n'était signalé nulle part dans le jeu.
+ */
+export function scrollBar(view: Rect, contentH: number, offset: number): { track: Rect; thumb: Rect } | null {
+  if (contentH <= view.h) return null;
+  const x = view.x + view.w - BAR_PAD - BAR_W;
+  const trackH = Math.max(0, view.h - 2 * BAR_PAD);
+  const thumbH = Math.min(trackH, Math.max(24, (view.h / contentH) * trackH));
+  const t = -clampScroll(offset, contentH, view.h) / (contentH - view.h); // 0 → 1
+  return {
+    track: { x, y: view.y + BAR_PAD, w: BAR_W, h: trackH },
+    thumb: { x, y: view.y + BAR_PAD + t * (trackH - thumbH), w: BAR_W, h: thumbH },
+  };
 }
 
 export interface UiScrollListOpts {
@@ -59,6 +108,26 @@ export function uiScrollList(scene: Phaser.Scene, opts: UiScrollListOpts): UiScr
   const bar = scene.add.graphics().setDepth(5);
   content.parentContainer?.add(bar);
 
+  // Chevrons. Sur mobile, une gouttière de 5 unités ne suffit pas à faire
+  // comprendre qu'une liste défile — retour direct du PO. Un chevron posé sur le
+  // bord vers lequel il reste du contenu, lui, se lit sans apprentissage.
+  const chevron = (bas: boolean): Phaser.GameObjects.Image => {
+    const taille = 18;
+    const img = scene.add.image(
+      x + w / 2, bas ? y + h - taille / 2 - 2 : y + taille / 2 + 2, ICON.chevronDown,
+    ).setDisplaySize(taille, taille).setTint(ACCENT.goldSoft).setAlpha(0.8).setDepth(6).setVisible(false);
+    if (!bas) img.setFlipY(true);
+    content.parentContainer?.add(img);
+    return img;
+  };
+  const chevronBas = chevron(true);
+  const chevronHaut = chevron(false);
+  // Un léger va-et-vient : c'est le mouvement qui attire l'œil, pas la forme.
+  scene.tweens.add({
+    targets: [chevronBas, chevronHaut], y: "+=3", duration: 700,
+    yoyo: true, repeat: -1, ease: "Sine.easeInOut",
+  });
+
   let contentH = 0;
   let offset = 0;
   let dragging = false;
@@ -70,15 +139,15 @@ export function uiScrollList(scene: Phaser.Scene, opts: UiScrollListOpts): UiScr
   const redraw = () => {
     content.setY(y + offset);
     bar.clear();
-    if (contentH <= h) return;
-    const trackH = h - 8;
-    const thumbH = Math.max(24, (h / contentH) * trackH);
-    const t = -offset / (contentH - h); // 0 → 1
-    const thumbY = y + 4 + t * (trackH - thumbH);
+    const hints = scrollHints(offset, contentH, h);
+    chevronBas.setVisible(hints.down);
+    chevronHaut.setVisible(hints.up);
+    const g = scrollBar({ x, y, w, h }, contentH, offset);
+    if (!g) return;
     bar.fillStyle(ACCENT.dimBorder, 0.35);
-    bar.fillRoundedRect(x + w + 4, y + 4, 4, trackH, 2);
-    bar.fillStyle(ACCENT.goldSoft, 0.75);
-    bar.fillRoundedRect(x + w + 4, thumbY, 4, thumbH, 2);
+    bar.fillRoundedRect(g.track.x, g.track.y, g.track.w, g.track.h, 2);
+    bar.fillStyle(ACCENT.goldSoft, 0.85);
+    bar.fillRoundedRect(g.thumb.x, g.thumb.y, g.thumb.w, g.thumb.h, 2);
   };
 
   const onDown = (p: Phaser.Input.Pointer) => {
@@ -116,6 +185,11 @@ export function uiScrollList(scene: Phaser.Scene, opts: UiScrollListOpts): UiScr
     scene.input.off("wheel", onWheel);
     maskG.destroy();
     bar.destroy();
+    // Le tween cible les chevrons : le laisser tourner sur des objets détruits
+    // lève à la frame suivante.
+    scene.tweens.killTweensOf([chevronBas, chevronHaut]);
+    chevronBas.destroy();
+    chevronHaut.destroy();
   });
 
   return {

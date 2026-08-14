@@ -21,7 +21,7 @@
 import type Phaser from "phaser";
 import { flattenStretched } from "./nineSliceFlatten";
 import {
-  planNineSlice, planStrip,
+  planNineSlice, planStrip, sliceInsets,
   type Insets, type PieceRect, type SheetFrame, type StripFrame,
 } from "./nineSlicePlan";
 
@@ -136,6 +136,34 @@ export function uiSkinInsets(key: string): Insets {
 export function uiSkinInset(key: string): number {
   const i = uiSkinInsets(key);
   return Math.max(i.left, i.right, i.top, i.bottom);
+}
+
+/**
+ * Marges à appliquer pour habiller une boîte `w`×`h` avec `key` — bornées par la
+ * boîte ET par la texture (cf. `sliceInsets`).
+ */
+export function uiSkinFit(scene: Phaser.Scene, key: string, w: number, h: number): Insets {
+  const insets = uiSkinInsets(key);
+  if (!scene.textures.exists(key)) return sliceInsets(insets, { w, h }, { w, h });
+  const src = scene.textures.get(key).getSourceImage();
+  return sliceInsets(insets, { w, h }, { w: src.width, h: src.height });
+}
+
+/**
+ * Change la texture d'un nine-slice habillé — point d'entrée UNIQUE.
+ *
+ * `setTexture` seul est un piège : Phaser garde les marges de découpe de
+ * l'ANCIENNE texture. Or les planches du pack ne composent pas toutes à la même
+ * taille — un bouton enfoncé est plus plat que le même bouton au repos — et
+ * l'écart suffit à faire se recouvrir les tranches. Constaté au playtest : tout
+ * bouton virait au noir sous le doigt.
+ */
+export function uiSkinSetTexture(
+  scene: Phaser.Scene, nine: Phaser.GameObjects.NineSlice, key: string, w: number, h: number,
+): void {
+  nine.setTexture(key);
+  const i = uiSkinFit(scene, key, w, h);
+  nine.setSlices(w, h, i.left, i.right, i.top, i.bottom);
 }
 
 /** Le chrome du pack est-il disponible ? */

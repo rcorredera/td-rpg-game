@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gridLayout } from "./levelGrid";
+import { gridLayout, levelCellLayout, levelCellMinH, NAME_LINES } from "./levelGrid";
 
 describe("gridLayout", () => {
   it("remplit la largeur disponible, gouttières comprises", () => {
@@ -60,5 +60,44 @@ describe("gridLayout", () => {
     const one = gridLayout(1, 640, 5, 10, 74);
     expect(one.cols).toBe(1);
     expect(one.cellW).toBeCloseTo(640, 6);
+  });
+});
+
+describe("contenu d'une vignette de chapitre", () => {
+  /** Mesures relevées à l'écran sur mobile paysage (844×390). */
+  const MESURE = { pad: 22, numH: 34, lineH: 20, starSize: 16, gap: 4 };
+
+  it("laisse au nom la place de ses deux lignes, au-dessus des étoiles", () => {
+    // LE défaut. Chapitre 2, « Les Faubourgs en cendres » : le nom passait à deux
+    // lignes et finissait 9,2 unités PAR-DESSUS les étoiles, parce que le texte
+    // s'empilait depuis le haut pendant que les étoiles étaient épinglées en bas,
+    // sans que rien ne réserve la bande entre les deux.
+    //
+    // La propriété vaut pour TOUTE hauteur admissible, pas pour la seule mesurée.
+    const min = levelCellMinH(MESURE);
+    for (const h of [min, min + 1, min + 20, min + 90, 400]) {
+      const b = levelCellLayout({ ...MESURE, h });
+      expect(b.nameMaxH, `hauteur ${h}`).toBeGreaterThanOrEqual(NAME_LINES * MESURE.lineH);
+      // Formulé aussi en positions absolues : le bas du nom reste au-dessus du
+      // haut de l'étoile, c'est ce que l'œil constate.
+      const basDuNom = b.nameTop + NAME_LINES * MESURE.lineH;
+      expect(basDuNom, `hauteur ${h}`).toBeLessThanOrEqual(b.starCy - MESURE.starSize / 2);
+    }
+  });
+
+  it("garde tout le contenu dans les marges de la vignette", () => {
+    // L'ornement d'angle du panneau du pack court sur 22 unités (ADR-030) : rien
+    // ne doit s'y poser, ni en haut ni en bas.
+    const h = levelCellMinH(MESURE);
+    const b = levelCellLayout({ ...MESURE, h });
+    expect(b.numTop).toBeGreaterThanOrEqual(-h / 2 + MESURE.pad);
+    expect(b.starCy + MESURE.starSize / 2).toBeLessThanOrEqual(h / 2 - MESURE.pad);
+  });
+
+  it("réserve la bande d'étoiles même sans étoile à afficher", () => {
+    // Sinon le nom sauterait d'une vignette à l'autre selon qu'elle est conquise
+    // ou non — la grille se lit alors comme un alignement raté.
+    const sansEtoile = levelCellMinH({ ...MESURE, starSize: 0 });
+    expect(levelCellMinH(MESURE)).toBeGreaterThan(sansEtoile);
   });
 });

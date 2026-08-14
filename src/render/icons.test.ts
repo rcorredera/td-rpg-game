@@ -15,7 +15,7 @@ describe("registre d'icônes UI", () => {
     // Garde-fou : un rôle retiré du registre casse ici plutôt qu'à l'écran, où
     // l'icône manquante rendrait juste une texture verte de remplacement.
     for (const role of ["story", "rift", "armory", "bestiary", "chronicles", "locked", "castle",
-      "star", "starEmpty"]) {
+      "star", "starEmpty", "fullscreen", "fullscreenExit", "chevronDown"]) {
       expect(ICON).toHaveProperty(role);
     }
   });

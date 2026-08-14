@@ -20,7 +20,7 @@ import { ICON, preloadIcons } from "./icons";
 import { ensureBackdropTextures, TEX_VIGNETTE } from "./backdrop";
 import { decorativeEdgeVisible, uiButton, uiPanel } from "./components";
 import {
-  ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets,
+  ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets, uiSkinSetTexture,
   UI_SKIN_BAR, UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS, UI_SKIN_PANEL,
 } from "./uiSkin";
 import { castleAnchor, castleBarBox, CASTLE_HALF } from "./castle";
@@ -523,7 +523,7 @@ export class GameScene extends Phaser.Scene {
       const set = (on: boolean): void => {
         if (on === pressed) return;
         pressed = on;
-        plate.setTexture(on ? keyDown : keyUp);
+        uiSkinSetTexture(this, plate, on ? keyDown : keyUp, plate.width, plate.height);
         movers.forEach((m, i) => { m.y = baseY[i]! + (on ? PRESS_DY : 0); });
       };
       plate.on("pointerdown", () => set(true));

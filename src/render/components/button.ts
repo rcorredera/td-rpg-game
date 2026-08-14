@@ -7,8 +7,8 @@ import { UI_TINT } from "../theme";
 import { CURSOR_POINT, FONT_DISPLAY } from "../ui";
 import { touchSize } from "../viewport";
 import {
-  ensureUiSkinTextures, uiSkinActive, uiSkinInsets, UI_SKIN_BTN, UI_SKIN_BTN_PRESS,
-  UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
+  ensureUiSkinTextures, uiSkinActive, uiSkinFit, uiSkinInsets, uiSkinSetTexture,
+  UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
 } from "../uiSkin";
 
 /** Hauteur minimale d'un bouton habillé par le pack : deux marges de nine-slice
@@ -28,12 +28,24 @@ export interface UiButtonOpts {
    *  ni le plancher de hauteur ni la marge horizontale de l'habillage ne
    *  s'appliquent — sinon un glyphe unique se retrouve dans une plaque de 66×56. */
   compact?: boolean;
+  /**
+   * Clé d'icône du registre (ADR-012), affichée à la place du libellé.
+   *
+   * Un glyphe Unicode tenait ce rôle (« ⛶ » / « ⤡ ») et c'était la même erreur
+   * que les emojis : il est rendu par la police du SYSTÈME. Mesuré, « ⤡ » n'est
+   * pas dans Cinzel, son encre occupe le bas-gauche de sa boîte de texte — et
+   * `setOrigin(0.5)` centre la BOÎTE, pas l'encre. Le bouton paraissait de
+   * travers une fois en plein écran. Une image du registre est centrée par
+   * construction et identique d'un appareil à l'autre.
+   */
+  icon?: string;
 }
 
 export interface UiButton {
   container: Phaser.GameObjects.Container;
   img: Phaser.GameObjects.NineSlice;
-  txt: Phaser.GameObjects.Text;
+  /** Libellé, ou `null` sur un bouton-icône. */
+  txt: Phaser.GameObjects.Text | null;
   /** Dimensions EFFECTIVES après application du plancher tactile — les écrans doivent
    *  espacer leurs éléments d'après ces valeurs, jamais d'après celles demandées. */
   w: number;
@@ -70,9 +82,17 @@ export function uiButton(
   const i = skin ? uiSkinInsets(keyUp) : { left: 14, right: 14, top: 14, bottom: 16 };
   const inset = Math.max(i.left, i.right, i.top, i.bottom);
 
-  const img = scene.add.nineslice(0, 0, keyUp, undefined, touchSize(opts.w), h, i.left, i.right, i.top, i.bottom);
+  const w0 = touchSize(opts.w);
+  const fit = skin ? uiSkinFit(scene, keyUp, w0, h) : i;
+  const img = scene.add.nineslice(0, 0, keyUp, undefined, w0, h, fit.left, fit.right, fit.top, fit.bottom);
   if (!skin && !opts.gold) img.setTint(UI_TINT.btn);
-  const txt = scene.add.text(0, -2, label, {
+
+  // Icône du registre, ou libellé — jamais les deux.
+  const icon = opts.icon
+    ? scene.add.image(0, 0, opts.icon).setOrigin(0.5)
+    : null;
+  if (icon) icon.setDisplaySize(h * 0.42, h * 0.42);
+  const txt = icon ? null : scene.add.text(0, -2, label, {
     fontSize: `${opts.fontSize ?? 15}px`,
     color: opts.color ?? (skin ? "#f7efe0" : opts.gold ? "#3a2c12" : "#f0e6d2"),
     fontFamily: FONT_DISPLAY,
@@ -86,9 +106,11 @@ export function uiButton(
   // Plancher de LARGEUR, pas seulement de hauteur : deux coins de 37 doivent tenir
   // côte à côte, sinon Phaser les fait se chevaucher et la plaque se replie sur
   // elle-même. Un libellé court comme « x1 » passait à deux pixels près.
-  const w = Math.max(img.width, txt.width + (skin && !opts.compact ? 46 : 22), skin ? 2 * inset + 2 : 0);
+  const contenu = (txt?.width ?? 0) + (skin && !opts.compact ? 46 : 22);
+  const w = Math.max(img.width, contenu, skin ? 2 * inset + 2 : 0);
   if (w !== img.width) img.setSize(w, h);
-  c.add([img, txt]);
+  c.add(img);
+  c.add(icon ?? txt!);
   if (opts.disabled || !cb) {
     c.setAlpha(0.55);
     return { container: c, img, txt, w, h };
@@ -113,17 +135,19 @@ export function uiButton(
     ev?.stopPropagation?.();
     downAt = { x: p.x, y: p.y };
     c.setScale(0.96);
-    if (skin) img.setTexture(keyDown);
+    // JAMAIS `setTexture` nu : Phaser garderait les marges de découpe de la
+    // texture précédente, et la planche enfoncée n'a pas la même géométrie.
+    if (skin) uiSkinSetTexture(scene, img, keyDown, w, h);
   });
   img.on("pointerup", (p: Phaser.Input.Pointer, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
     ev?.stopPropagation?.();
     c.setScale(1.04);
-    if (skin) img.setTexture(keyUp);
+    if (skin) uiSkinSetTexture(scene, img, keyUp, w, h);
     const from = downAt;
     downAt = null;
     if (!from || Math.hypot(p.x - from.x, p.y - from.y) > DRAG_SLOP) return;
     cb();
   });
-  img.on("pointerout", () => { downAt = null; if (skin) img.setTexture(keyUp); });
+  img.on("pointerout", () => { downAt = null; if (skin) uiSkinSetTexture(scene, img, keyUp, w, h); });
   return { container: c, img, txt, w, h };
 }

@@ -10,7 +10,7 @@ import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
 import { ICON } from "../icons";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
-import { scaleFont, touchSize } from "../viewport";
+import { touchSize } from "../viewport";
 import { uiFramedPanel, uiPanelPad } from "./panel";
 import { rowColors, type RowState } from "./listRow";
 import { uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
@@ -65,6 +65,60 @@ export function gridLayout(
   };
 }
 
+/**
+ * Nombre de lignes RÉSERVÉES au nom de chapitre. « Les Faubourgs en cendres » en
+ * occupe deux ; au-delà, le nom est tronqué plutôt que de mordre les étoiles.
+ */
+export const NAME_LINES = 2;
+
+export interface LevelCellOpts {
+  /** Hauteur de la cellule. */
+  h: number;
+  /** Marge intérieure, dérivée de l'ornement du panneau (ADR-030). */
+  pad: number;
+  /** Hauteurs MESURÉES, pas les tailles de police demandées : Phaser rend un
+   *  texte nettement plus haut que son `fontSize` (34 pour 26 demandés, relevé). */
+  numH: number;
+  lineH: number;
+  starSize: number;
+  gap: number;
+}
+
+export interface LevelCellBox {
+  numTop: number;
+  nameTop: number;
+  /** Hauteur disponible pour le nom avant la bande d'étoiles. */
+  nameMaxH: number;
+  /** Centre vertical de la rangée d'étoiles. */
+  starCy: number;
+}
+
+/**
+ * Hauteur minimale d'une vignette pour que numéro, nom et étoiles coexistent.
+ *
+ * La bande d'étoiles est réservée MÊME sur un chapitre non conquis : sans quoi
+ * les noms sauteraient d'une vignette à l'autre selon qu'elle est gagnée ou non.
+ */
+export function levelCellMinH(o: Omit<LevelCellOpts, "h">): number {
+  return 2 * o.pad + o.numH + o.gap + NAME_LINES * o.lineH + o.gap + o.starSize;
+}
+
+/**
+ * Pure — empile numéro, nom et étoiles dans une vignette.
+ *
+ * Existe parce que les trois éléments obéissaient à deux règles CONCURRENTES :
+ * le texte s'empilait depuis le haut sans borne, les étoiles étaient épinglées
+ * en bas, et rien ne réservait la bande entre les deux. Mesuré sur le chapitre 2,
+ * le nom finissait 9,2 unités PAR-DESSUS les étoiles dès qu'il passait à deux
+ * lignes. Deux règles qui ne se parlent pas finissent toujours par se croiser.
+ */
+export function levelCellLayout(o: LevelCellOpts): LevelCellBox {
+  const numTop = -o.h / 2 + o.pad;
+  const nameTop = numTop + o.numH + o.gap;
+  const starCy = o.h / 2 - o.pad - o.starSize / 2;
+  return { numTop, nameTop, starCy, nameMaxH: starCy - o.starSize / 2 - o.gap - nameTop };
+}
+
 export interface LevelTile {
   /** Numéro affiché en gros (1-based). */
   index: number;
@@ -98,8 +152,30 @@ export function uiLevelGrid(
   // La tuile doit rester tapable ET loger son contenu : numéro, nom sur deux
   // lignes, étoiles. Les polices sont remontées sur petit écran (ADR-015), donc
   // une hauteur fixe faisait déborder le nom hors de la tuile.
-  const numH = scaleFont(26), nameH = scaleFont(12);
-  const minCellH = Math.max(touchSize(74), numH + nameH * 2 + 30);
+  //
+  // Hauteurs MESURÉES sur des sondes, et non les tailles de police demandées :
+  // Phaser rend un texte ~1,25× plus haut que son `fontSize`, et c'est cet écart
+  // qui manquait au plancher — le nom du chapitre 2 recouvrait les étoiles.
+  // La sonde reçoit la taille DEMANDÉE : `scene.add.text` applique déjà
+  // `scaleFont` (main.ts, ADR-015). La repasser ici la compterait deux fois.
+  const sonde = (size: number, famille: string): number => {
+    const t = scene.add.text(0, 0, "Ag", { fontSize: `${size}px`, fontFamily: famille });
+    const h = t.height;
+    t.destroy();
+    return h;
+  };
+  const numH = sonde(26, FONT_DISPLAY);
+  const lineH = sonde(12, FONT_BODY);
+  const cellGap = 4;
+  // L'étoile suit la POLICE, pas la cellule. Dérivée de `cellH` (× 0,13) elle
+  // entrait dans une boucle : la hauteur de cellule dépend de la bande d'étoiles,
+  // qui dépendrait de la hauteur de cellule. Et une note se lit à côté d'un nom,
+  // donc c'est bien à ce nom qu'elle doit être calée.
+  const starSize = Math.max(12, Math.round(lineH * 0.8));
+  const minCellH = Math.max(
+    touchSize(74),
+    levelCellMinH({ pad: uiPanelPad(scene), numH, lineH, starSize, gap: cellGap }),
+  );
   const layout = gridLayout(tiles.length, availW, maxCols, gap, minCellH, availH);
   const cellH = layout.cellH;
   const container = scene.add.container(0, 0);
@@ -134,21 +210,23 @@ export function uiLevelGrid(
       ).setAlpha(0.4));
     }
 
-    // Numéro et nom empilés d'après leurs hauteurs réelles, le bloc étant remonté
-    // pour laisser la place aux étoiles en bas.
-    const num = scene.add.text(0, 0, String(t.index), {
+    // Numéro, nom et étoiles placés par UN seul calcul : c'est ce qui garantit
+    // qu'ils ne se croisent pas. La marge vient de l'ORNEMENT, pas d'un chiffre —
+    // à 6 unités du bord, le numéro se posait sur la volute d'angle (marge 22).
+    const box = levelCellLayout({
+      h: cellH, pad: uiPanelPad(scene), numH, lineH, starSize, gap: cellGap,
+    });
+    const num = scene.add.text(0, box.numTop, String(t.index), {
       fontSize: "26px", color: t.state === "locked" ? TEXT.dim : TEXT.gold, fontFamily: FONT_DISPLAY,
     }).setOrigin(0.5, 0);
-    const name = scene.add.text(0, 0, t.name, {
+    // `maxLines` : le nom ne peut PLUS déborder de la bande qui lui est réservée,
+    // quelle que soit la longueur qu'on donnera un jour à un chapitre. Sans lui,
+    // la garantie de `levelCellLayout` ne tiendrait qu'aux noms d'aujourd'hui.
+    const name = scene.add.text(0, box.nameTop, t.name, {
       fontSize: "12px", color: colors.titleColor, fontFamily: FONT_BODY,
-      align: "center", wordWrap: { width: layout.cellW - uiPanelPad(scene) * 2 },
+      align: "center", maxLines: NAME_LINES,
+      wordWrap: { width: layout.cellW - uiPanelPad(scene) * 2 },
     }).setOrigin(0.5, 0);
-    // Marge dérivée de l'ORNEMENT, pas d'un chiffre : à 6 unités du bord, le
-    // numéro se posait sur la volute d'angle du panneau ouvragé (marge 22).
-    const pad = uiPanelPad(scene);
-    const top0 = -cellH / 2 + pad;
-    num.setY(top0);
-    name.setY(top0 + num.height + 2);
     cell.add([num, name]);
 
     if (t.state === "done") {
@@ -158,9 +236,9 @@ export function uiLevelGrid(
       // ce qu'on s'interdit pour les emojis. Le pack Tiny Swords n'offre rien qui
       // note un niveau, elles sont donc dessinées pour le projet.
       const s = t.stars ?? 0;
-      const size = Math.max(12, Math.round(cellH * 0.13));
+      const size = starSize;
       const gapS = Math.round(size * 0.28);
-      const y = cellH / 2 - pad - size / 2;
+      const y = box.starCy;
       for (let k = 0; k < 3; k++) {
         const gagnee = k < s;
         // L'étoile non gagnée garde l'OR, en transparence. Teintée avec
