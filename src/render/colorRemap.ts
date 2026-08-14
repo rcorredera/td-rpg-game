@@ -71,3 +71,40 @@ export function remapBufferByLuma(img: PixelBuffer, dark: Rgb, light: Rgb): void
     img.data[i] = out.r; img.data[i + 1] = out.g; img.data[i + 2] = out.b; img.data[i + 3] = out.a;
   }
 }
+
+export interface PixelBox { x: number; y: number; w: number; h: number }
+
+/**
+ * Rectangle opaque le plus ÉTROIT qui contient tout le contenu non transparent
+ * d'un tampon, ou `null` si tout est transparent.
+ *
+ * Sert à retirer la marge que beaucoup de rasters gardent autour de leur motif
+ * réel : `bar-big-fill.png` fait 64×64 mais ne peint que 24 px de haut — sans
+ * ce recadrage, `setDisplaySize` étire la marge vide EN MÊME TEMPS que le
+ * motif, et une jauge censée être pleine sur sa hauteur n'affiche plus qu'un
+ * mince trait (bug réel, ADR-035).
+ */
+export function opaqueBBox(img: PixelBuffer, alphaThreshold: number = 40): PixelBox | null {
+  let minX: number = img.w, minY: number = img.h, maxX: number = -1, maxY: number = -1;
+  for (let y: number = 0; y < img.h; y++) {
+    for (let x: number = 0; x < img.w; x++) {
+      if (img.data[(y * img.w + x) * 4 + 3]! <= alphaThreshold) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return maxX < minX ? null : { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+}
+
+/** Extrait un rectangle d'un tampon dans un nouveau tampon indépendant. */
+export function cropBuffer(img: PixelBuffer, box: PixelBox): PixelBuffer {
+  const out: PixelBuffer = { w: box.w, h: box.h, data: new Uint8ClampedArray(box.w * box.h * 4) };
+  for (let y: number = 0; y < box.h; y++) {
+    const srcStart: number = ((box.y + y) * img.w + box.x) * 4;
+    const dstStart: number = (y * box.w) * 4;
+    out.data.set(img.data.subarray(srcStart, srcStart + box.w * 4), dstStart);
+  }
+  return out;
+}
