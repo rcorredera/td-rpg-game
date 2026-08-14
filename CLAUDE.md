@@ -21,3 +21,7 @@ Jeu tower defense + méta-progression RPG. TypeScript strict + Phaser 3 + Vite, 
 
 ## Commandes
 `npm run dev` (dev), `npm test` (tests core), `npm run build` (typecheck + build).
+
+## Skills Claude (secure-dev-standards, game-ux)
+Ces skills sont versionnés dans un repo dédié : [github.com/rcorredera/claude-skills](https://github.com/rcorredera/claude-skills) (privé), symlinkés dans `~/.claude/skills/` et resynchronisés automatiquement (`git pull`) à chaque lancement de Claude Code.
+**Toute modification de leur contenu se fait dans ce repo** (localement + push, ou éditeur web GitHub) — jamais via l'UI Cowork/claude.ai, pour éviter toute divergence entre les deux copies (déjà arrivé une fois).
