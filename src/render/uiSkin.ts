@@ -19,7 +19,9 @@
 // et importer Phaser comme VALEUR y lit `window` dès le chargement, ce qui casse
 // les tests unitaires purs sous Vitest (cf. `.ai/pitfalls.md`).
 import type Phaser from "phaser";
+import { remapBufferByLuma } from "./colorRemap";
 import { flattenStretched } from "./nineSliceFlatten";
+import type { PixelBuffer } from "./nineSliceFlatten";
 import type { NineSlicePlan, StripPlan } from "./nineSlicePlan";
 import {
   planNineSlice, planStrip, sliceInsets,
@@ -119,6 +121,12 @@ export const UI_SKIN_BTN_PRIMARY = "ts_btn_primary" satisfies UiSkinKey;
 // eslint-disable-next-line @typescript-eslint/typedef -- `satisfies` garde un type littéral précis ; l'annoter le réélargirait.
 export const UI_SKIN_BTN_PRIMARY_PRESS = "ts_btn_primary_press" satisfies UiSkinKey;
 
+/** Remplissage de jauge du pack — hors des grilles `SHEETS`/`STRIPS` : ni un
+ *  nine-slice 3×3, ni une bande à trois tranches, juste un motif RECOLORÉ
+ *  (`ensureBarFillGoldTexture`). */
+const BAR_FILL_FILE: string = "bar-big-fill.png";
+export const UI_SKIN_BAR_FILL_GOLD: string = "ts_bar_fill_gold";
+
 /** Marges réelles, renseignées à la composition. */
 const INSETS: Map<string, Insets> = new Map<string, Insets>();
 
@@ -193,6 +201,7 @@ export function preloadUiSkin(scene: Phaser.Scene): void {
   // Par FICHIER et non par clé : les trois rubans sortent de la même planche,
   // à trois rangées différentes.
   const fichiers: Set<string> = new Set(Object.values({ ...SHEETS, ...STRIPS }).map(s => s.file));
+  fichiers.add(BAR_FILL_FILE);
   for (const f of fichiers) scene.load.image(sheetKey(f), `${SRC}/${f}`);
 }
 
@@ -360,10 +369,41 @@ function ensureStripTextures(scene: Phaser.Scene): void {
   }
 }
 
+/** Dégradé or du remplissage de jauge (ADR-035). Bornes CHOISIES, pas dérivées
+ *  d'un token existant : `ACCENT.gold`/le brun-texte des boutons dorés servent
+ *  un autre usage (bordure, texte) et un dégradé de jauge veut son propre
+ *  contraste sombre→clair. Le clair reprend `hoverTint` des boutons dorés
+ *  (`components/button.ts`) — même famille de reflet. */
+const BAR_FILL_DARK: Rgb = [74, 54, 20];
+const BAR_FILL_LIGHT: Rgb = [255, 242, 207];
+
+/**
+ * Recompose `bar-big-fill.png` (rouge natif du pack) en or, par LUMINANCE
+ * (`colorRemap.ts`) — `setTint` ne peut pas désaturer un rouge saturé (ADR-014).
+ * Idempotent, même contrat que `ensureUiSkinTextures`.
+ */
+function ensureBarFillGoldTexture(scene: Phaser.Scene): void {
+  if (scene.textures.exists(UI_SKIN_BAR_FILL_GOLD)) return;
+  const src: SheetPixels | null = sheetPixels(scene, BAR_FILL_FILE);
+  if (!src) return;
+  const { img, data } = src;
+  const buf: PixelBuffer = { w: img.width, h: img.height, data: new Uint8ClampedArray(data) };
+  remapBufferByLuma(buf, BAR_FILL_DARK, BAR_FILL_LIGHT);
+  const tex: Phaser.Textures.CanvasTexture | null = scene.textures.createCanvas(UI_SKIN_BAR_FILL_GOLD, buf.w, buf.h);
+  if (!tex) return;
+  const ctx: CanvasRenderingContext2D = tex.getContext();
+  const out: ImageData = ctx.createImageData(buf.w, buf.h);
+  out.data.set(buf.data);
+  ctx.putImageData(out, 0, 0);
+  tex.refresh();
+  tex.setFilter(NEAREST);
+}
+
 /** Recompose les nine-slice. Idempotent : les composants l'appellent à chaque
  *  usage, le premier fait le travail et les suivants sortent aussitôt. */
 export function ensureUiSkinTextures(scene: Phaser.Scene): void {
   ensureStripTextures(scene);
+  ensureBarFillGoldTexture(scene);
   for (const [key, sheet] of Object.entries(SHEETS) as [string, Sheet][]) {
     if (scene.textures.exists(key)) continue;
     const src: SheetPixels | null = sheetPixels(scene, sheet.file);

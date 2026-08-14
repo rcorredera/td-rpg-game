@@ -34,7 +34,7 @@ export function buildHome(ctx: MenuCtx): void {
     },
     { icon: EMBLEM.armory, raw: true, title: "Armurerie", sub: "Arsenal · Forge · Héros", view: "shop" },
     { icon: ICON.bestiary, title: "Bestiaire", sub: `${ctx.profileSvc.get().bestiary.length} / ${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
-    { icon: ICON.chronicles, title: "Chroniques", sub: "Vos hauts faits", view: "chronicles" },
+    { icon: EMBLEM.chronicles, raw: true, title: "Chroniques", sub: "Vos hauts faits", view: "chronicles" },
   ];
   // Deux rangs de tuiles, disposés d'après la largeur RÉELLE de l'écran (ADR-025).
   // Avant : cinq cartes identiques dans une colonne de 540 unités, quand le paysage
