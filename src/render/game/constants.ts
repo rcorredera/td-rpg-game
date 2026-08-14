@@ -20,10 +20,6 @@ export const C = {
 export const GAME_W: number = BATTLEFIELD.w;
 export const GAME_H: number = BATTLEFIELD.h;
 
-/** Descente du libellé quand un bouton du HUD est enfoncé, en unités logiques.
- *  Cale sur le décalage que la planche « pressed » du pack applique à la plaque. */
-export const PRESS_DY: number = 3;
-
 /** Libellé posé sur une plaque du pack. Crème plutôt que doré : mesuré, l'or ne
  *  garde que 0,26 d'écart de luminance sur le teal contre 0,43 pour le crème. */
 export const HUD_LABEL: string = "#f7efe0";

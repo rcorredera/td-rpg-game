@@ -9,13 +9,13 @@ import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, UI_TINT } from "../ui";
 import { scaleFont, touchSize, viewport } from "../viewport";
 import type { Viewport } from "../viewport";
 import { ICON } from "../icons";
-import { uiButton } from "../components";
+import { skinPressVisual, uiButton } from "../components";
 import {
-  ensureUiSkinTextures, uiSkinActive, uiSkinInsets, uiSkinSetTexture,
+  ensureUiSkinTextures, uiSkinActive, uiSkinInsets,
   UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
 } from "../uiSkin";
 import type { Insets } from "../nineSlicePlan";
-import { C, GAME_W, HUD_LABEL, PRESS_DY } from "./constants";
+import { C, GAME_W, HUD_LABEL } from "./constants";
 import type { HudBuildCtx, HudKey } from "./types";
 
 /** Actions déclenchées par les boutons du HUD ; la logique (mode sort, FX de
@@ -99,13 +99,12 @@ export class Hud {
     movers: readonly Phaser.GameObjects.Components.Transform[],
   ): void {
     if (!ctx.skin) return;
-    const baseY: number[] = movers.map(m => m.y);
+    const baseY: readonly number[] = movers.map(m => m.y);
     let pressed: boolean = false;
     const set = (on: boolean): void => {
       if (on === pressed) return;
       pressed = on;
-      uiSkinSetTexture(this.scene, plate, on ? keyDown : keyUp, plate.width, plate.height);
-      movers.forEach((m, i) => { m.y = baseY[i]! + (on ? PRESS_DY : 0); });
+      skinPressVisual(this.scene, plate, keyUp, keyDown, movers, baseY, on);
     };
     plate.on("pointerdown", () => set(true));
     plate.on("pointerup", () => set(false));
