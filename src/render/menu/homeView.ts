@@ -32,7 +32,7 @@ export function buildHome(ctx: MenuCtx): void {
       sub: storyDone ? "Bientôt" : "Achevez l'Histoire",
       view: "rifts", rift: true,
     },
-    { icon: ICON.armory, title: "Armurerie", sub: "Arsenal · Forge · Héros", view: "shop" },
+    { icon: EMBLEM.armory, raw: true, title: "Armurerie", sub: "Arsenal · Forge · Héros", view: "shop" },
     { icon: ICON.bestiary, title: "Bestiaire", sub: `${ctx.profileSvc.get().bestiary.length} / ${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
     { icon: ICON.chronicles, title: "Chroniques", sub: "Vos hauts faits", view: "chronicles" },
   ];
@@ -57,7 +57,7 @@ export function buildHome(ctx: MenuCtx): void {
     const box: TileBox = layout.secondary[i]!;
     p.add(uiTile(ctx.scene, box.x, box.y, {
       w: box.w, h: box.h,
-      icon: e.icon, title: e.title, sub: e.sub,
+      icon: e.icon, rawIcon: e.raw, title: e.title, sub: e.sub,
       titleColor: TEXT.light,
       ribbonTone: e.rift ? "rift" : "normal",
       iconColor: e.rift ? (storyDone ? 0xb07cc6 : ACCENT.locked) : ACCENT.goldSoft,

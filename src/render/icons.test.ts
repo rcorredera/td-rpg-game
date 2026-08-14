@@ -14,18 +14,21 @@ describe("registre d'icônes UI", () => {
   it("couvre les rôles attendus par les écrans", () => {
     // Garde-fou : un rôle retiré du registre casse ici plutôt qu'à l'écran, où
     // l'icône manquante rendrait juste une texture verte de remplacement.
-    for (const role of ["story", "rift", "armory", "bestiary", "chronicles", "locked", "castle",
+    // `armory` vit dans EMBLEM (couvert ci-dessous) : c'est un raster du pack,
+    // pas une silhouette teintable.
+    for (const role of ["story", "rift", "bestiary", "chronicles", "locked", "castle",
       "star", "starEmpty", "fullscreen", "fullscreenExit", "chevronDown"]) {
       expect(ICON).toHaveProperty(role);
     }
   });
 
-  it("sépare les emblèmes RASTER des icônes", () => {
+  it("couvre les emblèmes RASTER attendus, séparés des icônes", () => {
     // Les deux registres ne se mélangent pas : une icône est une silhouette
     // monochrome que le rendu teinte pour porter un état, un emblème arrive du
     // pack avec ses couleurs. Les préfixer distinctement empêche de teinter l'un
     // en croyant manipuler l'autre.
-    const keys: "ts_castle"[] = Object.values(EMBLEM);
+    for (const role of ["bastion", "armory"]) expect(EMBLEM).toHaveProperty(role);
+    const keys: ("ts_castle" | "ts_shield")[] = Object.values(EMBLEM);
     expect(new Set(keys).size).toBe(keys.length);
     for (const k of keys) expect(k).toMatch(/^ts_[a-z]+$/);
     expect(keys.some(k => Object.values(ICON).includes(k as never))).toBe(false);

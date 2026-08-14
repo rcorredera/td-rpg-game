@@ -24,6 +24,15 @@ const SOURCES: Record<string, string> = import.meta.glob("/src/**/*.ts", {
   query: "?raw", import: "default", eager: true,
 }) as Record<string, string>;
 
+/**
+ * Hors de `src/` : le PWA manifest (icône d'installation) cite un asset sans
+ * passer par un `scene.load.*` — un fichier qui n'y apparaît QUE parce que ces
+ * sources sont ignorées serait un faux orphelin.
+ */
+const OTHER_SOURCES: Record<string, string> = import.meta.glob(
+  ["/index.html", "/public/manifest.webmanifest"], { query: "?raw", import: "default", eager: true },
+) as Record<string, string>;
+
 /** Fichiers présents sous public/assets (clés seulement : non-eager, rien n'est chargé). */
 const ASSET_FILES: string[] = Object.keys(import.meta.glob("/public/assets/**/*"));
 
@@ -43,6 +52,7 @@ const NEVER_LOADED: RegExp = /(?:License[^/]*\.txt|README\.md)$/i;
 const CODE: string = Object.entries(SOURCES)
   .filter(([p]) => !p.endsWith("assets.integrity.test.ts"))
   .map(([, src]) => src)
+  .concat(Object.values(OTHER_SOURCES))
   .join("\n");
 
 const basename = (p: string) => p.slice(p.lastIndexOf("/") + 1);
