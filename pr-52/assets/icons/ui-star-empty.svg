@@ -1,5 +1,0 @@
-<!-- Étoile de chapitre, creuse — note non obtenue. Même silhouette, évidée en evenodd
-     pour que les deux états se superposent exactement à l'écran. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path fill="#fff" fill-rule="evenodd" d="M32 4 39.3 21.9 58.6 23.3 43.9 35.9 48.5 54.7 32 44.5 15.5 54.7 20.1 35.9 5.4 23.3 24.7 21.9ZM32 14.6 36.5 25.7 48.5 26.6 39.4 34.4 42.2 46.1 32 39.8 21.8 46.1 24.6 34.4 15.5 26.6 27.5 25.7Z"/>
-</svg>
