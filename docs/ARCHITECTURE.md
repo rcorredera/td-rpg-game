@@ -71,8 +71,9 @@ ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, pré
 (`story`, `bestiary`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
 qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji
 dans l'UI : leur rendu dépend de l'OS et leurs couleurs cassent la palette. `EMBLEM` est le registre
-frère pour les rasters du pack : un rôle aussi, mais jamais teinté — l'armurerie porte désormais le
-bouclier `tiny-swords/ui/icon-06.png` (`ts_shield`) plutôt qu'une silhouette maison.
+frère pour les rasters du pack : un rôle aussi, mais jamais teinté — l'armurerie porte le bouclier
+`icon-06.png` (`ts_shield`) et les Chroniques les épées croisées `icon-05.png` (`ts_swords`), tous
+deux issus de la réserve d'icônes-ressources, plutôt que les silhouettes maison d'origine.
 
 ## Scènes (ADR-034)
 

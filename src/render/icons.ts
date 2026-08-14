@@ -17,7 +17,6 @@ export const ICON = {
   story: "ui_scroll",
   rift: "ui_portal",
   bestiary: "ui_book",
-  chronicles: "ui_banner",
   locked: "ui_lock",
   castle: "ui_castle",
   // Note de chapitre. Elle s'affichait en glyphes Unicode « ★ / ☆ », donc rendue
@@ -44,7 +43,6 @@ const FILES: Record<IconKey, string> = {
   story: "ui-scroll.svg",
   rift: "ui-portal.svg",
   bestiary: "ui-book.svg",
-  chronicles: "ui-banner.svg",
   locked: "ui-lock.svg",
   castle: "ui-castle.svg",
   star: "ui-star.svg",
@@ -62,16 +60,17 @@ const FILES: Record<IconKey, string> = {
  * couleurs et son relief ; le teinter reviendrait à les jeter.
  */
 // eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
-export const EMBLEM = { bastion: "ts_castle", armory: "ts_shield" } as const;
+export const EMBLEM = { bastion: "ts_castle", armory: "ts_shield", chronicles: "ts_swords" } as const;
 
 export type EmblemKey = keyof typeof EMBLEM;
 
 const EMBLEM_FILES: Record<EmblemKey, string> = {
   bastion: "tiny-swords/buildings/castle-blue.png",
-  // Bouclier des icônes-ressources du pack (réserve ADR-032/README) : remplace,
-  // pour la tuile Armurerie, la silhouette maison — gardée pour la seule icône
-  // d'installation PWA (manifest.webmanifest), où sa netteté vectorielle compte.
+  // Icônes-ressources du pack (réserve ADR-032/README) : remplacent les
+  // silhouettes maison, gardées pour la seule icône d'installation PWA
+  // (manifest.webmanifest), où leur netteté vectorielle compte.
   armory: "tiny-swords/ui/icon-06.png",
+  chronicles: "tiny-swords/ui/icon-05.png",
 };
 
 /**

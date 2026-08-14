@@ -11,7 +11,7 @@ les tests — c'est voulu.
 | Dossier | Contenu | Auteur | Licence |
 |---|---|---|---|
 | `skin-medieval/` | **SKIN ACTIF du monde** — 10 ennemis, héros, 3 tours × 2 paliers, Bastion, dalle (19 SVG) | **projet Bastion** (ADR-016) | maison |
-| `icons/ui-*.svg` | Icônes d'UI — parchemin, livre, bannière, portail, cadenas, donjon ; `ui-shield.svg` ne sert plus qu'à l'icône d'installation PWA (`manifest.webmanifest`), le jeu affiche le bouclier du pack | **projet Bastion** (ADR-012) | maison |
+| `icons/ui-*.svg` | Icônes d'UI — parchemin, livre, portail, cadenas, donjon ; `ui-shield.svg` ne sert plus qu'à l'icône d'installation PWA (`manifest.webmanifest`), le jeu affiche le bouclier du pack | **projet Bastion** (ADR-012) | maison |
 | `icons/` (3 autres) | Icônes de sorts : `tornado`, `flying-flag`, `arrow-cluster` | **Lorc** — game-icons.net | **CC BY 3.0** ⚠ crédit obligatoire |
 | `tiny-swords/` | UI 9-slice, bâtiments, FX, décors — voir plus bas | **Pixel Frog** — pixelfrog-assets.itch.io | **CC0** |
 | `kenney-td/` | `sheet.png` seule (planche 64×64, 23 colonnes) — ne sert plus qu'aux FX | Kenney (kenney.nl) | **CC0** |
