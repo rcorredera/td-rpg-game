@@ -26,6 +26,15 @@ export const ICON = {
   // la palette. Le pack Tiny Swords n'offre rien de tel, on la dessine donc.
   star: "ui_star",
   starEmpty: "ui_star_empty",
+  // Bascule plein écran. Elle s'affichait en « ⛶ / ⤡ », donc rendue par la police
+  // du SYSTÈME — même faute que les glyphes d'étoiles ci-dessus, avec un effet
+  // supplémentaire : « ⤡ » n'existe pas dans Cinzel, son encre occupe le
+  // bas-gauche de sa boîte de texte et `setOrigin(0.5)` centre la boîte, pas
+  // l'encre. Le bouton paraissait de travers une fois le plein écran actif.
+  fullscreen: "ui_fullscreen",
+  fullscreenExit: "ui_fullscreen_exit",
+  // Affordance de défilement : « il y a plus à voir sous cette liste ».
+  chevronDown: "ui_chevron_down",
 } as const;
 
 export type IconKey = keyof typeof ICON;
@@ -41,6 +50,9 @@ const FILES: Record<IconKey, string> = {
   castle: "ui-castle.svg",
   star: "ui-star.svg",
   starEmpty: "ui-star-empty.svg",
+  fullscreen: "ui-fullscreen.svg",
+  fullscreenExit: "ui-fullscreen-exit.svg",
+  chevronDown: "ui-chevron-down.svg",
 };
 
 /**

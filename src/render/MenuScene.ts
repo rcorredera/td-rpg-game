@@ -118,8 +118,11 @@ export class MenuScene extends Phaser.Scene {
     // bouton — il ne peut pas être déclenché au chargement.
     if (this.scale.fullscreen.available) {
       const s = touchSize(38);
-      this.fsBtn = uiButton(this, viewport().safeRight - s / 2 - 10, s / 2 + 10,
-        this.scale.isFullscreen ? "⤡" : "⛶", { w: s, h: s, fontSize: 17, compact: true },
+      // Icône du REGISTRE et non un glyphe Unicode : « ⤡ » n'est pas dans Cinzel,
+      // il tombait sur la police du système et son encre, décentrée dans la boîte
+      // de texte, faisait paraître le bouton de travers en plein écran (ADR-012).
+      this.fsBtn = uiButton(this, viewport().safeRight - s / 2 - 10, s / 2 + 10, "",
+        { w: s, h: s, compact: true, icon: this.scale.isFullscreen ? ICON.fullscreenExit : ICON.fullscreen },
         () => {
           if (this.scale.isFullscreen) this.scale.stopFullscreen();
           else this.scale.startFullscreen();

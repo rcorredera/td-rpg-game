@@ -135,6 +135,24 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   notes de chapitre passent des glyphes Unicode « ★/☆ » — rendus par la police système, donc hors
   palette — à deux icônes du registre. Le pack n'offre RIEN qui note un niveau, elles sont
   dessinées pour le projet.
+- **État enfoncé, défilement, vignettes (ADR-032) — FAIT** : quatre retours de playtest mobile,
+  quatre causes mesurées. (1) **Tout bouton virait au noir sous le doigt** — deux défauts
+  superposés : `planNineSlice` prélevait la bande du milieu dans la GOUTTIÈRE transparente de la
+  planche dès que la pièce est gardée entière (le cas des planches enfoncées), et `setTexture`
+  garde les marges de découpe de l'ancienne texture alors que la planche enfoncée compose en 48×41
+  contre 52×52 au repos. Point d'entrée unique `uiSkinSetTexture`, gardé par un test de source.
+  (2) **Aucune indication de défilement nulle part** : la gouttière se dessinait à `x + w + 4`, or
+  les fenêtres du campement occupent toute la largeur — 4 unités hors du viewport. Rentrée, plus
+  un chevron animé sur le bord vers lequel il reste du contenu. (3) **Le nom du chapitre 2
+  recouvrait ses étoiles de 9,2 unités** : deux règles de placement concurrentes, plus un plancher
+  de cellule calculé sur les tailles de police demandées et non mesurées. `levelCellLayout` (pur)
+  place tout d'un seul calcul, `maxLines: 2` borne le nom. (4) **Le bouton « quitter le plein
+  écran » paraissait de travers** : glyphe « ⤡ » absent de Cinzel, donc police système, encre
+  décentrée dans sa boîte. Passé au registre (ADR-012), avec `chevronDown` au passage.
+  ⚠ **Trois icônes DESSINÉES faute d'équivalent dans les packs** — inventaire fait : les 12 icônes
+  Tiny Swords sont des ressources, `kenney-ui` n'a que deux boutons et un panneau ; aucune flèche,
+  aucun chevron, aucun symbole de plein écran. À remplacer en priorité quand des assets arrivent
+  (une ligne par icône dans `render/icons.ts`).
 - **Marges intérieures et abscisses en dur (suite ADR-030) — FAIT** : le contenu se posait sur les
   volutes d'angle (numéro de chapitre à 6 unités du bord pour une marge de 22) et les colonnes
   des Chroniques/du Bestiaire/des Failles gardaient des abscisses en dur héritées du monde 800 —

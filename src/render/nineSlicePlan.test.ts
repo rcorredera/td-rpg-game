@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fitInsets, MID, planNineSlice, planStrip, type SheetFrame } from "./nineSlicePlan";
+import {
+  fitInsets, MID, planNineSlice, planStrip, sliceInsets, type SheetFrame,
+} from "./nineSlicePlan";
 
 // ============================================================
 // Ce fichier existe parce que son absence a coûté cinq allers-retours de
@@ -18,6 +20,26 @@ const BUTTON: SheetFrame = {
   left: [19, 128, 256], right: [64, 192, 301],
   top: [17, 128, 256], bottom: [64, 192, 303],
 };
+/**
+ * Bouton ENFONCÉ (`btn-big-blue-pressed.png`), relevé sur la planche : le
+ * bouton y est plus plat (36 px de haut en rangée 0 contre 49 en rangée 2) et
+ * son dessin d'angle court sur 19 px — donc la pièce est gardée entière.
+ *
+ * C'est ce cas qui manquait au fichier, et il valait une plaque noire à chaque
+ * appui : la bande du milieu était prélevée à x=64, dans la gouttière vide qui
+ * sépare la colonne 0 (14→64) de la colonne 1 (128→192).
+ */
+const BUTTON_PRESSED: SheetFrame = {
+  left: [14, 128, 256], right: [64, 192, 306],
+  top: [28, 128, 256], bottom: [64, 192, 305],
+};
+
+/** Les trois planches réelles, avec la profondeur d'angle mesurée sur chacune. */
+const PLANCHES = [
+  ["parchemin", PAPER, 3],
+  ["bouton", BUTTON, 37],
+  ["bouton enfoncé", BUTTON_PRESSED, 19],
+] as const;
 
 describe("plan de découpe d'un nine-slice", () => {
   it("rogne à 1:1 quand le dessin d'angle est court", () => {
@@ -41,35 +63,63 @@ describe("plan de découpe d'un nine-slice", () => {
     // C'est CE contrat qui permet aux boutons de rester petits : sans lui, la
     // marge suivait l'art et j'ai fini par grossir les boutons à 76 pour
     // compenser — en tordant tout le reste de l'interface au passage.
-    for (const [frame, detail] of [[PAPER, 3], [BUTTON, 37]] as const) {
+    for (const [nom, frame, detail] of PLANCHES) {
       for (const cible of [12, 16, 22, 24]) {
         const p = planNineSlice(frame, detail, cible);
         for (const [cote, v] of Object.entries(p.insets)) {
-          expect(v, `${cote} pour une cible de ${cible}`).toBeLessThanOrEqual(cible);
+          expect(v, `${nom} : ${cote} pour une cible de ${cible}`).toBeLessThanOrEqual(cible);
         }
       }
     }
   });
 
-  it("prend chaque bande CONTIGUË au coin qu'elle prolonge", () => {
-    // LA propriété qui manquait. Une bande prélevée ailleurs (au centre de la
-    // pièce du milieu, comme je le faisais) ne raccorde pas : mesuré à l'écran,
-    // le bord du remplissage sautait de 9 à 7 px entre le coin et la bande, ce
-    // qui se lit comme un arc de coin détaché une fois la bande étirée.
-    for (const [frame, detail] of [[PAPER, 3], [BUTTON, 37]] as const) {
+  it("prend chaque bande CONTIGUË au coin quand le coin est rogné", () => {
+    // Une bande prélevée ailleurs (au centre de la pièce du milieu) ne raccorde
+    // pas : mesuré à l'écran, le bord du remplissage sautait de 9 à 7 px entre
+    // le coin et la bande, ce qui se lit comme un arc de coin détaché une fois
+    // la bande étirée.
+    //
+    // La propriété ne vaut QUE si le coin est rogné : il reste alors du dessin
+    // après lui dans la même pièce. Quand la pièce est gardée entière, il n'y a
+    // par définition plus rien de contigu — la propriété devient impossible, et
+    // c'est le test suivant qui prend le relais.
+    for (const [nom, frame, detail] of PLANCHES) {
       const p = planNineSlice(frame, detail, 22);
+      if (p.scale !== 1) continue; // pièce entière : cf. test suivant
       const at = (r: number, c: number) => p.rects[r * 3 + c]!;
 
       for (const r of [0, 1, 2]) {
         // bande du milieu = juste après le coin gauche, même bande verticale
-        expect(at(r, 1).sx, `rangée ${r} : bande décollée du coin gauche`)
+        expect(at(r, 1).sx, `${nom}, rangée ${r} : bande décollée du coin gauche`)
           .toBe(at(r, 0).sx + at(r, 0).sw);
-        expect(at(r, 1).sy, `rangée ${r} : bande décalée verticalement`).toBe(at(r, 0).sy);
+        expect(at(r, 1).sy, `${nom}, rangée ${r} : bande décalée verticalement`).toBe(at(r, 0).sy);
       }
       for (const c of [0, 1, 2]) {
-        expect(at(1, c).sy, `colonne ${c} : bande décollée du coin haut`)
+        expect(at(1, c).sy, `${nom}, colonne ${c} : bande décollée du coin haut`)
           .toBe(at(0, c).sy + at(0, c).sh);
-        expect(at(1, c).sx, `colonne ${c} : bande décalée horizontalement`).toBe(at(0, c).sx);
+        expect(at(1, c).sx, `${nom}, colonne ${c} : bande décalée horizontalement`).toBe(at(0, c).sx);
+      }
+    }
+  });
+
+  it("prélève chaque découpe DANS une pièce, jamais dans la gouttière", () => {
+    // LA propriété universelle, celle qui vaut pour les deux branches — et celle
+    // dont l'absence a coûté un bug visible : sur les planches enfoncées, le coin
+    // occupe toute sa pièce, donc « prolonger le coin » prélevait à x=64, dans le
+    // vide transparent qui sépare la colonne 0 (14→64) de la colonne 1 (128→192).
+    // Résultat à l'écran : une plaque noire à chaque appui de bouton.
+    //
+    // Contrôler seulement les bornes EXTÉRIEURES de la planche ne suffit pas :
+    // la gouttière est à l'intérieur de ces bornes.
+    for (const [nom, frame, detail] of PLANCHES) {
+      for (const cible of [12, 16, 22, 24]) {
+        const p = planNineSlice(frame, detail, cible);
+        for (const q of p.rects) {
+          const colonne = [0, 1, 2].some(c => q.sx >= frame.left[c]! && q.sx + q.sw <= frame.right[c]!);
+          const rangee = [0, 1, 2].some(r => q.sy >= frame.top[r]! && q.sy + q.sh <= frame.bottom[r]!);
+          expect(colonne, `${nom} (cible ${cible}) : découpe x ${q.sx}→${q.sx + q.sw} hors pièce`).toBe(true);
+          expect(rangee, `${nom} (cible ${cible}) : découpe y ${q.sy}→${q.sy + q.sh} hors pièce`).toBe(true);
+        }
       }
     }
   });
@@ -77,7 +127,7 @@ describe("plan de découpe d'un nine-slice", () => {
   it("assemble sans trou ni recouvrement", () => {
     // Les 9 découpes doivent paver exactement la texture : un trou laisse du
     // transparent au milieu du panneau, un recouvrement double le contour.
-    for (const [frame, detail] of [[PAPER, 3], [BUTTON, 37]] as const) {
+    for (const [, frame, detail] of PLANCHES) {
       const p = planNineSlice(frame, detail, 22);
       const couvert = new Set<string>();
       for (const q of p.rects) {
@@ -156,13 +206,35 @@ describe("plan de découpe d'un nine-slice", () => {
   });
 
   it("ne prélève jamais hors de la planche", () => {
-    for (const [frame, detail] of [[PAPER, 3], [BUTTON, 37]] as const) {
+    for (const [, frame, detail] of PLANCHES) {
       const p = planNineSlice(frame, detail, 22);
       for (const q of p.rects) {
         expect(q.sx).toBeGreaterThanOrEqual(frame.left[0]!);
         expect(q.sx + q.sw).toBeLessThanOrEqual(frame.right[2]!);
         expect(q.sy).toBeGreaterThanOrEqual(frame.top[0]!);
         expect(q.sy + q.sh).toBeLessThanOrEqual(frame.bottom[2]!);
+      }
+    }
+  });
+
+  it("ne réserve jamais plus de marge que la texture n'en possède", () => {
+    // Cas RÉEL, mesuré : le bouton au repos compose en 52×52 avec 22 de marge,
+    // sa variante enfoncée en 48×41. Reposer 22 en haut ET en bas sur 41 px de
+    // texture fait se recouvrir les tranches — plaque noire à l'appui. La borne
+    // par la BOÎTE affichée (190×61 ici, largement suffisante) ne l'attrape pas :
+    // c'est la texture qui est trop petite, pas le bouton.
+    const voulu = { left: 22, right: 22, top: 22, bottom: 22 };
+    const i = sliceInsets(voulu, { w: 190, h: 61 }, { w: 48, h: 41 });
+    expect(i.top + i.bottom, "les tranches se recouvrent").toBeLessThan(41);
+    expect(i.left + i.right).toBeLessThan(48);
+
+    // Et la garantie générale : quelles que soient la boîte et la texture, les
+    // marges tiennent dans les DEUX.
+    for (const tex of [{ w: 48, h: 41 }, { w: 52, h: 52 }, { w: 20, h: 14 }]) {
+      for (const box of [{ w: 190, h: 61 }, { w: 30, h: 30 }, { w: 600, h: 400 }]) {
+        const f = sliceInsets(voulu, box, tex);
+        expect(f.left + f.right).toBeLessThan(Math.min(box.w, tex.w));
+        expect(f.top + f.bottom).toBeLessThan(Math.min(box.h, tex.h));
       }
     }
   });

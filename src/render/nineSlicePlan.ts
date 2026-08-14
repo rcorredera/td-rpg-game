@@ -139,6 +139,24 @@ export function fitInsets(insets: Insets, w: number, h: number): Insets {
 }
 
 /**
+ * Marges effectives d'un nine-slice : bornées par la boîte affichée ET par la
+ * TEXTURE elle-même.
+ *
+ * La seconde borne manquait. Les planches du pack ne composent pas toutes à la
+ * même taille — `btn-big-blue` donne 52×52 (marges 22), sa variante enfoncée
+ * 48×41 (marges 22 et 16), parce que le bouton enfoncé est plus plat. Poser
+ * 22 de marge haute ET basse sur une texture de 41 fait se recouvrir les
+ * tranches : la plaque rendait un damier noir à chaque appui.
+ *
+ * Un nine-slice ne peut jamais réserver plus de dessin qu'il n'en possède.
+ */
+export function sliceInsets(
+  insets: Insets, box: { w: number; h: number }, tex: { w: number; h: number },
+): Insets {
+  return fitInsets(insets, Math.min(box.w, tex.w), Math.min(box.h, tex.h));
+}
+
+/**
  * Décide où découper, à partir d'UNE mesure : la profondeur du dessin d'angle.
  *
  * Un coin doit contenir TOUT son dessin, sinon la courbe est tronquée et ne
@@ -180,18 +198,34 @@ export function planNineSlice(
   const dx = [0, cw[0]!, cw[0]! + cw[1]!];
   const dy = [0, rh[0]!, rh[0]! + rh[1]!];
 
+  // Où prélever la bande du milieu — et c'est la branche qui décide, pas un
+  // réglage :
+  //
+  // - ROGNÉ : contiguë au coin, dans la MÊME pièce. La bande du haut commence
+  //   exactement là où finit le coin haut-gauche, donc la continuité est vraie
+  //   par construction. Prélevée ailleurs, elle ne raccorde pas — mesuré à
+  //   l'écran sur le parchemin, le bord du remplissage sautait de 9 à 7 px.
+  // - PIÈCE ENTIÈRE : il ne RESTE rien de contigu. Le coin occupe déjà toute sa
+  //   pièce, et « prolonger » revient à prélever dans la gouttière transparente
+  //   qui sépare les pièces de la planche. C'est exactement ce qui rendait les
+  //   planches enfoncées (`btn-*-pressed`, dessin d'angle sur 19 px) noires à
+  //   l'appui. On prélève alors dans la pièce que l'artiste a dessinée pour ça :
+  //   celle du milieu de la planche, en son centre.
+  const midX = croppable
+    ? frame.left[0]! + cw[0]!
+    : Math.round((frame.left[1]! + frame.right[1]!) / 2 - MID / 2);
+  const midY = croppable
+    ? frame.top[0]! + rh[0]!
+    : Math.round((frame.top[1]! + frame.bottom[1]!) / 2 - MID / 2);
+
   const rects: PieceRect[] = [];
   for (let r = 0; r < 3; r++) {
     for (let c = 0; c < 3; c++) {
-      // Chaque bande est prise CONTIGUË au coin qu'elle prolonge : la bande du
-      // haut commence exactement là où finit le coin haut-gauche, etc. C'est ce
-      // qui rend la continuité vraie par construction — et c'est la propriété
-      // que le test vérifie.
       const sx = c === 0 ? frame.left[0]!
-        : c === 1 ? frame.left[0]! + cw[0]!
+        : c === 1 ? midX
         : frame.right[2]! - cw[2]!;
       const sy = r === 0 ? frame.top[0]!
-        : r === 1 ? frame.top[0]! + rh[0]!
+        : r === 1 ? midY
         : frame.bottom[2]! - rh[2]!;
       // La colonne du milieu s'étire en X, la rangée du milieu en Y — les quatre
       // coins ne s'étirent jamais et gardent donc l'art intact.
