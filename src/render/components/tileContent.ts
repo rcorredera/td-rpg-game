@@ -26,6 +26,13 @@ export interface TileContentInput {
   maxGlyph: number;
   /** Hauteur réservée en pied (jauge d'avancement), 0 s'il n'y en a pas. */
   footerH: number;
+  /**
+   * Marge intérieure MINIMALE imposée par l'habillage (`uiPanelPad`).
+   *
+   * La marge proportionnelle seule vaut 15 sur une tuile de 167, alors que la
+   * volute d'angle du panneau ouvragé en occupe 22 : le contenu se posait dessus.
+   */
+  minPad?: number;
 }
 
 /** Positions, relatives au CENTRE de la tuile (repère d'un container Phaser). */
@@ -58,7 +65,7 @@ function clamp(v: number, lo: number, hi: number): number {
  * et c'est au calcul de disposition (`hubLayout`, `gridLayout`) de la corriger.
  */
 export function composeTile(o: TileContentInput): TileContentBox {
-  const pad = clamp(o.h * 0.09, 8, 22);
+  const pad = Math.max(clamp(o.h * 0.09, 8, 22), o.minPad ?? 0);
   const gap = clamp(o.h * 0.035, 4, 10);
   const subGap = gap * 0.5;
 

@@ -13,7 +13,8 @@ import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
 import { ICON_RASTER_PX } from "../icons";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
-import { uiFramedPanel } from "./panel";
+import { uiFramedPanel, uiPanelPad } from "./panel";
+import { uiRibbon, uiRibbonAvailable, uiRibbonHeight, type RibbonTone } from "./ribbon";
 import { composeTile } from "./tileContent";
 
 export interface UiTileOpts {
@@ -29,6 +30,8 @@ export interface UiTileOpts {
   primary?: boolean;
   /** Avancement 0..1 — dessine une jauge en pied de tuile. */
   progress?: number;
+  /** Couleur du ruban de titre — le sens, pas le goût. */
+  ribbonTone?: RibbonTone;
   /** Verrouillée : plus de relief au survol, plus de curseur main. */
   locked?: boolean;
   onSelect: () => void;
@@ -66,13 +69,26 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
       }).setOrigin(0.5, 0)
     : null;
 
+  // Le titre se pose sur un RUBAN du pack, dans les mêmes couleurs que les
+  // boutons — c'est ce qui raccrochait visuellement les tuiles aux commandes.
+  // Sa hauteur remplace celle du texte dans la composition, sinon le ruban
+  // déborderait du bloc calculé.
+  // Borné à un quart de la tuile : à sa taille native (54), le ruban mangeait la
+  // moitié de la zone utile d'une tuile secondaire et l'emblème tombait à 45.
+  const RIBBON_SHARE = 0.26;
+  const ribbonH = uiRibbonAvailable(scene)
+    ? Math.min(uiRibbonHeight(scene), h * RIBBON_SHARE)
+    : 0;
+  const titleBlockH = Math.max(title.height, ribbonH);
+
   // Empilement d'après les hauteurs RÉELLES (les polices sont remontées sur petit
   // écran, ADR-015) et d'après la place DISPONIBLE : `composeTile` est pur et
   // testé, ce module ne fait que poser les objets aux positions qu'il renvoie.
   const barH = 6;
   const box = composeTile({
-    w, h, titleH: title.height, subH: sub?.height ?? 0,
+    w, h, titleH: titleBlockH, subH: sub?.height ?? 0,
     maxGlyph: ICON_RASTER_PX, footerH: opts.progress !== undefined ? barH : 0,
+    minPad: uiPanelPad(scene),
   });
 
   // Ombre portée sous l'emblème. Nos icônes sont des SILHOUETTES monochromes
@@ -86,7 +102,15 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   container.add(scene.add.image(0, box.iconCy, opts.icon)
     .setDisplaySize(box.glyph, box.glyph)
     .setTint(opts.iconColor ?? ACCENT.goldSoft));
-  title.setY(box.titleTop);
+  const ruban = uiRibbon(
+    scene, 0, box.titleTop + titleBlockH / 2, title.width, w - box.pad * 2,
+    opts.locked ? "off" : opts.ribbonTone ?? "normal", ribbonH,
+  );
+  if (ruban) container.add(ruban);
+  // Origine CENTRÉE une fois posé sur le ruban : aligner son haut le décalerait
+  // vers le bas d'une demi-hauteur de ruban.
+  title.setOrigin(0.5, ruban ? 0.5 : 0);
+  title.setY(ruban ? box.titleTop + titleBlockH / 2 : box.titleTop);
   container.add(title);
   if (sub) {
     sub.setY(box.subTop);

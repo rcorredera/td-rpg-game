@@ -70,11 +70,29 @@ interface StripSheet {
   cell: number;
 }
 
+/**
+ * Rangées de `ribbons-small.png` : cinq couleurs, chacune en deux variantes —
+ * en pointe (rangée paire) puis arrondie (rangée impaire).
+ *
+ * On prend l'ARRONDIE. Mesurée, la variante en pointe fait 60 de haut avec des
+ * embouts de 62 : sur une tuile secondaire de 167, elle ne laissait plus la place
+ * à l'emblème. L'arrondie est une plaque de libellé compacte, ce qu'on cherche.
+ */
+const RIBBON_ROW = { teal: 64, red: 192, yellow: 320, purple: 448, grey: 576 } as const;
+
 const STRIPS = {
   ts_bar: { file: "bar-small-base.png", cols: [0, 128, 256], row: 0, cell: 64 },
+  // Rubans de titre. Le teal et le rouge sont EXACTEMENT ceux des boutons du pack :
+  // c'est ce qui raccroche visuellement les tuiles aux commandes, ce qui manquait.
+  ts_ribbon: { file: "ribbons-small.png", cols: [0, 128, 256], row: RIBBON_ROW.teal, cell: 64 },
+  ts_ribbon_rift: { file: "ribbons-small.png", cols: [0, 128, 256], row: RIBBON_ROW.purple, cell: 64 },
+  ts_ribbon_off: { file: "ribbons-small.png", cols: [0, 128, 256], row: RIBBON_ROW.grey, cell: 64 },
 } satisfies Record<string, StripSheet>;
 
 export const UI_SKIN_BAR = "ts_bar" satisfies keyof typeof STRIPS;
+export const UI_SKIN_RIBBON = "ts_ribbon" satisfies keyof typeof STRIPS;
+export const UI_SKIN_RIBBON_RIFT = "ts_ribbon_rift" satisfies keyof typeof STRIPS;
+export const UI_SKIN_RIBBON_OFF = "ts_ribbon_off" satisfies keyof typeof STRIPS;
 
 export type UiSkinKey = keyof typeof SHEETS;
 
@@ -86,6 +104,22 @@ export const UI_SKIN_BTN_PRIMARY_PRESS = "ts_btn_primary_press" satisfies UiSkin
 
 /** Marges réelles, renseignées à la composition. */
 const INSETS = new Map<string, Insets>();
+
+/**
+ * Marges SÛRES d'une bande : distance depuis chaque bord jusqu'au corps plat.
+ *
+ * Distinctes des marges de découpe. Sur un ruban, l'embout mesure 61 px de large
+ * pour une texture de 130 — mais l'essentiel de ces 61 px est déjà le corps du
+ * ruban ; seuls les premiers pixels portent l'arrondi. Dimensionner un libellé
+ * sur la marge de DÉCOUPE réserverait 122 px pour rien et forcerait des rubans
+ * démesurés ; le dimensionner « au jugé » ramènerait le texte sur l'arrondi.
+ */
+const SAFE = new Map<string, { left: number; right: number }>();
+
+/** Marge sûre pour poser un libellé sur une bande. */
+export function uiSkinSafeInsets(key: string): { left: number; right: number } {
+  return SAFE.get(key) ?? { left: 8, right: 8 };
+}
 
 /** Marges d'une texture composée. Repli sur la valeur visée tant qu'elle n'est
  *  pas encore composée (la planche peut ne pas être chargée). */
@@ -109,12 +143,30 @@ export function uiSkinActive(scene: Phaser.Scene): boolean {
 
 /** À appeler dans le `preload()` de chaque scène affichant du chrome d'UI. */
 export function preloadUiSkin(scene: Phaser.Scene): void {
-  for (const [key, s] of Object.entries({ ...SHEETS, ...STRIPS })) {
-    scene.load.image(`${key}__sheet`, `${SRC}/${s.file}`);
-  }
+  // Par FICHIER et non par clé : les trois rubans sortent de la même planche,
+  // à trois rangées différentes.
+  const fichiers = new Set(Object.values({ ...SHEETS, ...STRIPS }).map(s => s.file));
+  for (const f of fichiers) scene.load.image(sheetKey(f), `${SRC}/${f}`);
+}
+
+/** Clé de texture de la planche BRUTE, dérivée de son nom de fichier. */
+function sheetKey(file: string): string {
+  return `__sheet_${file}`;
 }
 
 interface Box { x: number; y: number; w: number; h: number }
+
+type Rgb = readonly [number, number, number];
+
+function pixelAt(data: Uint8ClampedArray, sheetW: number, x: number, y: number): Rgb {
+  const i = (y * sheetW + x) * 4;
+  return [data[i]!, data[i + 1]!, data[i + 2]!];
+}
+
+/** Même couleur à la tolérance près — le pixel art du pack a un léger grain. */
+function sameColor(a: Rgb, b: Rgb): boolean {
+  return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) < 60;
+}
 
 /** Bornes opaques dans un rectangle de la planche, ou `null` si tout est vide. */
 function opaqueBounds(
@@ -167,11 +219,11 @@ function cornerDetailDepth(
 
 /** Image source d'une planche préchargée, ou `null` si elle n'est pas là. */
 function sheetPixels(
-  scene: Phaser.Scene, key: string,
+  scene: Phaser.Scene, file: string,
 ): { img: HTMLImageElement; data: Uint8ClampedArray } | null {
-  const sheetKey = `${key}__sheet`;
-  if (!scene.textures.exists(sheetKey)) return null;
-  const img = scene.textures.get(sheetKey).getSourceImage() as HTMLImageElement;
+  const k = sheetKey(file);
+  if (!scene.textures.exists(k)) return null;
+  const img = scene.textures.get(k).getSourceImage() as HTMLImageElement;
   const probe = document.createElement("canvas");
   probe.width = img.width;
   probe.height = img.height;
@@ -224,7 +276,7 @@ function paintPlan(
 function ensureStripTextures(scene: Phaser.Scene): void {
   for (const [key, strip] of Object.entries(STRIPS) as [string, StripSheet][]) {
     if (scene.textures.exists(key)) continue;
-    const src = sheetPixels(scene, key);
+    const src = sheetPixels(scene, strip.file);
     if (!src) continue;
 
     const piece = strip.cols.map(x => opaqueBounds(src.data, src.img.width, x, strip.row, strip.cell));
@@ -240,6 +292,22 @@ function ensureStripTextures(scene: Phaser.Scene): void {
     };
     const plan = planStrip(frame);
     paintPlan(scene, key, src.img, plan, 1, plan.insets);
+
+    // Marge SÛRE, mesurée sur la rangée médiane : on avance depuis chaque bord
+    // jusqu'à retomber sur la couleur du corps. C'est là que le libellé peut se
+    // poser sans mordre l'arrondi de l'embout.
+    const ligne = Math.round((frame.top + frame.bottom) / 2);
+    const corps = pixelAt(src.data, src.img.width, Math.round((frame.left[1]! + frame.right[1]!) / 2), ligne);
+    const depuis = (x0: number, pas: number, max: number): number => {
+      for (let k = 0; k < max; k++) {
+        if (sameColor(pixelAt(src.data, src.img.width, x0 + k * pas, ligne), corps)) return k;
+      }
+      return max;
+    };
+    SAFE.set(key, {
+      left: depuis(frame.left[0]!, 1, plan.insets.left),
+      right: depuis(frame.right[2]! - 1, -1, plan.insets.right),
+    });
   }
 }
 
@@ -249,7 +317,7 @@ export function ensureUiSkinTextures(scene: Phaser.Scene): void {
   ensureStripTextures(scene);
   for (const [key, sheet] of Object.entries(SHEETS) as [string, Sheet][]) {
     if (scene.textures.exists(key)) continue;
-    const src = sheetPixels(scene, key);
+    const src = sheetPixels(scene, sheet.file);
     if (!src) continue;
     const { img, data } = src;
 

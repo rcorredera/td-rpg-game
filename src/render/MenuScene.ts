@@ -349,7 +349,8 @@ export class MenuScene extends Phaser.Scene {
       p.add(uiTile(this, box.x, box.y, {
         w: box.w, h: box.h,
         icon: e.icon, title: e.title, sub: e.sub,
-        titleColor: e.rift ? TEXT.rift : TEXT.gold,
+        titleColor: TEXT.light,
+        ribbonTone: e.rift ? "rift" : "normal",
         iconColor: e.rift ? (storyDone ? 0xb07cc6 : ACCENT.locked) : ACCENT.goldSoft,
         accent: e.rift ? ACCENT.dimBorder : ACCENT.gold,
         locked: e.rift && !storyDone,
