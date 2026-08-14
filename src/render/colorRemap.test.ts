@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { opaqueLumaRange, remapBufferByLuma, remapByLuma } from "./colorRemap";
+import { cropBuffer, opaqueBBox, opaqueLumaRange, remapBufferByLuma, remapByLuma } from "./colorRemap";
+import type { PixelBox } from "./colorRemap";
 import type { PixelBuffer, Rgba } from "./nineSliceFlatten";
 
 const DARK = [40, 30, 10] as const;
@@ -17,6 +18,19 @@ function buffer(pixels: readonly Rgba[]): PixelBuffer {
   });
   return { w: pixels.length, h: 1, data };
 }
+
+/** Construit un tampon W×H à partir de rangées de pixels (une ligne par entrée). */
+function buffer2d(rows: readonly (readonly Rgba[])[]): PixelBuffer {
+  const h: number = rows.length, w: number = rows[0]?.length ?? 0;
+  const data: Uint8ClampedArray = new Uint8ClampedArray(w * h * 4);
+  rows.forEach((row, y) => row.forEach((p, x) => {
+    const i: number = (y * w + x) * 4;
+    data[i] = p.r; data[i + 1] = p.g; data[i + 2] = p.b; data[i + 3] = p.a;
+  }));
+  return { w, h, data };
+}
+
+const T = px(0, 0, 0, 0);
 
 describe("colorRemap", () => {
   it("ignore les pixels transparents pour les bornes de luminance", () => {
@@ -62,5 +76,33 @@ describe("colorRemap", () => {
     const buf: PixelBuffer = buffer([px(80, 80, 80), px(80, 80, 80)]);
     remapBufferByLuma(buf, DARK, LIGHT);
     expect([buf.data[0], buf.data[1], buf.data[2]]).toEqual([...DARK]);
+  });
+
+  it("opaqueBBox ignore la marge transparente autour du motif réel", () => {
+    // Même défaut que bar-big-fill.png : un canevas large, un motif étroit au
+    // centre. Sans ce recadrage, étirer le canevas entier étire le vide avec.
+    const buf: PixelBuffer = buffer2d([
+      [T, T, T, T],
+      [T, px(255, 0, 0), px(255, 0, 0), T],
+      [T, T, T, T],
+    ]);
+    expect(opaqueBBox(buf)).toEqual({ x: 1, y: 1, w: 2, h: 1 });
+  });
+
+  it("opaqueBBox renvoie null quand tout est transparent", () => {
+    const buf: PixelBuffer = buffer2d([[T, T], [T, T]]);
+    expect(opaqueBBox(buf)).toBeNull();
+  });
+
+  it("cropBuffer extrait exactement le rectangle demandé, ligne par ligne", () => {
+    const buf: PixelBuffer = buffer2d([
+      [px(1, 0, 0), px(2, 0, 0), px(3, 0, 0)],
+      [px(4, 0, 0), px(5, 0, 0), px(6, 0, 0)],
+      [px(7, 0, 0), px(8, 0, 0), px(9, 0, 0)],
+    ]);
+    const box: PixelBox = { x: 1, y: 0, w: 2, h: 2 };
+    const out: PixelBuffer = cropBuffer(buf, box);
+    expect([out.w, out.h]).toEqual([2, 2]);
+    expect([out.data[0], out.data[4], out.data[8], out.data[12]]).toEqual([2, 3, 5, 6]);
   });
 });

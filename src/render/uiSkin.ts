@@ -19,7 +19,8 @@
 // et importer Phaser comme VALEUR y lit `window` dès le chargement, ce qui casse
 // les tests unitaires purs sous Vitest (cf. `.ai/pitfalls.md`).
 import type Phaser from "phaser";
-import { remapBufferByLuma } from "./colorRemap";
+import { cropBuffer, opaqueBBox, remapBufferByLuma } from "./colorRemap";
+import type { PixelBox } from "./colorRemap";
 import { flattenStretched } from "./nineSliceFlatten";
 import type { PixelBuffer } from "./nineSliceFlatten";
 import type { NineSlicePlan, StripPlan } from "./nineSlicePlan";
@@ -387,8 +388,13 @@ function ensureBarFillGoldTexture(scene: Phaser.Scene): void {
   const src: SheetPixels | null = sheetPixels(scene, BAR_FILL_FILE);
   if (!src) return;
   const { img, data } = src;
-  const buf: PixelBuffer = { w: img.width, h: img.height, data: new Uint8ClampedArray(data) };
-  remapBufferByLuma(buf, BAR_FILL_DARK, BAR_FILL_LIGHT);
+  const full: PixelBuffer = { w: img.width, h: img.height, data: new Uint8ClampedArray(data) };
+  remapBufferByLuma(full, BAR_FILL_DARK, BAR_FILL_LIGHT);
+  // Recadré sur le contenu OPAQUE : la planche fait 64×64 mais ne peint que 24 px
+  // de haut — sans ce recadrage, `setDisplaySize` (progress.ts) étire le vide en
+  // même temps que le motif, et une jauge pleine n'affichait qu'un mince trait.
+  const bbox: PixelBox | null = opaqueBBox(full);
+  const buf: PixelBuffer = bbox ? cropBuffer(full, bbox) : full;
   const tex: Phaser.Textures.CanvasTexture | null = scene.textures.createCanvas(UI_SKIN_BAR_FILL_GOLD, buf.w, buf.h);
   if (!tex) return;
   const ctx: CanvasRenderingContext2D = tex.getContext();
