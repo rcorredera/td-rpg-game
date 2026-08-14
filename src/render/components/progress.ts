@@ -14,6 +14,8 @@ import { fitInsets } from "../nineSlicePlan";
 import { ensureUiSkinTextures, uiSkinInsets, uiSkinSafeInsets, UI_SKIN_BAR_BIG } from "../uiSkin";
 import type { SafeInsets } from "../uiSkin";
 import type { Insets } from "../nineSlicePlan";
+import { progressFillBox } from "./progressFill";
+import type { ProgressFillBox } from "./progressFill";
 
 export interface UiProgress {
   /** Hauteur RÉELLE occupée — celle de l'art quand la châsse est disponible. */
@@ -57,15 +59,14 @@ export function uiProgress(
   );
 
   // Le remplissage se pose DANS la gorge : en retrait de la ferrure des embouts,
-  // mesurée sur la planche, et d'une part de la hauteur pour le cerclage.
+  // mesurée sur la planche, et d'une part de la hauteur pour le cerclage
+  // (géométrie pure et testée, `progressFill.ts` — voir `GORGE_PAD_RATIO`).
   const safe: SafeInsets = uiSkinSafeInsets(UI_SKIN_BAR_BIG);
-  const padY: number = Math.max(2, Math.round(h * 0.22));
-  const ix: number = x - w / 2 + safe.left;
-  const iw: number = Math.max(0, w - safe.left - safe.right);
+  const box: ProgressFillBox = progressFillBox(w, h, clamped, safe);
   const g: Phaser.GameObjects.Graphics = scene.add.graphics();
   if (clamped > 0) {
     g.fillStyle(ACCENT.gold, 0.95);
-    g.fillRect(ix, top + padY, iw * clamped, h - padY * 2);
+    g.fillRect(x + box.ix, top + box.iy, box.iw, box.ih);
   }
   return { h, objects: [chasse, g] };
 }
