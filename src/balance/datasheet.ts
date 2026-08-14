@@ -10,11 +10,11 @@
 // Phaser ni DOM : ce module tourne en Node comme en test.
 // ============================================================
 
-import type { ContentPack, PlayableChapter, Vec2, WaveDef } from "../core/types";
+import type { ChapterDef, ContentPack, EnemyDef, PathDef, PlayableChapter, TowerDef, TowerLevelStats, TowerSpecDef, Vec2, WaveDef } from "../core/types";
 
 /** Chapitre jouable par index — les chapitres non jouables n'ont ni carte ni vagues. */
 export function playableChapter(c: ContentPack, index: number): PlayableChapter {
-  const ch = c.chapters[index];
+  const ch: ChapterDef | undefined = c.chapters[index];
   if (!ch || !ch.playable) throw new Error(`datasheet: chapitre ${index} injouable`);
   return ch;
 }
@@ -27,26 +27,26 @@ export function playableChapter(c: ContentPack, index: number): PlayableChapter 
  * à l'instanciation. Toute divergence ici rendrait le banc d'essai menteur.
  */
 export function enemyHpAtWave(c: ContentPack, enemyId: string, waveIndex: number, hpMult = 1): number {
-  const def = c.enemies[enemyId];
+  const def: EnemyDef | undefined = c.enemies[enemyId];
   if (!def) throw new Error(`datasheet: ennemi inconnu « ${enemyId} »`);
   return Math.round(def.hp * Math.pow(c.scaling.hpExponent, waveIndex) * hpMult);
 }
 
 /** Dégâts au château d'un ennemi renforcé — miroir de l'impact dans `stepOnce`. */
 export function castleDamageOf(c: ContentPack, enemyId: string, hpMult: number): number {
-  const def = c.enemies[enemyId];
+  const def: EnemyDef | undefined = c.enemies[enemyId];
   if (!def) throw new Error(`datasheet: ennemi inconnu « ${enemyId} »`);
-  const strength = Math.pow(hpMult, c.scaling.castleDamageExponent);
+  const strength: number = Math.pow(hpMult, c.scaling.castleDamageExponent);
   return Math.max(def.damageToCastle, Math.round(def.damageToCastle * strength));
 }
 
 // ---------- Tours ----------
 
 function statsOf(c: ContentPack, towerId: string, level: number, specId?: string | null) {
-  const def = c.towers[towerId];
+  const def: TowerDef | undefined = c.towers[towerId];
   if (!def) throw new Error(`datasheet: tour inconnue « ${towerId} »`);
-  const spec = specId ? def.specs?.find(s => s.id === specId) : undefined;
-  const stats = spec ? spec.stats : def.levels[level - 1];
+  const spec: TowerSpecDef | undefined = specId ? def.specs?.find(s => s.id === specId) : undefined;
+  const stats: TowerLevelStats | undefined = spec ? spec.stats : def.levels[level - 1];
   if (!stats) throw new Error(`datasheet: niveau ${level} inconnu pour « ${towerId} »`);
   return { def, spec, stats };
 }
@@ -76,25 +76,25 @@ export function towerBurstDps(c: ContentPack, towerId: string, level: number, sp
 
 /** Or investi pour amener une tour au niveau donné (construction + upgrades + spécialisation). */
 export function towerInvestment(c: ContentPack, towerId: string, level: number, specId?: string | null): number {
-  const def = c.towers[towerId];
+  const def: TowerDef | undefined = c.towers[towerId];
   if (!def) throw new Error(`datasheet: tour inconnue « ${towerId} »`);
-  let gold = def.costs.slice(0, level).reduce((a, b) => a + b, 0);
+  let gold: number = def.costs.slice(0, level).reduce((a, b) => a + b, 0);
   if (specId) gold += def.specs?.find(s => s.id === specId)?.cost ?? 0;
   return gold;
 }
 
 /** Rendement d'une tour : DPS de pointe par pièce d'or investie. Le comparateur le plus utile. */
 export function dpsPerGold(c: ContentPack, towerId: string, level: number, specId?: string | null): number {
-  const gold = towerInvestment(c, towerId, level, specId);
+  const gold: number = towerInvestment(c, towerId, level, specId);
   return gold === 0 ? 0 : towerBurstDps(c, towerId, level, specId) / gold;
 }
 
 // ---------- Cartes ----------
 
 export function pathLength(waypoints: Vec2[]): number {
-  let total = 0;
-  for (let i = 1; i < waypoints.length; i++) {
-    const a = waypoints[i - 1]!, b = waypoints[i]!;
+  let total: number = 0;
+  for (let i: number = 1; i < waypoints.length; i++) {
+    const a: Vec2 = waypoints[i - 1]!, b: Vec2 = waypoints[i]!;
     total += Math.hypot(a.x - b.x, a.y - b.y);
   }
   return total;
@@ -107,21 +107,21 @@ export function pathLength(waypoints: Vec2[]): number {
  * quelle que soit la façon de jouer.
  */
 export function traversalSeconds(c: ContentPack, chapterIndex: number, pathIndex: number, enemyId: string): number {
-  const ch = playableChapter(c, chapterIndex);
-  const path = ch.map.paths[pathIndex];
+  const ch: PlayableChapter = playableChapter(c, chapterIndex);
+  const path: PathDef | undefined = ch.map.paths[pathIndex];
   if (!path) throw new Error(`datasheet: chemin ${pathIndex} inconnu (chapitre ${chapterIndex})`);
-  const def = c.enemies[enemyId];
+  const def: EnemyDef | undefined = c.enemies[enemyId];
   if (!def) throw new Error(`datasheet: ennemi inconnu « ${enemyId} »`);
   return pathLength(path.waypoints) / def.speed;
 }
 
 /** Distance d'un emplacement au chemin le plus proche de lui. */
 export function distanceToPath(slot: Vec2, waypoints: readonly Vec2[]): number {
-  let best = Infinity;
-  for (let i = 1; i < waypoints.length; i++) {
-    const a = waypoints[i - 1]!, b = waypoints[i]!;
-    const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy;
-    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((slot.x - a.x) * dx + (slot.y - a.y) * dy) / len2));
+  let best: number = Infinity;
+  for (let i: number = 1; i < waypoints.length; i++) {
+    const a: Vec2 = waypoints[i - 1]!, b: Vec2 = waypoints[i]!;
+    const dx: number = b.x - a.x, dy: number = b.y - a.y, len2: number = dx * dx + dy * dy;
+    const t: number = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((slot.x - a.x) * dx + (slot.y - a.y) * dy) / len2));
     best = Math.min(best, Math.hypot(slot.x - (a.x + t * dx), slot.y - (a.y + t * dy)));
   }
   return best;
@@ -136,9 +136,9 @@ export function distanceToPath(slot: Vec2, waypoints: readonly Vec2[]): number {
  * mieux que n'importe quel réglage de vague.
  */
 export function slotCoverage(c: ContentPack, chapterIndex: number, range?: number): number[] {
-  const ch = playableChapter(c, chapterIndex);
+  const ch: PlayableChapter = playableChapter(c, chapterIndex);
   // Portée de référence : la tour de base au niveau 1, le pire cas du joueur.
-  const r = range ?? c.towers.tower_archer?.levels[0]?.range ?? 130;
+  const r: number = range ?? c.towers.tower_archer?.levels[0]?.range ?? 130;
   return ch.map.paths.map(p => ch.map.slots.filter(s => distanceToPath(s, p.waypoints) <= r).length);
 }
 
@@ -162,26 +162,28 @@ export interface WaveStats {
 }
 
 /** Chaque ennemi d'une vague, aplati : les `count` spawns plus le mini-boss. */
-function waveUnits(wave: WaveDef): { enemyId: string; hpMult: number }[] {
-  const units: { enemyId: string; hpMult: number }[] = [];
+interface WaveUnit { enemyId: string; hpMult: number }
+
+function waveUnits(wave: WaveDef): WaveUnit[] {
+  const units: WaveUnit[] = [];
   for (const spawn of wave.spawns) {
-    for (let i = 0; i < spawn.count; i++) units.push({ enemyId: spawn.enemyId, hpMult: 1 });
+    for (let i: number = 0; i < spawn.count; i++) units.push({ enemyId: spawn.enemyId, hpMult: 1 });
   }
   if (wave.miniBoss) units.push({ enemyId: wave.miniBoss.enemyId, hpMult: wave.miniBoss.hpMult });
   return units;
 }
 
 export function waveStats(c: ContentPack, chapterIndex: number, waveIndex: number): WaveStats {
-  const ch = playableChapter(c, chapterIndex);
-  const wave = ch.waves[waveIndex];
+  const ch: PlayableChapter = playableChapter(c, chapterIndex);
+  const wave: WaveDef | undefined = ch.waves[waveIndex];
   if (!wave) throw new Error(`datasheet: vague ${waveIndex} inconnue (chapitre ${chapterIndex})`);
 
-  const units = waveUnits(wave);
-  let totalHp = 0, flyingHp = 0, gold = 0, castleDamage = 0;
+  const units: WaveUnit[] = waveUnits(wave);
+  let totalHp: number = 0, flyingHp: number = 0, gold: number = 0, castleDamage: number = 0;
   const enemyIds: string[] = [];
   for (const u of units) {
-    const def = c.enemies[u.enemyId]!;
-    const hp = enemyHpAtWave(c, u.enemyId, waveIndex, u.hpMult);
+    const def: EnemyDef = c.enemies[u.enemyId]!;
+    const hp: number = enemyHpAtWave(c, u.enemyId, waveIndex, u.hpMult);
     totalHp += hp;
     if (def.flying) flyingHp += hp;
     gold += def.goldReward;
@@ -221,10 +223,10 @@ export interface ChapterStats {
 }
 
 export function chapterStats(c: ContentPack, index: number): ChapterStats {
-  const ch = playableChapter(c, index);
-  const waves = ch.waves.map((_, w) => waveStats(c, index, w));
-  const totalHp = waves.reduce((a, w) => a + w.totalHp, 0);
-  const flyingHp = waves.reduce((a, w) => a + w.totalHp * w.flyingHpShare, 0);
+  const ch: PlayableChapter = playableChapter(c, index);
+  const waves: WaveStats[] = ch.waves.map((_, w) => waveStats(c, index, w));
+  const totalHp: number = waves.reduce((a, w) => a + w.totalHp, 0);
+  const flyingHp: number = waves.reduce((a, w) => a + w.totalHp * w.flyingHpShare, 0);
   return {
     index, id: ch.id, name: ch.name,
     waveCount: ch.waves.length,

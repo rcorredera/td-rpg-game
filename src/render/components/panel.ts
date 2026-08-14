@@ -6,6 +6,7 @@ import Phaser from "phaser";
 import { ACCENT, skinPanelTint, UI_TINT } from "../theme";
 import { fitInsets } from "../nineSlicePlan";
 import { ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets, UI_SKIN_PANEL } from "../uiSkin";
+import type { Insets } from "../nineSlicePlan";
 
 /** Panneau nine-slice teinté (remplace les rectangles plats). */
 export function uiPanel(
@@ -16,16 +17,16 @@ export function uiPanel(
   // reste pilotée par le thème (ADR-026) : la base est claire exprès, `setTint`
   // multipliant, elle peut virer ardoise, parchemin ou pourpre selon la palette.
   ensureUiSkinTextures(scene);
-  const skin = scene.textures.exists(UI_SKIN_PANEL);
-  const key = skin ? UI_SKIN_PANEL : "ui_panel";
+  const skin: boolean = scene.textures.exists(UI_SKIN_PANEL);
+  const key: string = skin ? UI_SKIN_PANEL : "ui_panel";
   // Marges par CÔTÉ : les pièces du pack ne sont pas carrées (45 de large pour
   // 47 de haut), une marge unique déformerait les angles.
   // Les marges sont ramenées à ce que l'élément peut loger : un panneau plus court
   // que deux marges replierait le nine-slice sur lui-même.
-  const i = fitInsets(
+  const i: Insets = fitInsets(
     skin ? uiSkinInsets(key) : { left: 14, right: 14, top: 14, bottom: 14 }, w, h,
   );
-  const p = scene.add.nineslice(x, y, key, undefined, w, h, i.left, i.right, i.top, i.bottom);
+  const p: Phaser.GameObjects.NineSlice = scene.add.nineslice(x, y, key, undefined, w, h, i.left, i.right, i.top, i.bottom);
   p.setTint(skin ? skinPanelTint(tint) : tint).setAlpha(alpha);
   return p;
 }
@@ -78,9 +79,9 @@ export interface UiFramedPanel {
 /** Panneau + liseré arrondi regroupés dans un container (remplace MenuScene.box()). */
 export function uiFramedPanel(scene: Phaser.Scene, x: number, y: number, opts: UiFramedPanelOpts): UiFramedPanel {
   const { w, h, tint = UI_TINT.panel, borderColor = ACCENT.gold, borderAlpha = 0.85, radius = 10 } = opts;
-  const container = scene.add.container(x, y);
-  const panel = uiPanel(scene, 0, 0, w, h, tint);
-  const border = scene.add.graphics();
+  const container: Phaser.GameObjects.Container = scene.add.container(x, y);
+  const panel: Phaser.GameObjects.NineSlice = uiPanel(scene, 0, 0, w, h, tint);
+  const border: Phaser.GameObjects.Graphics = scene.add.graphics();
   // Le panneau du pack porte DÉJÀ son contour, dessiné dans l'art — liseré doré
   // et volutes d'angle. Reposer par-dessus un liseré vectoriel superpose deux
   // courbes de rayons différents, qui divergent aux angles.

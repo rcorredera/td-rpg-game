@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CONTENT } from "../content/index";
 import { BIOMES, DEFAULT_BIOME, biomeFor } from "./biomes";
+import type { ChapterDef } from "../core/types";
 
 describe("biomes — chaque chapitre a son identité visuelle", () => {
   // Le défaut d'origine : « Le Col du Gel » s'affichait sur la même prairie verte
@@ -16,8 +17,8 @@ describe("biomes — chaque chapitre a son identité visuelle", () => {
 
   it("ne réutilise pas le même biome sur deux chapitres consécutifs", () => {
     // Deux chapitres voisins au même décor donnent l'impression de rejouer le même.
-    const playable = CONTENT.chapters.filter(c => c.playable);
-    for (let i = 1; i < playable.length; i++) {
+    const playable: ChapterDef[] = CONTENT.chapters.filter(c => c.playable);
+    for (let i: number = 1; i < playable.length; i++) {
       expect(playable[i]!.biome, `ch${i + 1} a le même décor que le précédent`)
         .not.toBe(playable[i - 1]!.biome);
     }
@@ -25,7 +26,7 @@ describe("biomes — chaque chapitre a son identité visuelle", () => {
 
   it("donne à chaque biome un sol ET une route distincts", () => {
     // Ne changer que le sol laisse une route de terre battue traverser un col gelé.
-    const grounds = new Set<number>(), paths = new Set<number>();
+    const grounds: Set<number> = new Set<number>(), paths: Set<number> = new Set<number>();
     for (const b of Object.values(BIOMES)) {
       grounds.add(b.ground);
       paths.add(b.path);
@@ -45,9 +46,9 @@ describe("biomes — chaque chapitre a son identité visuelle", () => {
     // Règle de palette : plus une couleur est saturée, plus elle porte du sens. Un
     // sol vif rendrait les créatures illisibles quel que soit leur propre coloris.
     for (const [id, b] of Object.entries(BIOMES)) {
-      const r = (b.ground >> 16) & 0xff, g = (b.ground >> 8) & 0xff, bl = b.ground & 0xff;
-      const max = Math.max(r, g, bl), min = Math.min(r, g, bl);
-      const saturation = max === 0 ? 0 : (max - min) / max;
+      const r: number = (b.ground >> 16) & 0xff, g: number = (b.ground >> 8) & 0xff, bl: number = b.ground & 0xff;
+      const max: number = Math.max(r, g, bl), min: number = Math.min(r, g, bl);
+      const saturation: number = max === 0 ? 0 : (max - min) / max;
       expect(saturation, `biome « ${id} » trop saturé`).toBeLessThan(0.55);
     }
   });

@@ -24,7 +24,7 @@
 
 import { describe, expect, it } from "vitest";
 
-const SOURCES = import.meta.glob("/src/render/*Scene.ts", {
+const SOURCES: Record<string, string> = import.meta.glob("/src/render/*Scene.ts", {
   query: "?raw", import: "default", eager: true,
 }) as Record<string, string>;
 
@@ -35,13 +35,13 @@ const SOURCES = import.meta.glob("/src/render/*Scene.ts", {
  * relatif à un conteneur, pas une position d'écran. Au-delà, c'est forcément une
  * coordonnée du monde — donc une valeur qui devait être dérivée.
  */
-const ABSCISSE_EN_DUR = /(?:add\.(?:text|image)\(|ui(?:Chip|Panel|Button|Tile)\(\s*(?:this|scene)\s*,\s*)\s*(\d{3,})\s*,/g;
+const ABSCISSE_EN_DUR: RegExp = /(?:add\.(?:text|image)\(|ui(?:Chip|Panel|Button|Tile)\(\s*(?:this|scene)\s*,\s*)\s*(\d{3,})\s*,/g;
 
 describe("mise en page des scènes", () => {
   it("ne pose aucune abscisse en dur", () => {
     const fautes: string[] = [];
     for (const [chemin, src] of Object.entries(SOURCES)) {
-      const lignes = src.split("\n");
+      const lignes: string[] = src.split("\n");
       lignes.forEach((ligne, i) => {
         for (const m of ligne.matchAll(ABSCISSE_EN_DUR)) {
           fautes.push(`${chemin}:${i + 1} → « ${m[1]} » (${ligne.trim().slice(0, 70)})`);

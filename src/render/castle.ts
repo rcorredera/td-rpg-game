@@ -15,15 +15,18 @@
 import { BATTLEFIELD } from "../core/types";
 
 /** Demi-côté du sprite du Bastion, affiché en 124×124. */
-export const CASTLE_HALF = 62;
+export const CASTLE_HALF: number = 62;
 
 /** Décalage vertical du sprite par rapport à son point d'ancrage (assise au sol). */
-const SPRITE_LIFT = 6;
+const SPRITE_LIFT: number = 6;
 
 /** Marge conservée sous le bord bas pour que l'assise reste dans le champ. */
-const BOTTOM_KEEP = 70;
+const BOTTOM_KEEP: number = 70;
 
 export interface Point { x: number; y: number }
+
+/** Boîte de la jauge de PV : coin haut-gauche + taille. */
+export interface CastleBarBox { x: number; y: number; w: number; h: number }
 
 /**
  * Centre du sprite du Bastion, d'après le dernier point du chemin principal.
@@ -39,8 +42,8 @@ export function castleAnchor(end: Point): Point {
 }
 
 /** Jauge de PV du Bastion : posée au-dessus du sprite et CENTRÉE sur lui. */
-export function castleBarBox(end: Point): { x: number; y: number; w: number; h: number } {
-  const a = castleAnchor(end);
-  const w = 76, h = 11;
+export function castleBarBox(end: Point): CastleBarBox {
+  const a: Point = castleAnchor(end);
+  const w: number = 76, h: number = 11;
   return { x: a.x - w / 2, y: a.y - CASTLE_HALF - h - 4, w, h };
 }

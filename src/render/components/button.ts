@@ -6,6 +6,8 @@ import Phaser from "phaser";
 import { UI_TINT } from "../theme";
 import { CURSOR_POINT, FONT_DISPLAY } from "../ui";
 import { touchSize } from "../viewport";
+import type { Insets } from "../nineSlicePlan";
+import type { Vec2 } from "../../core/types";
 import {
   ensureUiSkinTextures, uiSkinActive, uiSkinFit, uiSkinInsets, uiSkinSetTexture,
   UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
@@ -14,7 +16,7 @@ import {
 /** Hauteur minimale d'un bouton habillé par le pack : deux marges de nine-slice
  *  doivent y tenir. La pièce du pack fait 47 de haut et la texture est réduite de
  *  moitié (cf. `BTN_SCALE`), soit des marges de ~23 — d'où 48. */
-const SKIN_MIN_H = 48;
+const SKIN_MIN_H: number = 48;
 
 export interface UiButtonOpts {
   w: number;
@@ -57,14 +59,14 @@ export function uiButton(
   scene: Phaser.Scene, x: number, y: number, label: string,
   opts: UiButtonOpts, cb?: () => void,
 ): UiButton {
-  const c = scene.add.container(x, y);
+  const c: Phaser.GameObjects.Container = scene.add.container(x, y);
 
   // Boutons du pack Tiny Swords quand il est chargé : ils portent leur propre
   // gamme (bleu au repos, rouge pour l'action principale) et leur propre état
   // enfoncé. Pas de teinte de thème ici — `setTint` multiplie, une planche bleue
   // ne pourrait pas devenir dorée ; le repli Kenney, lui, est gris et se teinte.
   ensureUiSkinTextures(scene);
-  const skin = uiSkinActive(scene);
+  const skin: boolean = uiSkinActive(scene);
 
   // Plancher tactile appliqué ici, une fois pour tous les appelants : une hauteur
   // écrite à la main reste confortable sur grand écran mais devient inatteignable
@@ -72,27 +74,27 @@ export function uiButton(
   //
   // L'habillage du pack impose EN PLUS son propre plancher : deux marges de
   // nine-slice doivent tenir dans la plaque, sinon les coins se recouvrent.
-  const h = touchSize(Math.max(opts.h ?? 36, skin ? SKIN_MIN_H : 0));
-  const keyUp = skin
+  const h: number = touchSize(Math.max(opts.h ?? 36, skin ? SKIN_MIN_H : 0));
+  const keyUp: string = skin
     ? (opts.gold ? UI_SKIN_BTN_PRIMARY : UI_SKIN_BTN)
     : (opts.gold ? "ui_btn_gold" : "ui_btn");
-  const keyDown = skin
+  const keyDown: string = skin
     ? (opts.gold ? UI_SKIN_BTN_PRIMARY_PRESS : UI_SKIN_BTN_PRESS)
     : keyUp;
-  const i = skin ? uiSkinInsets(keyUp) : { left: 14, right: 14, top: 14, bottom: 16 };
-  const inset = Math.max(i.left, i.right, i.top, i.bottom);
+  const i: Insets = skin ? uiSkinInsets(keyUp) : { left: 14, right: 14, top: 14, bottom: 16 };
+  const inset: number = Math.max(i.left, i.right, i.top, i.bottom);
 
-  const w0 = touchSize(opts.w);
-  const fit = skin ? uiSkinFit(scene, keyUp, w0, h) : i;
-  const img = scene.add.nineslice(0, 0, keyUp, undefined, w0, h, fit.left, fit.right, fit.top, fit.bottom);
+  const w0: number = touchSize(opts.w);
+  const fit: Insets = skin ? uiSkinFit(scene, keyUp, w0, h) : i;
+  const img: Phaser.GameObjects.NineSlice = scene.add.nineslice(0, 0, keyUp, undefined, w0, h, fit.left, fit.right, fit.top, fit.bottom);
   if (!skin && !opts.gold) img.setTint(UI_TINT.btn);
 
   // Icône du registre, ou libellé — jamais les deux.
-  const icon = opts.icon
+  const icon: Phaser.GameObjects.Image | null = opts.icon
     ? scene.add.image(0, 0, opts.icon).setOrigin(0.5)
     : null;
   if (icon) icon.setDisplaySize(h * 0.42, h * 0.42);
-  const txt = icon ? null : scene.add.text(0, -2, label, {
+  const txt: Phaser.GameObjects.Text | null = icon ? null : scene.add.text(0, -2, label, {
     fontSize: `${opts.fontSize ?? 15}px`,
     color: opts.color ?? (skin ? "#f7efe0" : opts.gold ? "#3a2c12" : "#f0e6d2"),
     fontFamily: FONT_DISPLAY,
@@ -106,8 +108,8 @@ export function uiButton(
   // Plancher de LARGEUR, pas seulement de hauteur : deux coins de 37 doivent tenir
   // côte à côte, sinon Phaser les fait se chevaucher et la plaque se replie sur
   // elle-même. Un libellé court comme « x1 » passait à deux pixels près.
-  const contenu = (txt?.width ?? 0) + (skin && !opts.compact ? 46 : 22);
-  const w = Math.max(img.width, contenu, skin ? 2 * inset + 2 : 0);
+  const contenu: number = (txt?.width ?? 0) + (skin && !opts.compact ? 46 : 22);
+  const w: number = Math.max(img.width, contenu, skin ? 2 * inset + 2 : 0);
   if (w !== img.width) img.setSize(w, h);
   c.add(img);
   c.add(icon ?? txt!);
@@ -120,8 +122,8 @@ export function uiButton(
   // clair — la teinter par-dessus la DÉLAVE au lieu de l'éclairer (relevé au
   // playtest). Le grossissement suffit à signaler le survol ; seul le repli
   // Kenney, uniformément gris, gagne à être teinté.
-  const restTint = opts.gold ? 0xffffff : UI_TINT.btn;
-  const hoverTint = opts.gold ? 0xfff2cf : 0xa68c64;
+  const restTint: number = opts.gold ? 0xffffff : UI_TINT.btn;
+  const hoverTint: number = opts.gold ? 0xfff2cf : 0xa68c64;
   img.on("pointerover", () => { c.setScale(1.04); if (!skin) img.setTint(hoverTint); });
   img.on("pointerout", () => { c.setScale(1); if (!skin) img.setTint(restTint); });
 
@@ -129,8 +131,8 @@ export function uiButton(
   // glissement commencé sur un bouton déclencherait sinon son action avant même
   // que le doigt ait bougé. Au-delà de DRAG_SLOP, le geste est lu comme un
   // défilement et le clic est abandonné.
-  const DRAG_SLOP = 10;
-  let downAt: { x: number; y: number } | null = null;
+  const DRAG_SLOP: number = 10;
+  let downAt: Vec2 | null = null;
   img.on("pointerdown", (p: Phaser.Input.Pointer, _x: unknown, _y: unknown, ev?: Phaser.Types.Input.EventData) => {
     ev?.stopPropagation?.();
     downAt = { x: p.x, y: p.y };
@@ -143,7 +145,7 @@ export function uiButton(
     ev?.stopPropagation?.();
     c.setScale(1.04);
     if (skin) uiSkinSetTexture(scene, img, keyUp, w, h);
-    const from = downAt;
+    const from: Vec2 | null = downAt;
     downAt = null;
     if (!from || Math.hypot(p.x - from.x, p.y - from.y) > DRAG_SLOP) return;
     cb();

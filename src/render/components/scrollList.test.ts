@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clampScroll, scrollBar, scrollHints } from "./scrollList";
+import type { Rect, ScrollBarGeometry } from "./scrollList";
 
 describe("clampScroll", () => {
   it("ne défile pas quand le contenu tient dans la fenêtre", () => {
@@ -29,7 +30,7 @@ describe("clampScroll", () => {
 
 describe("indicateur de défilement", () => {
   /** Fenêtre du campement : elle occupe TOUTE la largeur visible (v.left/v.width). */
-  const FENETRE = { x: -104, y: 120, w: 1168, h: 300 };
+  const FENETRE: Rect = { x: -104, y: 120, w: 1168, h: 300 };
 
   it("dessine la gouttière DANS la fenêtre", () => {
     // LE défaut. La barre se posait à `x + w + 4` : sur une fenêtre qui occupe
@@ -38,7 +39,7 @@ describe("indicateur de défilement", () => {
     // liste du Bestiaire semblait simplement coupée.
     for (const contentH of [301, 400, 1200, 9000]) {
       for (const offset of [0, -50, -(contentH - FENETRE.h), -99999]) {
-        const g = scrollBar(FENETRE, contentH, offset);
+        const g: ScrollBarGeometry | null = scrollBar(FENETRE, contentH, offset);
         expect(g, `contenu ${contentH}`).not.toBeNull();
         for (const [nom, r] of Object.entries(g!)) {
           expect(r.x, `${nom} : bord gauche`).toBeGreaterThanOrEqual(FENETRE.x);
@@ -57,9 +58,9 @@ describe("indicateur de défilement", () => {
   });
 
   it("descend le curseur à mesure qu'on descend dans le contenu", () => {
-    const haut = scrollBar(FENETRE, 1200, 0)!;
-    const milieu = scrollBar(FENETRE, 1200, -450)!;
-    const bas = scrollBar(FENETRE, 1200, -900)!;
+    const haut: ScrollBarGeometry = scrollBar(FENETRE, 1200, 0)!;
+    const milieu: ScrollBarGeometry = scrollBar(FENETRE, 1200, -450)!;
+    const bas: ScrollBarGeometry = scrollBar(FENETRE, 1200, -900)!;
     expect(milieu.thumb.y).toBeGreaterThan(haut.thumb.y);
     expect(bas.thumb.y).toBeGreaterThan(milieu.thumb.y);
     // En butée basse, le curseur touche exactement le bas de la gouttière.

@@ -27,19 +27,19 @@ import {
  */
 declare const process: { argv: string[]; exit(code: number): never };
 
-const argv = process.argv.slice(2);
+const argv: string[] = process.argv.slice(2);
 const has = (flag: string) => argv.includes(flag);
 const valueOf = (flag: string): string | undefined => {
-  const i = argv.indexOf(flag);
+  const i: number = argv.indexOf(flag);
   return i >= 0 ? argv[i + 1] : undefined;
 };
 
-const useHero = !has("--no-hero");
-const chapterArg = valueOf("--chapter");
+const useHero: boolean = !has("--no-hero");
+const chapterArg: string | undefined = valueOf("--chapter");
 const out: string[] = [];
 
 if (chapterArg !== undefined) {
-  const index = Number.parseInt(chapterArg, 10) - 1;
+  const index: number = Number.parseInt(chapterArg, 10) - 1;
   if (!Number.isInteger(index) || index < 0 || index >= CONTENT.chapters.length) {
     console.error(`Chapitre invalide : « ${chapterArg} » (attendu 1..${CONTENT.chapters.length})`);
     process.exit(1);

@@ -6,6 +6,9 @@ export type Vec2 = { x: number; y: number };
 
 // ---------- Content (données pures, voir src/content/) ----------
 
+/** Ralentissement : facteur de vitesse (0..1) appliqué pendant `duration` secondes. */
+export interface SlowEffect { factor: number; duration: number }
+
 export interface TowerDef {
   id: string;
   name: string;
@@ -20,7 +23,7 @@ export interface TowerDef {
   /** AoE en pixels (0 = monocible). */
   splashRadius: number;
   /** Ralentissement appliqué (0..1) et durée en s. */
-  slow?: { factor: number; duration: number };
+  slow?: SlowEffect;
   /** Unlock méta requis (null = dispo de base). */
   requiresUnlock: string | null;
   /** Spécialisations au-delà du niveau max : choix exclusif et définitif (GDD §Spécialisations). */
@@ -45,7 +48,7 @@ export interface TowerSpecDef {
   /** Override de l'AoE de base (undefined = hérite). */
   splashRadius?: number;
   /** Override du slow de base (undefined = hérite, null = retiré). */
-  slow?: { factor: number; duration: number } | null;
+  slow?: SlowEffect | null;
 }
 
 export interface TowerLevelStats {
@@ -90,6 +93,9 @@ export interface WaveDef { spawns: WaveSpawn[]; miniBoss?: { enemyId: string; hp
 export interface WhirlwindLevel { damage: number; radius: number; cooldownS: number }
 export interface RallyLevel { fireRateMult: number; radius: number; durationS: number; cooldownS: number }
 
+/** Sort à niveaux : upgradeCosts[i] = coût (Sceaux) du passage au niveau i+2. */
+export interface SkillTrack<TLevel> { levels: TLevel[]; upgradeCosts: number[] }
+
 export interface HeroDef {
   name: string;
   hp: number;
@@ -97,10 +103,9 @@ export interface HeroDef {
   meleeDps: number;
   meleeRange: number;
   respawnS: number;
-  /** Sorts à niveaux : upgradeCosts[i] = coût (Sceaux) du passage au niveau i+2. */
   skills: {
-    whirlwind: { levels: WhirlwindLevel[]; upgradeCosts: number[] };
-    rally: { levels: RallyLevel[]; upgradeCosts: number[] };
+    whirlwind: SkillTrack<WhirlwindLevel>;
+    rally: SkillTrack<RallyLevel>;
   };
 }
 
@@ -111,6 +116,7 @@ export interface HeroDef {
  *  exprimés. Toute entité pilotée par le joueur y est confinée.
  *  16:9 (ADR-027) — moitié de 1920×1080. Bord logique : entrées à x/y≈-20, sorties
  *  côté château à x≈w+20 / y≈h+20. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const BATTLEFIELD = { w: 960, h: 540 } as const;
 
 export interface PathDef {
@@ -297,6 +303,11 @@ export interface HeroState {
 
 export type RunPhase = "building" | "wave" | "victory" | "defeat";
 
+/** Spawn programmé, pas encore matérialisé en `EnemyState` (délai/tourniquet de vague écoulés). */
+export interface PendingSpawn {
+  at: number; enemyId: string; hpMult: number; pathIndex: number; boss?: boolean;
+}
+
 export interface RunState {
   time: number;          // temps simulé (s)
   /** Réservoir de temps réel pas encore consommé en pas fixes (< 1/60s). Indispensable
@@ -311,7 +322,7 @@ export interface RunState {
   /** PV max du château (base + bonus méta) — pour la barre de PV du rendu. */
   castleHpMax: number;
   waveIndex: number;     // vague courante (0-based), -1 avant la première
-  pendingSpawns: { at: number; enemyId: string; hpMult: number; pathIndex: number; boss?: boolean }[];
+  pendingSpawns: PendingSpawn[];
   /** Niveau maximal auquel une tour peut être améliorée (paliers d'armurerie, ADR-024). */
   maxTowerLevel: number;
   /** Le rang 4 (spécialisations) est-il débloqué à la méta ? */

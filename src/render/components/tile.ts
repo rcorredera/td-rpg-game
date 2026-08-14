@@ -17,6 +17,8 @@ import { uiFramedPanel, uiPanelPad } from "./panel";
 import { uiProgress, uiProgressHeight } from "./progress";
 import { uiRibbon, uiRibbonAvailable, uiRibbonHeight, type RibbonTone } from "./ribbon";
 import { composeTile } from "./tileContent";
+import type { TileContentBox } from "./tileContent";
+import type { Vec2 } from "../../core/types";
 
 export interface UiTileOpts {
   w: number;
@@ -42,15 +44,15 @@ export interface UiTileOpts {
 
 export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOpts): Phaser.GameObjects.Container {
   const { w, h } = opts;
-  const container = scene.add.container(x, y);
-  const radius = 14;
+  const container: Phaser.GameObjects.Container = scene.add.container(x, y);
+  const radius: number = 14;
 
   const { container: panel } = uiFramedPanel(scene, 0, 0, {
     w, h, borderColor: opts.accent ?? ACCENT.gold, radius,
   });
   container.add(panel);
 
-  const highlight = scene.add.graphics();
+  const highlight: Phaser.GameObjects.Graphics = scene.add.graphics();
   highlight.fillStyle(ACCENT.gold, 0.09);
   highlight.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
   highlight.lineStyle(2, ACCENT.goldSoft, 0.95);
@@ -58,14 +60,14 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   highlight.setVisible(false);
   container.add(highlight);
 
-  const titleSize = opts.primary ? 26 : 17;
-  const subSize = opts.primary ? 14 : 11;
+  const titleSize: number = opts.primary ? 26 : 17;
+  const subSize: number = opts.primary ? 14 : 11;
 
-  const title = scene.add.text(0, 0, opts.title, {
+  const title: Phaser.GameObjects.Text = scene.add.text(0, 0, opts.title, {
     fontSize: `${titleSize}px`, color: opts.titleColor ?? TEXT.gold,
     fontFamily: opts.primary ? FONT_DISPLAY : FONT_BODY, align: "center",
   }).setOrigin(0.5, 0);
-  const sub = opts.sub
+  const sub: Phaser.GameObjects.Text | null = opts.sub
     ? scene.add.text(0, 0, opts.sub, {
         fontSize: `${subSize}px`, color: TEXT.dim, fontFamily: FONT_BODY,
         align: "center", wordWrap: { width: w - 24 },
@@ -78,17 +80,17 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   // déborderait du bloc calculé.
   // Borné à un quart de la tuile : à sa taille native (54), le ruban mangeait la
   // moitié de la zone utile d'une tuile secondaire et l'emblème tombait à 45.
-  const RIBBON_SHARE = 0.26;
-  const ribbonH = uiRibbonAvailable(scene)
+  const RIBBON_SHARE: number = 0.26;
+  const ribbonH: number = uiRibbonAvailable(scene)
     ? Math.min(uiRibbonHeight(scene), h * RIBBON_SHARE)
     : 0;
-  const titleBlockH = Math.max(title.height, ribbonH);
+  const titleBlockH: number = Math.max(title.height, ribbonH);
 
   // Empilement d'après les hauteurs RÉELLES (les polices sont remontées sur petit
   // écran, ADR-015) et d'après la place DISPONIBLE : `composeTile` est pur et
   // testé, ce module ne fait que poser les objets aux positions qu'il renvoie.
-  const barH = Math.max(6, uiProgressHeight(scene));
-  const box = composeTile({
+  const barH: number = Math.max(6, uiProgressHeight(scene));
+  const box: TileContentBox = composeTile({
     w, h, titleH: titleBlockH, subH: sub?.height ?? 0,
     maxGlyph: ICON_RASTER_PX, footerH: opts.progress !== undefined ? barH : 0,
     minPad: uiPanelPad(scene),
@@ -100,18 +102,18 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   // l'épaisseur que l'art du pack a partout ailleurs, sans changer d'iconographie.
   // Un emblème du pack (`raw`) arrive avec son relief : ni ombre, ni teinte.
   if (!opts.rawIcon) {
-    const shadow = 3;
+    const shadow: number = 3;
     container.add(scene.add.image(shadow, box.iconCy + shadow, opts.icon)
       .setDisplaySize(box.glyph, box.glyph)
       .setTint(0x0b0f1a).setAlpha(0.45));
   }
-  const emblem = scene.add.image(0, box.iconCy, opts.icon);
+  const emblem: Phaser.GameObjects.Image = scene.add.image(0, box.iconCy, opts.icon);
   // Un raster du pack garde ses PROPORTIONS : l'étirer au carré écraserait le
   // Bastion, dont la planche fait 320×280.
   if (opts.rawIcon) emblem.setScale(box.glyph / Math.max(emblem.width, emblem.height));
   else emblem.setDisplaySize(box.glyph, box.glyph).setTint(opts.iconColor ?? ACCENT.goldSoft);
   container.add(emblem);
-  const ruban = uiRibbon(
+  const ruban: Phaser.GameObjects.NineSlice | null = uiRibbon(
     scene, 0, box.titleTop + titleBlockH / 2, title.width, w - box.pad * 2,
     opts.locked ? "off" : opts.ribbonTone ?? "normal", ribbonH,
   );
@@ -127,14 +129,14 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   }
 
   if (opts.progress !== undefined) {
-    const barW = w - box.pad * 2;
+    const barW: number = w - box.pad * 2;
     container.add(uiProgress(scene, 0, box.footerTop, barW, opts.progress).objects);
   }
 
   // `setInteractive({})` ne définit AUCUNE zone de clic et fait planter Phaser au
   // premier pointeur (`input.hitAreaCallback is not a function`) : sans option de
   // curseur, il faut l'appeler sans argument du tout.
-  const zone = scene.add.zone(0, 0, w, h);
+  const zone: Phaser.GameObjects.Zone = scene.add.zone(0, 0, w, h);
   if (opts.locked) zone.setInteractive();
   else zone.setInteractive({ cursor: CURSOR_POINT });
 
@@ -142,15 +144,15 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   // comme `uiButton` et `uiLevelGrid`. Sur `pointerdown`, l'appui ouvrait l'écran
   // suivant et le relâchement retombait sur ce qui se trouvait dessous : appuyer
   // sur « Histoire » lançait directement le chapitre placé sous le doigt.
-  const DRAG_SLOP = 10;
-  let downAt: { x: number; y: number } | null = null;
+  const DRAG_SLOP: number = 10;
+  let downAt: Vec2 | null = null;
   if (!opts.locked) {
     zone.on("pointerover", () => highlight.setVisible(true));
     zone.on("pointerout", () => { highlight.setVisible(false); downAt = null; });
   }
   zone.on("pointerdown", (p: Phaser.Input.Pointer) => { downAt = { x: p.x, y: p.y }; });
   zone.on("pointerup", (p: Phaser.Input.Pointer) => {
-    const from = downAt;
+    const from: Vec2 | null = downAt;
     downAt = null;
     if (!from || Math.hypot(p.x - from.x, p.y - from.y) > DRAG_SLOP) return;
     opts.onSelect();

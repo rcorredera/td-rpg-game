@@ -38,8 +38,8 @@ export interface UiModal {
 
 /** Modale centrée sur le champ de bataille (`WORLD_W`/`WORLD_H` logiques) — généralise l'overlay d'intro/confirmation/fin de run. */
 export function uiModal(scene: Phaser.Scene, opts: UiModalOpts): UiModal {
-  const depth = opts.depth ?? 3000;
-  const c = scene.add.container(WORLD_W / 2, WORLD_H / 2).setDepth(depth);
+  const depth: number = opts.depth ?? 3000;
+  const c: Phaser.GameObjects.Container = scene.add.container(WORLD_W / 2, WORLD_H / 2).setDepth(depth);
   c.add(scene.add.rectangle(0, 0, WORLD_W, WORLD_H, 0x120d08, opts.dimAlpha ?? 0.5));
   c.add(uiPanel(scene, 0, 0, opts.w, opts.h));
   c.add(scene.add.text(0, -opts.h / 2 + 34, opts.title, {
@@ -52,18 +52,18 @@ export function uiModal(scene: Phaser.Scene, opts: UiModalOpts): UiModal {
     }).setOrigin(0.5));
   }
   if (opts.build) {
-    const content = scene.add.container(0, 0);
+    const content: Phaser.GameObjects.Container = scene.add.container(0, 0);
     c.add(content);
     opts.build(content);
   }
-  const buttons = opts.buttons ?? [];
-  const gap = 20;
-  const widths = buttons.map(b => b.w ?? 150);
-  const totalW = widths.reduce((sum, w) => sum + w, 0) + gap * (buttons.length - 1);
-  let cursorX = -totalW / 2;
+  const buttons: UiModalButton[] = opts.buttons ?? [];
+  const gap: number = 20;
+  const widths: number[] = buttons.map(b => b.w ?? 150);
+  const totalW: number = widths.reduce((sum, w) => sum + w, 0) + gap * (buttons.length - 1);
+  let cursorX: number = -totalW / 2;
   buttons.forEach((b, i) => {
-    const w = widths[i]!;
-    const x = cursorX + w / 2;
+    const w: number = widths[i]!;
+    const x: number = cursorX + w / 2;
     cursorX += w + gap;
     c.add(uiButton(scene, x, opts.h / 2 - 45, b.label, { w, h: 40, gold: b.gold, color: b.color, fontSize: 16 }, () => b.onClick()).container);
   });

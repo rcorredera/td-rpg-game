@@ -12,6 +12,8 @@ import Phaser from "phaser";
 import { ACCENT } from "../theme";
 import { fitInsets } from "../nineSlicePlan";
 import { ensureUiSkinTextures, uiSkinInsets, uiSkinSafeInsets, UI_SKIN_BAR_BIG } from "../uiSkin";
+import type { SafeInsets } from "../uiSkin";
+import type { Insets } from "../nineSlicePlan";
 
 export interface UiProgress {
   /** Hauteur RÉELLE occupée — celle de l'art quand la châsse est disponible. */
@@ -34,11 +36,11 @@ export function uiProgressHeight(scene: Phaser.Scene): number {
 export function uiProgress(
   scene: Phaser.Scene, x: number, top: number, w: number, pct: number, fallbackH = 6,
 ): UiProgress {
-  const clamped = Math.max(0, Math.min(1, pct));
-  const h = uiProgressHeight(scene);
+  const clamped: number = Math.max(0, Math.min(1, pct));
+  const h: number = uiProgressHeight(scene);
 
   if (h === 0) {
-    const g = scene.add.graphics();
+    const g: Phaser.GameObjects.Graphics = scene.add.graphics();
     g.fillStyle(0x000000, 0.45);
     g.fillRoundedRect(x - w / 2, top, w, fallbackH, 3);
     if (clamped > 0) {
@@ -48,19 +50,19 @@ export function uiProgress(
     return { h: fallbackH, objects: [g] };
   }
 
-  const ins = uiSkinInsets(UI_SKIN_BAR_BIG);
-  const fitted = fitInsets(ins, w, h);
-  const chasse = scene.add.nineslice(
+  const ins: Insets = uiSkinInsets(UI_SKIN_BAR_BIG);
+  const fitted: Insets = fitInsets(ins, w, h);
+  const chasse: Phaser.GameObjects.NineSlice = scene.add.nineslice(
     x, top + h / 2, UI_SKIN_BAR_BIG, undefined, w, h, fitted.left, fitted.right, 0, 0,
   );
 
   // Le remplissage se pose DANS la gorge : en retrait de la ferrure des embouts,
   // mesurée sur la planche, et d'une part de la hauteur pour le cerclage.
-  const safe = uiSkinSafeInsets(UI_SKIN_BAR_BIG);
-  const padY = Math.max(2, Math.round(h * 0.22));
-  const ix = x - w / 2 + safe.left;
-  const iw = Math.max(0, w - safe.left - safe.right);
-  const g = scene.add.graphics();
+  const safe: SafeInsets = uiSkinSafeInsets(UI_SKIN_BAR_BIG);
+  const padY: number = Math.max(2, Math.round(h * 0.22));
+  const ix: number = x - w / 2 + safe.left;
+  const iw: number = Math.max(0, w - safe.left - safe.right);
+  const g: Phaser.GameObjects.Graphics = scene.add.graphics();
   if (clamped > 0) {
     g.fillStyle(ACCENT.gold, 0.95);
     g.fillRect(ix, top + padY, iw * clamped, h - padY * 2);

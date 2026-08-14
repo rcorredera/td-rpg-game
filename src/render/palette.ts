@@ -11,6 +11,7 @@
 // ============================================================
 
 /** Sol et décor — désaturés, ils ne doivent jamais concurrencer les unités. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const GROUND = {
   grassLight: 0x7fa05a,
   grass: 0x6b8c4a,
@@ -22,6 +23,7 @@ export const GROUND = {
 } as const;
 
 /** Camps ennemis — une teinte dominante par famille, nettement séparées. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const FOE = {
   goblin: 0x8dc63f,      // vert acide : petit et vif
   goblinDark: 0x5d8f22,
@@ -35,6 +37,7 @@ export const FOE = {
 } as const;
 
 /** Défenses du joueur — bleu/pierre côté allié, pour trancher avec les verts ennemis. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const KEEP = {
   stone: 0xb9b3a4,
   stoneDark: 0x7d786c,
@@ -46,6 +49,7 @@ export const KEEP = {
 } as const;
 
 /** Héros — or chaud, unique dans la palette : il doit se repérer instantanément. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const HERO_C = {
   armor: 0xdcd6c6,
   armorDark: 0x9a9384,
@@ -54,6 +58,7 @@ export const HERO_C = {
 } as const;
 
 /** Accents d'information : réservés aux barres, portées, états. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const SIGNAL = {
   hpGood: 0x5ec26a,
   hpWarn: 0xe8c252,

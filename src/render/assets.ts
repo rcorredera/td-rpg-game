@@ -8,14 +8,15 @@
 import Phaser from "phaser";
 
 /** Clé(s) de texture des spritesheets. */
+// eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const TEX = {
   td: "td_sheet", // Kenney TD : véhicules, tourelles, tuiles, FX
 } as const;
 
 /** Taille d'une tuile source (pixels). */
-export const TILE = 64;
+export const TILE: number = 64;
 /** Nombre de colonnes de la planche (frame = row*COLS + col). */
-export const SHEET_COLS = 23;
+export const SHEET_COLS: number = 23;
 
 export function frame(col: number, row: number): number {
   return row * SHEET_COLS + col;

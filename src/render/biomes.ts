@@ -129,7 +129,7 @@ export const BIOMES: Record<string, BiomeDef> = {
 };
 
 /** Biome de repli — un chapitre sans biome déclaré reste jouable. */
-export const DEFAULT_BIOME = "meadow";
+export const DEFAULT_BIOME: string = "meadow";
 
 export function biomeFor(id: string | undefined): BiomeDef {
   return BIOMES[id ?? DEFAULT_BIOME] ?? BIOMES[DEFAULT_BIOME]!;

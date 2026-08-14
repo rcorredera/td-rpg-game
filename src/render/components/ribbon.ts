@@ -11,10 +11,12 @@
 
 import Phaser from "phaser";
 import { fitInsets } from "../nineSlicePlan";
+import type { Insets } from "../nineSlicePlan";
 import {
   ensureUiSkinTextures, uiSkinInsets, uiSkinSafeInsets,
   UI_SKIN_RIBBON, UI_SKIN_RIBBON_OFF, UI_SKIN_RIBBON_RIFT,
 } from "../uiSkin";
+import type { SafeInsets } from "../uiSkin";
 
 /** Rôle du ruban — la couleur suit le sens, pas le goût. */
 export type RibbonTone = "normal" | "rift" | "off";
@@ -33,12 +35,12 @@ export function uiRibbonAvailable(scene: Phaser.Scene): boolean {
 
 /** Hauteur naturelle du ruban, telle que dessinée. Le texte s'y centre. */
 export function uiRibbonHeight(scene: Phaser.Scene): number {
-  const t = scene.textures.get(UI_SKIN_RIBBON);
+  const t: Phaser.Textures.Texture = scene.textures.get(UI_SKIN_RIBBON);
   return t.key === "__MISSING" ? 0 : t.getSourceImage().height;
 }
 
 /** Air laissé entre le libellé et le début de l'arrondi de l'embout. */
-const TEXT_AIR = 8;
+const TEXT_AIR: number = 8;
 
 /**
  * Pose un ruban centré sur `x`,`y`, assez large pour loger `textW`.
@@ -54,18 +56,18 @@ export function uiRibbon(
   tone: RibbonTone = "normal", maxH = Infinity,
 ): Phaser.GameObjects.NineSlice | null {
   if (!uiRibbonAvailable(scene)) return null;
-  const key = KEY[tone];
-  const ins = uiSkinInsets(key);
-  const safe = uiSkinSafeInsets(key);
-  const nativeH = uiRibbonHeight(scene);
+  const key: string = KEY[tone];
+  const ins: Insets = uiSkinInsets(key);
+  const safe: SafeInsets = uiSkinSafeInsets(key);
+  const nativeH: number = uiRibbonHeight(scene);
   // Réduction PROPORTIONNELLE (`setScale`) et non un étirement vertical : les
   // embouts se déformeraient. Le pack est du pixel art, on ne l'agrandit jamais.
-  const k = Math.min(1, maxH / nativeH);
+  const k: number = Math.min(1, maxH / nativeH);
 
-  const voulu = textW / k + safe.left + safe.right + TEXT_AIR * 2;
-  const w = Math.min(maxW / k, Math.max(ins.left + ins.right + 4, voulu));
-  const fitted = fitInsets(ins, w, nativeH);
-  const n = scene.add.nineslice(x, y, key, undefined, w, nativeH, fitted.left, fitted.right, 0, 0);
+  const voulu: number = textW / k + safe.left + safe.right + TEXT_AIR * 2;
+  const w: number = Math.min(maxW / k, Math.max(ins.left + ins.right + 4, voulu));
+  const fitted: Insets = fitInsets(ins, w, nativeH);
+  const n: Phaser.GameObjects.NineSlice = scene.add.nineslice(x, y, key, undefined, w, nativeH, fitted.left, fitted.right, 0, 0);
   if (k < 1) n.setScale(k);
   return n;
 }

@@ -96,17 +96,17 @@ const ARCANE: UiTheme = {
  * jugent donc sur `renderedPanel()`, pas sur `panel` — sinon un test vert
  * garantirait la lisibilité d'une couleur que personne n'affiche.
  */
-export const SKIN_PANEL_FILL = 0x525b66;
+export const SKIN_PANEL_FILL: number = 0x525b66;
 
 /** Assombrissement du panneau inactif, relatif au panneau standard. */
-export const SKIN_DIM_FACTOR = 0.6;
+export const SKIN_DIM_FACTOR: number = 0.6;
 
 /** Couleur RÉELLEMENT affichée par un panneau habillé, `setTint` multipliant. */
 export function renderedPanel(theme: UiTheme, dim = false): number {
-  const f = dim ? SKIN_DIM_FACTOR : 1;
+  const f: number = dim ? SKIN_DIM_FACTOR : 1;
   const ch = (shift: number): number => {
-    const base = (SKIN_PANEL_FILL >> shift) & 0xff;
-    const tint = (theme.skinTint >> shift) & 0xff;
+    const base: number = (SKIN_PANEL_FILL >> shift) & 0xff;
+    const tint: number = (theme.skinTint >> shift) & 0xff;
     return Math.round((base * tint / 255) * f);
   };
   return (ch(16) << 16) | (ch(8) << 8) | ch(0);
@@ -118,7 +118,7 @@ export const UI_THEMES: Record<string, UiTheme> = {
   arcane: ARCANE,
 };
 
-export const DEFAULT_UI_THEME = "nocturne";
+export const DEFAULT_UI_THEME: string = "nocturne";
 
 /**
  * Thème actif. Un paramètre d'URL `?theme=` permet de comparer les palettes sans
@@ -126,8 +126,8 @@ export const DEFAULT_UI_THEME = "nocturne";
  * UI ne l'expose et il retombe silencieusement sur le défaut.
  */
 export function resolveUiTheme(search?: string): UiTheme {
-  const q = search ?? (typeof location !== "undefined" ? location.search : "");
-  const id = /[?&]theme=([a-z]+)/i.exec(q)?.[1]?.toLowerCase();
+  const q: string = search ?? (typeof location !== "undefined" ? location.search : "");
+  const id: string | undefined = /[?&]theme=([a-z]+)/i.exec(q)?.[1]?.toLowerCase();
   return UI_THEMES[id ?? ""] ?? UI_THEMES[DEFAULT_UI_THEME]!;
 }
 

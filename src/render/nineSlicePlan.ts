@@ -17,11 +17,11 @@
 
 /** Largeur de la bande centrale prélevée : c'est elle que le nine-slice étire,
  *  8 px suffisent et gardent la texture minuscule. */
-export const MID = 8;
+export const MID: number = 8;
 
 /** Marge de sécurité au-dessus de la profondeur du dessin d'angle, pour ne pas
  *  rogner pile sur le dernier pixel du contour. */
-const DETAIL_MARGIN = 4;
+const DETAIL_MARGIN: number = 4;
 
 /** Bornes opaques des 9 pièces, unifiées par rangée et par colonne.
  *  Unifiées, car les pièces d'une même rangée n'ont pas toutes la même hauteur
@@ -97,10 +97,10 @@ export interface StripPlan {
  *   contraire la pièce que l'artiste a dessinée pour se répéter entre les embouts.
  */
 export function planStrip(frame: StripFrame): StripPlan {
-  const wL = frame.right[0]! - frame.left[0]!;
-  const wR = frame.right[2]! - frame.left[2]!;
-  const h = frame.bottom - frame.top;
-  const midCentre = Math.round((frame.left[1]! + frame.right[1]!) / 2 - MID / 2);
+  const wL: number = frame.right[0]! - frame.left[0]!;
+  const wR: number = frame.right[2]! - frame.left[2]!;
+  const h: number = frame.bottom - frame.top;
+  const midCentre: number = Math.round((frame.left[1]! + frame.right[1]!) / 2 - MID / 2);
 
   return {
     fullW: wL + MID + wR,
@@ -128,9 +128,9 @@ export function planStrip(frame: StripFrame): StripPlan {
  */
 export function fitInsets(insets: Insets, w: number, h: number): Insets {
   const fit = (a: number, b: number, avail: number): [number, number] => {
-    const room = Math.max(0, avail - 2);
+    const room: number = Math.max(0, avail - 2);
     if (a + b <= room) return [a, b];
-    const k = a + b === 0 ? 0 : room / (a + b);
+    const k: number = a + b === 0 ? 0 : room / (a + b);
     return [Math.floor(a * k), Math.floor(b * k)];
   };
   const [left, right] = fit(insets.left, insets.right, w);
@@ -174,29 +174,29 @@ export function sliceInsets(
 export function planNineSlice(
   frame: SheetFrame, detailDepth: number, targetInset: number,
 ): NineSlicePlan {
-  const pieceW = [0, 1, 2].map(c => frame.right[c]! - frame.left[c]!);
-  const pieceH = [0, 1, 2].map(r => frame.bottom[r]! - frame.top[r]!);
+  const pieceW: number[] = [0, 1, 2].map(c => frame.right[c]! - frame.left[c]!);
+  const pieceH: number[] = [0, 1, 2].map(r => frame.bottom[r]! - frame.top[r]!);
 
-  const croppable = detailDepth + DETAIL_MARGIN <= targetInset;
+  const croppable: boolean = detailDepth + DETAIL_MARGIN <= targetInset;
 
   // Largeurs des trois colonnes et hauteurs des trois rangées de l'assemblage.
-  const cw = croppable
+  const cw: number[] = croppable
     ? [targetInset, MID, targetInset]
     : [pieceW[0]!, MID, pieceW[2]!];
-  const rh = croppable
+  const rh: number[] = croppable
     ? [targetInset, MID, targetInset]
     : [pieceH[0]!, MID, pieceH[2]!];
 
-  const fullW = cw[0]! + cw[1]! + cw[2]!;
-  const fullH = rh[0]! + rh[1]! + rh[2]!;
+  const fullW: number = cw[0]! + cw[1]! + cw[2]!;
+  const fullH: number = rh[0]! + rh[1]! + rh[2]!;
 
   // Réduction : ramène le plus grand coin sur la marge visée, pour que deux
   // marges tiennent dans le plus petit élément habillé.
-  const biggest = Math.max(cw[0]!, cw[2]!, rh[0]!, rh[2]!);
-  const scale = croppable ? 1 : targetInset / biggest;
+  const biggest: number = Math.max(cw[0]!, cw[2]!, rh[0]!, rh[2]!);
+  const scale: number = croppable ? 1 : targetInset / biggest;
 
-  const dx = [0, cw[0]!, cw[0]! + cw[1]!];
-  const dy = [0, rh[0]!, rh[0]! + rh[1]!];
+  const dx: number[] = [0, cw[0]!, cw[0]! + cw[1]!];
+  const dy: number[] = [0, rh[0]!, rh[0]! + rh[1]!];
 
   // Où prélever la bande du milieu — et c'est la branche qui décide, pas un
   // réglage :
@@ -211,20 +211,20 @@ export function planNineSlice(
   //   planches enfoncées (`btn-*-pressed`, dessin d'angle sur 19 px) noires à
   //   l'appui. On prélève alors dans la pièce que l'artiste a dessinée pour ça :
   //   celle du milieu de la planche, en son centre.
-  const midX = croppable
+  const midX: number = croppable
     ? frame.left[0]! + cw[0]!
     : Math.round((frame.left[1]! + frame.right[1]!) / 2 - MID / 2);
-  const midY = croppable
+  const midY: number = croppable
     ? frame.top[0]! + rh[0]!
     : Math.round((frame.top[1]! + frame.bottom[1]!) / 2 - MID / 2);
 
   const rects: PieceRect[] = [];
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 3; c++) {
-      const sx = c === 0 ? frame.left[0]!
+  for (let r: number = 0; r < 3; r++) {
+    for (let c: number = 0; c < 3; c++) {
+      const sx: number = c === 0 ? frame.left[0]!
         : c === 1 ? midX
         : frame.right[2]! - cw[2]!;
-      const sy = r === 0 ? frame.top[0]!
+      const sy: number = r === 0 ? frame.top[0]!
         : r === 1 ? midY
         : frame.bottom[2]! - rh[2]!;
       // La colonne du milieu s'étire en X, la rangée du milieu en Y — les quatre

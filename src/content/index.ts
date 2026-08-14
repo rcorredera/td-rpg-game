@@ -170,8 +170,8 @@ const FRESH_COUNT: Record<string, number> = { rat: 8, wraith: 3, gargoyle: 1.6, 
 
 /** Créatures disponibles à un chapitre donné : le socle plus tout ce qui précède. */
 function rosterFor(num: number): string[] {
-  const base = ["goblin", "orc", "bat", "brute"];
-  const unlocked = Object.entries(NEWCOMER)
+  const base: string[] = ["goblin", "orc", "bat", "brute"];
+  const unlocked: string[] = Object.entries(NEWCOMER)
     .filter(([at]) => num >= Number(at))
     .map(([, id]) => id);
   return [...base, ...unlocked];
@@ -185,17 +185,17 @@ function rosterFor(num: number): string[] {
  * Déterministe (pas de RNG) : même content à chaque chargement.
  */
 function makeWaves(num: number, pathCount: number): WaveDef[] {
-  const d = num - 1;
-  const waveCount = d >= 9 ? 12 : 10;
-  const roster = rosterFor(num);
-  const fresh = NEWCOMER[num];
+  const d: number = num - 1;
+  const waveCount: number = d >= 9 ? 12 : 10;
+  const roster: string[] = rosterFor(num);
+  const fresh: string | undefined = NEWCOMER[num];
   const has = (id: string) => roster.includes(id);
   const waves: WaveDef[] = [];
-  for (let w = 0; w < waveCount; w++) {
+  for (let w: number = 0; w < waveCount; w++) {
     // Facteur de volume. Abaissé avec la densification (ADR-020) : des vagues plus
     // SERRÉES à effectif égal pèsent bien plus lourd — c'est le resserrement, pas le
     // nombre, qui donne son rôle aux tours à zone.
-    const k = 1 + d * 0.2 + w * 0.12;
+    const k: number = 1 + d * 0.2 + w * 0.12;
     const spawns: WaveSpawn[] = [];
     switch (w % 5) {
       case 0:
@@ -240,7 +240,7 @@ function makeWaves(num: number, pathCount: number): WaveDef[] {
     // Distribue les renforts sur les voies secondaires en tourniquet (1..pathCount-1) :
     // un chapitre à 3 voies alterne entre elles au lieu de toujours viser la voie 1.
     if (pathCount > 1 && w >= 3 && w % 2 === 1) {
-      const extraPathIndex = 1 + (Math.floor(w / 2) % (pathCount - 1));
+      const extraPathIndex: number = 1 + (Math.floor(w / 2) % (pathCount - 1));
       spawns.push({ enemyId: w % 4 === 1 ? "goblin" : "orc", count: Math.round(3 * k), intervalS: 0.85, delayS: 2, pathIndex: extraPathIndex });
     }
     const wave: WaveDef = { spawns };

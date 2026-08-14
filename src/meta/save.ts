@@ -7,7 +7,7 @@
 
 import type { Profile } from "../core/types";
 
-const KEY = "tdrpg_profile_v1";
+const KEY: string = "tdrpg_profile_v1";
 
 export interface SaveAdapter {
   load(): Profile;
@@ -31,7 +31,7 @@ function freshProfile(): Profile {
 
 /** Complète un profil partiel/ancien avec les défauts, champ par champ. */
 function normalize(parsed: Partial<Profile>): Profile {
-  const fresh = freshProfile();
+  const fresh: Profile = freshProfile();
   return {
     shards: typeof parsed.shards === "number" ? parsed.shards : fresh.shards,
     sceaux: typeof parsed.sceaux === "number" ? parsed.sceaux : fresh.sceaux,
@@ -55,7 +55,7 @@ function normalize(parsed: Partial<Profile>): Profile {
 export class LocalStorageSaveAdapter implements SaveAdapter {
   load(): Profile {
     try {
-      const raw = localStorage.getItem(KEY);
+      const raw: string | null = localStorage.getItem(KEY);
       if (!raw) return freshProfile();
       return normalize(JSON.parse(raw) as Partial<Profile>);
     } catch {

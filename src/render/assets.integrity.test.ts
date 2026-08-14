@@ -20,12 +20,12 @@ import { describe, expect, it } from "vitest";
 // ============================================================
 
 /** Sources du projet, en texte brut. */
-const SOURCES = import.meta.glob("/src/**/*.ts", {
+const SOURCES: Record<string, string> = import.meta.glob("/src/**/*.ts", {
   query: "?raw", import: "default", eager: true,
 }) as Record<string, string>;
 
 /** Fichiers présents sous public/assets (clés seulement : non-eager, rien n'est chargé). */
-const ASSET_FILES = Object.keys(import.meta.glob("/public/assets/**/*"));
+const ASSET_FILES: string[] = Object.keys(import.meta.glob("/public/assets/**/*"));
 
 /**
  * Assets versionnés mais pas encore câblés. Une entrée ici est une DETTE, pas une
@@ -34,13 +34,13 @@ const ASSET_FILES = Object.keys(import.meta.glob("/public/assets/**/*"));
  * branchés (`render/uiSkin.ts`) ; restent les rubans/bannières de titre, le
  * château, le décor et les FX.
  */
-const RESERVE = [/^\/public\/assets\/tiny-swords\//];
+const RESERVE: RegExp[] = [/^\/public\/assets\/tiny-swords\//];
 
 /** Licences et notes : jamais chargées par le jeu, mais obligatoires (CC0 / CC BY). */
-const NEVER_LOADED = /(?:License[^/]*\.txt|README\.md)$/i;
+const NEVER_LOADED: RegExp = /(?:License[^/]*\.txt|README\.md)$/i;
 
 /** Concaténation des sources, hors ce fichier (qui cite des noms en exemple). */
-const CODE = Object.entries(SOURCES)
+const CODE: string = Object.entries(SOURCES)
   .filter(([p]) => !p.endsWith("assets.integrity.test.ts"))
   .map(([, src]) => src)
   .join("\n");
@@ -48,23 +48,23 @@ const CODE = Object.entries(SOURCES)
 const basename = (p: string) => p.slice(p.lastIndexOf("/") + 1);
 
 /** Noms de fichiers présents sur le disque. */
-const ON_DISK = new Set(ASSET_FILES.map(basename));
+const ON_DISK: Set<string> = new Set(ASSET_FILES.map(basename));
 
 /** Noms de fichiers cités dans le code, quelle que soit la façon dont le chemin est bâti. */
 // La négation en tête écarte les appels de méthode : sans elle, `scene.load.svg(…)`
 // est lu comme un fichier nommé « load.svg ».
-const CITED = [...new Set(CODE.match(/(?<![.\w])[A-Za-z0-9_@-]+\.(?:png|svg|json)/g) ?? [])];
+const CITED: string[] = [...new Set(CODE.match(/(?<![.\w])[A-Za-z0-9_@-]+\.(?:png|svg|json)/g) ?? [])];
 
 describe("intégrité des assets", () => {
   it("ne cite aucun fichier absent du disque", () => {
     // Le vrai piège : renommer un fichier et oublier un `load.image`. Le typage ne
     // voit rien, les tests passent, et la texture manque à l'exécution.
-    const missing = CITED.filter((n) => !ON_DISK.has(n));
+    const missing: string[] = CITED.filter((n) => !ON_DISK.has(n));
     expect(missing, "fichiers cités dans le code mais absents de public/assets").toEqual([]);
   });
 
   it("ne conserve aucun fichier que personne ne charge", () => {
-    const orphans = ASSET_FILES.filter((p) => {
+    const orphans: string[] = ASSET_FILES.filter((p) => {
       if (NEVER_LOADED.test(p)) return false;
       if (RESERVE.some((re) => re.test(p))) return false;
       return !CODE.includes(basename(p));

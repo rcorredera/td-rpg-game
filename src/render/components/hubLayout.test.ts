@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { computeViewport, WORLD_W } from "../viewport";
 import { hubLayout, levelGridZone, menuZone, SIDE_BY_SIDE_MIN_WIDTH, type TileBox } from "./hubLayout";
+import type { HubLayout, LevelGridZone, MenuZone } from "./hubLayout";
+import type { Viewport } from "../viewport";
 
 /** Deux boîtes se chevauchent-elles ? (marge de 0,5 pour les arrondis) */
 function overlaps(a: TileBox, b: TileBox): boolean {
@@ -15,7 +17,7 @@ describe("hubLayout — le Campement doit occuper l'écran", () => {
   // largeur logique en paysage mobile avoisine 1 300. Les deux tiers latéraux
   // restaient noirs, et l'écran lisait comme un menu de réglages (ADR-025).
   it("passe en deux colonnes dès que la largeur le permet", () => {
-    const wide = hubLayout(600, 300, 1200, 400, 4);
+    const wide: HubLayout = hubLayout(600, 300, 1200, 400, 4);
     expect(wide.sideBySide).toBe(true);
     // La principale et la première secondaire sont côte à côte, pas l'une sous l'autre.
     expect(wide.secondary[0]!.x).toBeGreaterThan(wide.primary.x);
@@ -23,7 +25,7 @@ describe("hubLayout — le Campement doit occuper l'écran", () => {
 
   it("retombe en colonne unique sur écran étroit", () => {
     // Deux colonnes sur 500 unités donneraient des tuiles illisibles.
-    const narrow = hubLayout(400, 300, 500, 400, 4);
+    const narrow: HubLayout = hubLayout(400, 300, 500, 400, 4);
     expect(narrow.sideBySide).toBe(false);
     expect(narrow.secondary[0]!.y).toBeGreaterThan(narrow.primary.y);
   });
@@ -31,10 +33,10 @@ describe("hubLayout — le Campement doit occuper l'écran", () => {
   it("occupe vraiment la largeur disponible", () => {
     // LE test de cette famille : c'est le gâchis de largeur qui faisait « appli »
     // plutôt que « jeu ». On exige au moins 90 % de la zone utile couverte.
-    const w = 1200;
-    const l = hubLayout(600, 300, w, 400, 4);
-    const left = Math.min(...boxes(l).map(b => b.x - b.w / 2));
-    const right = Math.max(...boxes(l).map(b => b.x + b.w / 2));
+    const w: number = 1200;
+    const l: HubLayout = hubLayout(600, 300, w, 400, 4);
+    const left: number = Math.min(...boxes(l).map(b => b.x - b.w / 2));
+    const right: number = Math.max(...boxes(l).map(b => b.x + b.w / 2));
     expect(right - left).toBeGreaterThanOrEqual(w * 0.9);
   });
 
@@ -42,9 +44,9 @@ describe("hubLayout — le Campement doit occuper l'écran", () => {
     // Sans hiérarchie, le joueur ne sait pas où aller — c'était le cas avec cinq
     // cartes identiques.
     for (const w of [500, 1200]) {
-      const l = hubLayout(600, 300, w, 400, 4);
-      const primaryArea = l.primary.w * l.primary.h;
-      const secondArea = l.secondary[0]!.w * l.secondary[0]!.h;
+      const l: HubLayout = hubLayout(600, 300, w, 400, 4);
+      const primaryArea: number = l.primary.w * l.primary.h;
+      const secondArea: number = l.secondary[0]!.w * l.secondary[0]!.h;
       expect(primaryArea, `largeur ${w}`).toBeGreaterThan(secondArea);
     }
   });
@@ -52,9 +54,9 @@ describe("hubLayout — le Campement doit occuper l'écran", () => {
   it("ne fait jamais se chevaucher deux tuiles", () => {
     for (const w of [400, 700, 900, 1400]) {
       for (const count of [2, 3, 4, 5]) {
-        const all = boxes(hubLayout(600, 300, w, 400, count));
-        for (let i = 0; i < all.length; i++) {
-          for (let j = i + 1; j < all.length; j++) {
+        const all: TileBox[] = boxes(hubLayout(600, 300, w, 400, count));
+        for (let i: number = 0; i < all.length; i++) {
+          for (let j: number = i + 1; j < all.length; j++) {
             expect(overlaps(all[i]!, all[j]!), `w=${w} n=${count} : tuiles ${i} et ${j}`).toBe(false);
           }
         }
@@ -63,7 +65,7 @@ describe("hubLayout — le Campement doit occuper l'écran", () => {
   });
 
   it("garde toutes les tuiles dans la zone donnée", () => {
-    const l = hubLayout(600, 300, 1200, 400, 4);
+    const l: HubLayout = hubLayout(600, 300, 1200, 400, 4);
     for (const b of boxes(l)) {
       expect(b.x - b.w / 2).toBeGreaterThanOrEqual(600 - 1200 / 2 - 1);
       expect(b.x + b.w / 2).toBeLessThanOrEqual(600 + 1200 / 2 + 1);
@@ -99,7 +101,7 @@ describe("ancrage des écrans de menu dans le monde", () => {
 
   it("centre les écrans sur le monde, jamais sur une constante écrite en dur", () => {
     for (const [name, w, h, dpr] of SCREENS) {
-      const v = computeViewport(w, h, dpr);
+      const v: Viewport = computeViewport(w, h, dpr);
       expect(menuZone(v).cx, `${name} : Campement`).toBeCloseTo(WORLD_W / 2, 6);
       expect(levelGridZone(v).cx, `${name} : grille des chapitres`).toBeCloseTo(WORLD_W / 2, 6);
     }
@@ -107,8 +109,8 @@ describe("ancrage des écrans de menu dans le monde", () => {
 
   it("garde toutes les tuiles du Campement dans la zone visible", () => {
     for (const [name, w, h, dpr] of SCREENS) {
-      const v = computeViewport(w, h, dpr);
-      const z = menuZone(v);
+      const v: Viewport = computeViewport(w, h, dpr);
+      const z: MenuZone = menuZone(v);
       for (const [i, b] of boxes(hubLayout(z.cx, z.cy, z.w, z.h, 4)).entries()) {
         expect(b.x - b.w / 2, `${name} : tuile ${i} déborde à gauche`).toBeGreaterThanOrEqual(v.left - 0.5);
         expect(b.x + b.w / 2, `${name} : tuile ${i} déborde à droite`).toBeLessThanOrEqual(v.right + 0.5);
@@ -120,8 +122,8 @@ describe("ancrage des écrans de menu dans le monde", () => {
 
   it("garde la grille des chapitres dans la zone visible", () => {
     for (const [name, w, h, dpr] of SCREENS) {
-      const v = computeViewport(w, h, dpr);
-      const g = levelGridZone(v);
+      const v: Viewport = computeViewport(w, h, dpr);
+      const g: LevelGridZone = levelGridZone(v);
       expect(g.cx - g.w / 2, `${name} : déborde à gauche`).toBeGreaterThanOrEqual(v.left - 0.5);
       expect(g.cx + g.w / 2, `${name} : déborde à droite`).toBeLessThanOrEqual(v.right + 0.5);
     }

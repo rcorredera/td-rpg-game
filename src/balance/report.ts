@@ -11,13 +11,15 @@ import {
   towerDps, towerInvestment, traversalSeconds,
 } from "./datasheet";
 import { economyHealth } from "./economy";
+import type { ChapterStats } from "./datasheet";
+import type { EconomyHealth } from "./economy";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const num = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1));
 
 /** Table alignée : les colonnes se dimensionnent sur leur contenu réel. */
 export function table(headers: string[], rows: string[][]): string {
-  const widths = headers.map((h, i) =>
+  const widths: number[] = headers.map((h, i) =>
     Math.max(h.length, ...rows.map(r => (r[i] ?? "").length)));
   const line = (cells: string[]) =>
     "  " + cells.map((cell, i) => (i === 0 ? cell.padEnd(widths[i]!) : cell.padStart(widths[i]!))).join("  ");
@@ -31,7 +33,7 @@ export function section(title: string): string {
 // ---------- Fiches statiques ----------
 
 export function enemiesReport(c: ContentPack, atWave = 9): string {
-  const rows = Object.values(c.enemies).map(e => [
+  const rows: string[][] = Object.values(c.enemies).map(e => [
     e.name,
     e.flying ? "vol" : "sol",
     String(e.hp),
@@ -78,8 +80,8 @@ export function towersReport(c: ContentPack): string {
 }
 
 export function chaptersReport(c: ContentPack): string {
-  const rows = allChapterStats(c).map(ch => {
-    const flying = ch.waves.filter(w => w.flyingHpShare > 0).length;
+  const rows: string[][] = allChapterStats(c).map(ch => {
+    const flying: number = ch.waves.filter(w => w.flyingHpShare > 0).length;
     return [
       `${ch.index + 1}. ${ch.name}`,
       String(ch.waveCount),
@@ -105,17 +107,17 @@ export function chaptersReport(c: ContentPack): string {
  * d'une vague dépassent ce produit, elle passe quelle que soit la façon de jouer.
  */
 export function pressureReport(c: ContentPack, chapterIndex: number): string {
-  const ch = allChapterStats(c)[chapterIndex];
+  const ch: ChapterStats | undefined = allChapterStats(c)[chapterIndex];
   if (!ch) return "";
-  const slots = ch.slotCount;
+  const slots: number = ch.slotCount;
   // Référence : tous les emplacements occupés par des archeries de niveau max.
-  const refDps = slots * towerDps(c, "tower_archer", c.towers.tower_archer!.levels.length);
-  const rows = ch.waves.map(w => {
-    const slowest = w.enemyIds.reduce((a, id) => {
-      const s = traversalSeconds(c, chapterIndex, 0, id);
+  const refDps: number = slots * towerDps(c, "tower_archer", c.towers.tower_archer!.levels.length);
+  const rows: string[][] = ch.waves.map(w => {
+    const slowest: number = w.enemyIds.reduce((a, id) => {
+      const s: number = traversalSeconds(c, chapterIndex, 0, id);
       return Math.max(a, s);
     }, 0);
-    const budget = refDps * slowest;
+    const budget: number = refDps * slowest;
     return [
       `v${w.index + 1}`,
       String(w.count),
@@ -141,8 +143,8 @@ export function pressureReport(c: ContentPack, chapterIndex: number): string {
 // ---------- Méta ----------
 
 export function economyReport(c: ContentPack, unlocks: UnlockDef[], blockSecondsPerRun = 35): string {
-  const h = economyHealth(c, unlocks, blockSecondsPerRun);
-  const rows = h.shardsPerChapter.map((s, i) => [
+  const h: EconomyHealth = economyHealth(c, unlocks, blockSecondsPerRun);
+  const rows: string[][] = h.shardsPerChapter.map((s, i) => [
     `${i + 1}. ${c.chapters[i]?.name ?? "?"}`,
     String(s),
     `×${(s / (h.firstChapterShards || 1)).toFixed(2)}`,
@@ -174,7 +176,7 @@ export function economyReport(c: ContentPack, unlocks: UnlockDef[], blockSeconds
 // ---------- Autoplay ----------
 
 export function autoplayReport(reports: AutoplayReport[]): string {
-  const rows = reports.map(r => [
+  const rows: string[][] = reports.map(r => [
     `${r.chapterIndex + 1}`,
     r.policy,
     r.result.victory ? "VICTOIRE" : "défaite",
@@ -204,14 +206,14 @@ export function autoplayReport(reports: AutoplayReport[]): string {
  */
 export function compositionReport(c: ContentPack, useHero = true): string {
   // Paliers ouverts : on compare des compositions à puissance égale, pas des états de méta.
-  const unlocked = { unlocks: c.unlocks.map(u => u.id) };
-  const ids = Object.keys(c.towers);
+  const unlocked: { unlocks: string[] } = { unlocks: c.unlocks.map(u => u.id) };
+  const ids: string[] = Object.keys(c.towers);
   const compos: { name: string; towers: string[] }[] = [
     ...ids.map(id => ({ name: `${c.towers[id]!.name} seule`, towers: [id] })),
     { name: "toutes (mélange)", towers: ids },
   ];
-  const rows = compos.map(({ name, towers }) => {
-    const rs = autoplayAll(c, { policy: "spread", towers, useHero, profile: unlocked });
+  const rows: string[][] = compos.map(({ name, towers }) => {
+    const rs: AutoplayReport[] = autoplayAll(c, { policy: "spread", towers, useHero, profile: unlocked });
     return [
       name,
       `${rs.filter(r => r.result.victory).length}/${rs.length}`,
@@ -230,7 +232,7 @@ export function compositionReport(c: ContentPack, useHero = true): string {
 
 /** Détail vague par vague d'un run — pour comprendre POURQUOI un chapitre casse. */
 export function waveTraceReport(r: AutoplayReport): string {
-  const rows = r.waves.map(w => [
+  const rows: string[][] = r.waves.map(w => [
     `v${w.wave + 1}`,
     String(w.towers),
     String(w.towerLevels),

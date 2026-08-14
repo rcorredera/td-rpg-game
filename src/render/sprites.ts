@@ -59,7 +59,7 @@ const ENEMIES: Record<string, SpriteRef> = {
 };
 
 /** Taille par défaut si un skin oublie de la préciser. */
-export const ENEMY_SIZE_FALLBACK = 46;
+export const ENEMY_SIZE_FALLBACK: number = 46;
 
 // ---- Tours --------------------------------------------------------------
 // Une entrée par PALIER visuel : l'amélioration doit se voir sur la carte, pas
@@ -104,17 +104,17 @@ const TILES: Record<TileKind, SpriteRef> = {
 // ---- API ----------------------------------------------------------------
 
 export function enemyView(defId: string): SpriteRef {
-  const v = ENEMIES[defId];
+  const v: SpriteRef | undefined = ENEMIES[defId];
   if (!v) throw new Error(`sprites: ennemi non mappé « ${defId} »`);
   return v;
 }
 
 export function towerView(defId: string, level = 1, specId?: string | null): TowerView {
-  const skin = TOWERS[defId];
+  const skin: TowerSkin | undefined = TOWERS[defId];
   if (!skin) throw new Error(`sprites: tour non mappée « ${defId} »`);
-  const tier = Math.min(towerTier(level, specId), skin.tiers.length - 1);
-  const base = skin.tiers[tier]!;
-  const tint = specId ? skin.specTint?.[specId] : undefined;
+  const tier: number = Math.min(towerTier(level, specId), skin.tiers.length - 1);
+  const base: SpriteRef = skin.tiers[tier]!;
+  const tint: number | undefined = specId ? skin.specTint?.[specId] : undefined;
   return { base: tint ? { ...base, tint } : base };
 }
 
@@ -132,4 +132,4 @@ export function tileFor(kind: TileKind): SpriteRef {
 
 /** Frames valides sur la planche TD (23×13 = 299). Conservé : la planche sert
  *  encore aux FX (flamme d'explosion) le temps de leur reprise. */
-export const SHEET_FRAME_MAX = 298;
+export const SHEET_FRAME_MAX: number = 298;

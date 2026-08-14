@@ -109,11 +109,20 @@ par PR** : `main` à la racine, chaque PR ouverte dans `/pr-<numéro>/` (lien co
 sur la PR), nettoyée à la fermeture. Le `base` de build est surchargé par CI via `vite build --base`
 selon l'événement — pas de branche de config supplémentaire dans `vite.config.ts`.
 
+## Typage explicite (ADR-033)
+
+`npm run lint` (ESLint + `typescript-eslint`) exige un type écrit sur chaque `const`/`let`
+(`@typescript-eslint/typedef`), au-delà de ce que `tsc --noEmit` vérifie déjà — l'inférence reste
+correcte sans lint, mais le type n'est alors lisible que via l'IDE. Exceptions documentées par un
+commentaire `eslint-disable-next-line` : valeur de fonction, `as const`/`satisfies` (dont
+l'annotation réélargirait le type précis qu'ils gardent). Pas encore câblé en CI.
+
 ## Commandes
 
 ```
 npm install     # première fois
 npm run dev     # serveur de dev Vite
 npm test        # tests du core (Vitest)
+npm run lint    # ESLint (typage explicite, ADR-033)
 npm run build   # typecheck + build prod
 ```

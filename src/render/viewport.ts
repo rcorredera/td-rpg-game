@@ -16,22 +16,22 @@ import { BATTLEFIELD } from "../core/types";
 
 /** Zone de jeu garantie visible, en unités logiques : c'est le champ de bataille
  *  du core (source unique), pas une constante de rendu parallèle. */
-export const WORLD_W = BATTLEFIELD.w;
-export const WORLD_H = BATTLEFIELD.h;
+export const WORLD_W: number = BATTLEFIELD.w;
+export const WORLD_H: number = BATTLEFIELD.h;
 
 /** Plafond de densité : au-delà, le framebuffer coûte plus qu'il n'apporte. */
-export const MAX_DPR = 2;
+export const MAX_DPR: number = 2;
 
 /** Plancher d'ergonomie tactile, en pixels CSS (44 px : Apple HIG ; Material dit 48 dp).
  *  Exprimé en pixels RÉELS, pas en unités logiques — c'est le doigt qui décide, pas le repère
  *  du jeu. `Viewport.touchMin` fait la conversion pour l'écran courant. */
-export const TOUCH_MIN_CSS = 44;
+export const TOUCH_MIN_CSS: number = 44;
 
 /** Plancher de lisibilité du texte, en pixels CSS RÉELS. Même raisonnement que
  *  `TOUCH_MIN_CSS` : une taille écrite en unités logiques ne vaut pas cette taille
  *  à l'écran. Sur un mobile paysage, 1 unité logique ≈ 0,6 px — un texte « 12px »
  *  y était rendu à ~7 px, illisible (retour utilisateur sur appareil réel). */
-export const TEXT_MIN_CSS = 13;
+export const TEXT_MIN_CSS: number = 13;
 
 /** Hauteur logique (unités BATTLEFIELD) sous laquelle le HUD bas peut recouvrir
  *  le champ de bataille sur le pire appareil plausible (mobile paysage étroit) :
@@ -40,7 +40,7 @@ export const TEXT_MIN_CSS = 13;
  *  ~410-455 en unités logiques sur un panel de mobiles courants. Aucun waypoint
  *  ni aucun emplacement de tour ne doit être posé sous cette limite (ADR-028) :
  *  la sim ne connaît pas le HUD, seul le content peut s'en garder. */
-export const PLAY_SAFE_BOTTOM = 400;
+export const PLAY_SAFE_BOTTOM: number = 400;
 
 /** Encoches / barres système, en pixels CSS (env(safe-area-inset-*)). */
 export interface SafeInsets {
@@ -96,22 +96,22 @@ export function computeViewport(
   dpr: number,
   insets: SafeInsets = NO_INSETS,
 ): Viewport {
-  const w = Math.max(1, cssW);
-  const h = Math.max(1, cssH);
-  const d = Math.min(Math.max(dpr || 1, 1), MAX_DPR);
-  const canvasW = Math.round(w * d);
-  const canvasH = Math.round(h * d);
+  const w: number = Math.max(1, cssW);
+  const h: number = Math.max(1, cssH);
+  const d: number = Math.min(Math.max(dpr || 1, 1), MAX_DPR);
+  const canvasW: number = Math.round(w * d);
+  const canvasH: number = Math.round(h * d);
 
   // « Contain » : le facteur limitant décide, la zone de jeu ne sort jamais de l'écran.
-  const zoom = Math.min(canvasW / WORLD_W, canvasH / WORLD_H);
-  const width = canvasW / zoom;
-  const height = canvasH / zoom;
-  const left = WORLD_W / 2 - width / 2;
-  const top = WORLD_H / 2 - height / 2;
+  const zoom: number = Math.min(canvasW / WORLD_W, canvasH / WORLD_H);
+  const width: number = canvasW / zoom;
+  const height: number = canvasH / zoom;
+  const left: number = WORLD_W / 2 - width / 2;
+  const top: number = WORLD_H / 2 - height / 2;
 
   // Les encoches sont exprimées en px CSS : converties en unités logiques.
-  const k = d / zoom;
-  const cssPerLogical = w / width;
+  const k: number = d / zoom;
+  const cssPerLogical: number = w / width;
   return {
     canvasW, canvasH, cssW: w, cssH: h, zoom,
     left, top, right: left + width, bottom: top + height, width, height,
@@ -149,7 +149,7 @@ export function minFontSize(): number {
 }
 
 /** Taille de corps de référence : l'échelle typographique est calée dessus. */
-const BODY_SIZE = 12;
+const BODY_SIZE: number = 12;
 
 /**
  * Adapte une taille de police à l'écran courant.
@@ -162,13 +162,13 @@ const BODY_SIZE = 12;
  * Sur grand écran, `desired` gagne toujours : aucun effet.
  */
 export function scaleFont(desired: number): number {
-  const min = minFontSize();
-  const scaled = min * Math.pow(Math.max(0.01, desired) / BODY_SIZE, 0.6);
+  const min: number = minFontSize();
+  const scaled: number = min * Math.pow(Math.max(0.01, desired) / BODY_SIZE, 0.6);
   return Math.max(desired, min, scaled);
 }
 
 type Listener = (v: Viewport) => void;
-const listeners = new Set<Listener>();
+const listeners: Set<Listener> = new Set<Listener>();
 
 /** S'abonne aux changements de viewport (resize, rotation). Retourne le désabonnement. */
 export function onViewportChange(fn: Listener): () => void {
@@ -180,15 +180,15 @@ export function onViewportChange(fn: Listener): () => void {
  *  Renvoie des zéros hors navigateur ou si le navigateur ignore `env()`. */
 export function readSafeInsets(): SafeInsets {
   if (typeof document === "undefined") return NO_INSETS;
-  const probe = document.createElement("div");
+  const probe: HTMLDivElement = document.createElement("div");
   probe.style.cssText =
     "position:fixed;visibility:hidden;pointer-events:none;top:0;left:0;" +
     "padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right);" +
     "padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);";
   document.body.appendChild(probe);
-  const cs = getComputedStyle(probe);
+  const cs: CSSStyleDeclaration = getComputedStyle(probe);
   const px = (v: string) => {
-    const n = Number.parseFloat(v);
+    const n: number = Number.parseFloat(v);
     return Number.isFinite(n) ? n : 0;
   };
   const insets: SafeInsets = {
@@ -218,10 +218,10 @@ export function attachViewport(game: Phaser.Game): void {
   if (typeof window === "undefined") return;
 
   const apply = () => {
-    const v = computeViewport(window.innerWidth, window.innerHeight, window.devicePixelRatio, readSafeInsets());
+    const v: Viewport = computeViewport(window.innerWidth, window.innerHeight, window.devicePixelRatio, readSafeInsets());
     current = v;
     game.scale.resize(v.canvasW, v.canvasH);
-    const cv = game.canvas;
+    const cv: HTMLCanvasElement = game.canvas;
     if (cv) {
       cv.style.width = `${v.cssW}px`;
       cv.style.height = `${v.cssH}px`;
@@ -240,7 +240,7 @@ export function attachViewport(game: Phaser.Game): void {
   // Repli sur setTimeout : requestAnimationFrame est SUSPENDU quand l'onglet est
   // en arrière-plan, or une rotation d'écran peut survenir dans cet état — sans
   // repli, le viewport resterait périmé au retour au premier plan.
-  let pendingRaf = 0;
+  let pendingRaf: number = 0;
   let pendingTimer: ReturnType<typeof setTimeout> | undefined;
   const schedule = () => {
     if (pendingRaf) cancelAnimationFrame(pendingRaf);

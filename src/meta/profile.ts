@@ -3,11 +3,11 @@
 // meilleurs runs), achats d'unlocks, de forge et de niveaux de sorts.
 // ============================================================
 
-import type { Profile, RunResult } from "../core/types";
+import type { Profile, RallyLevel, RunResult, SkillTrack, UnlockDef, WhirlwindLevel } from "../core/types";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { SaveAdapter } from "./save";
 
-const BEST_RUNS_KEPT = 5;
+const BEST_RUNS_KEPT: number = 5;
 
 export type SkillId = "whirlwind" | "rally";
 
@@ -62,14 +62,14 @@ export class ProfileService {
   // ---------- Unlocks (Éclats) ----------
 
   canBuy(unlockId: string): boolean {
-    const def = UNLOCKS.find(u => u.id === unlockId);
+    const def: UnlockDef | undefined = UNLOCKS.find(u => u.id === unlockId);
     if (!def) return false;
     return !this.profile.unlocks.includes(unlockId) && this.profile.shards >= def.cost;
   }
 
   buy(unlockId: string): boolean {
     if (!this.canBuy(unlockId)) return false;
-    const def = UNLOCKS.find(u => u.id === unlockId)!;
+    const def: UnlockDef = UNLOCKS.find(u => u.id === unlockId)!;
     this.profile.shards -= def.cost;
     this.profile.unlocks.push(unlockId);
     this.adapter.save(this.profile);
@@ -87,7 +87,7 @@ export class ProfileService {
 
   buyForge(towerId: string): boolean {
     if (!CONTENT.towers[towerId]) return false;
-    const cost = this.forgeNextCost(towerId);
+    const cost: number | null = this.forgeNextCost(towerId);
     if (cost === null || this.profile.shards < cost) return false;
     this.profile.shards -= cost;
     this.profile.forge[towerId] = this.forgeLevel(towerId) + 1;
@@ -105,10 +105,10 @@ export class ProfileService {
   }
 
   buySkill(skill: SkillId): boolean {
-    const def = CONTENT.hero.skills[skill];
-    const lvl = this.skillLevel(skill);
+    const def: SkillTrack<WhirlwindLevel> | SkillTrack<RallyLevel> = CONTENT.hero.skills[skill];
+    const lvl: number = this.skillLevel(skill);
     if (lvl >= def.levels.length) return false;
-    const cost = this.skillNextCost(skill);
+    const cost: number | null = this.skillNextCost(skill);
     if (cost === null || this.profile.sceaux < cost) return false;
     this.profile.sceaux -= cost;
     this.profile.skills[skill] = lvl + 1;

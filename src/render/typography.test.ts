@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeViewport, scaleFont, TEXT_MIN_CSS } from "./viewport";
+import type { Viewport } from "./viewport";
 
 /** `scaleFont` lit le viewport courant (module-global). Ces tests vérifient la
  *  forme de la courbe indépendamment de l'écran, plus les invariants métier. */
@@ -21,8 +22,8 @@ describe("échelle typographique", () => {
   it("compresse les grandes tailles au lieu de les multiplier à l'identique", () => {
     // Un titre ne doit pas gonfler proportionnellement au corps de texte, sinon
     // il devient démesuré sur petit écran.
-    const bodyGain = scaleFont(12) / 12;
-    const titleGain = scaleFont(42) / 42;
+    const bodyGain: number = scaleFont(12) / 12;
+    const titleGain: number = scaleFont(42) / 42;
     expect(titleGain).toBeLessThanOrEqual(bodyGain);
   });
 
@@ -35,11 +36,11 @@ describe("échelle typographique", () => {
   it("le plancher visé correspond bien à TEXT_MIN_CSS pixels réels", () => {
     // Vérifie la conversion elle-même : sur un mobile paysage, le corps de texte
     // doit atteindre le plancher de lisibilité une fois converti en pixels écran.
-    const v = computeViewport(780, 360, 2);
-    const minLogical = TEXT_MIN_CSS / v.cssPerLogical;
+    const v: Viewport = computeViewport(780, 360, 2);
+    const minLogical: number = TEXT_MIN_CSS / v.cssPerLogical;
     expect(minLogical * v.cssPerLogical).toBeCloseTo(TEXT_MIN_CSS, 6);
     // Et sur un grand écran, ce plancher est sous les tailles courantes.
-    const d = computeViewport(2004, 1030, 1);
+    const d: Viewport = computeViewport(2004, 1030, 1);
     expect(TEXT_MIN_CSS / d.cssPerLogical).toBeLessThan(12);
   });
 });

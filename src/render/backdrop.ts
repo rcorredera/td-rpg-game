@@ -13,15 +13,15 @@
 import type Phaser from "phaser";
 import { UI_THEME } from "./uiTheme";
 
-export const TEX_GRAIN = "ui_grain";
-export const TEX_VIGNETTE = "ui_vignette";
+export const TEX_GRAIN: string = "ui_grain";
+export const TEX_VIGNETTE: string = "ui_vignette";
 
 /** Bruit pseudo-aléatoire reproductible : suffisant pour du grain, et stable
  *  d'une exécution à l'autre contrairement à Math.random. */
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
 function noise(x: number, y: number): number {
-  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  const n: number = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
 }
 
@@ -31,12 +31,12 @@ function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
   ctx.fillRect(0, 0, size, size);
 
   // Marbrures larges : cassent l'uniformité sans créer de motif reconnaissable.
-  for (let i = 0; i < 90; i++) {
-    const x = noise(i, 1) * size;
-    const y = noise(i, 2) * size;
-    const r = 30 + noise(i, 3) * 90;
-    const warm = noise(i, 4) > 0.5;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  for (let i: number = 0; i < 90; i++) {
+    const x: number = noise(i, 1) * size;
+    const y: number = noise(i, 2) * size;
+    const r: number = 30 + noise(i, 3) * 90;
+    const warm: boolean = noise(i, 4) > 0.5;
+    const g: CanvasGradient = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, warm ? UI_THEME.marbleLight : UI_THEME.marbleDark);
     g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
@@ -46,11 +46,11 @@ function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
   }
 
   // Grain fin : un pixel sur deux environ, très faible opacité.
-  const img = ctx.getImageData(0, 0, size, size);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const p = (i / 4) | 0;
-    const v = (noise(p % size, (p / size) | 0) - 0.5) * 16;
+  const img: ImageData = ctx.getImageData(0, 0, size, size);
+  const d: ImageDataArray = img.data;
+  for (let i: number = 0; i < d.length; i += 4) {
+    const p: number = (i / 4) | 0;
+    const v: number = (noise(p % size, (p / size) | 0) - 0.5) * 16;
     d[i] = Math.max(0, Math.min(255, d[i]! + v));
     d[i + 1] = Math.max(0, Math.min(255, d[i + 1]! + v));
     d[i + 2] = Math.max(0, Math.min(255, d[i + 2]! + v));
@@ -61,7 +61,7 @@ function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
 /** Vignette radiale : transparente au centre, sombre aux bords. Étirée à la
  *  taille de la vue par l'appelant — l'ovalisation est voulue et invisible. */
 function drawVignette(ctx: CanvasRenderingContext2D, size: number): void {
-  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.28, size / 2, size / 2, size * 0.72);
+  const g: CanvasGradient = ctx.createRadialGradient(size / 2, size / 2, size * 0.28, size / 2, size / 2, size * 0.72);
   g.addColorStop(0, "rgba(0,0,0,0)");
   g.addColorStop(0.65, "rgba(0,0,0,0.28)");
   g.addColorStop(1, "rgba(0,0,0,0.62)");
@@ -75,9 +75,9 @@ export function ensureBackdropTextures(scene: Phaser.Scene): void {
   if (typeof document === "undefined") return;
   const make = (key: string, size: number, draw: (c: CanvasRenderingContext2D, s: number) => void) => {
     if (scene.textures.exists(key)) return;
-    const cv = document.createElement("canvas");
+    const cv: HTMLCanvasElement = document.createElement("canvas");
     cv.width = cv.height = size;
-    const ctx = cv.getContext("2d");
+    const ctx: CanvasRenderingContext2D | null = cv.getContext("2d");
     if (!ctx) return;
     draw(ctx, size);
     scene.textures.addCanvas(key, cv);
@@ -99,7 +99,7 @@ export interface BackdropRect {
  */
 export function addBackdrop(scene: Phaser.Scene, v: BackdropRect): Phaser.GameObjects.Container {
   ensureBackdropTextures(scene);
-  const c = scene.add.container(0, 0).setDepth(-100);
+  const c: Phaser.GameObjects.Container = scene.add.container(0, 0).setDepth(-100);
 
   if (scene.textures.exists(TEX_GRAIN)) {
     c.add(scene.add.tileSprite(v.left, v.top, v.width, v.height, TEX_GRAIN).setOrigin(0, 0));

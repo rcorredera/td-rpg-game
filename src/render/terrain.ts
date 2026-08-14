@@ -22,7 +22,7 @@ export function grassTextureKey(biome: string | undefined): string {
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
 function noise(x: number, y: number): number {
-  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  const n: number = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
 }
 
@@ -39,17 +39,17 @@ function drawGrass(ctx: CanvasRenderingContext2D, size: number, b: BiomeDef): vo
 
   /** Rejoue un tracé aux 9 positions du pavage pour qu'il se raccorde aux bords. */
   const tiled = (draw: (dx: number, dy: number) => void) => {
-    for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) draw(ox * size, oy * size);
+    for (let ox: number = -1; ox <= 1; ox++) for (let oy: number = -1; oy <= 1; oy++) draw(ox * size, oy * size);
   };
 
   // Nuances larges : donnent du volume sans motif identifiable.
-  for (let i = 0; i < 40; i++) {
-    const x = noise(i, 11) * size;
-    const y = noise(i, 12) * size;
-    const r = 24 + noise(i, 13) * 60;
-    const light = noise(i, 14) > 0.5;
+  for (let i: number = 0; i < 40; i++) {
+    const x: number = noise(i, 11) * size;
+    const y: number = noise(i, 12) * size;
+    const r: number = 24 + noise(i, 13) * 60;
+    const light: boolean = noise(i, 14) > 0.5;
     tiled((dx, dy) => {
-      const g = ctx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
+      const g: CanvasGradient = ctx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
       g.addColorStop(0, light ? b.patchLight : b.patchDark);
       g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
@@ -62,16 +62,16 @@ function drawGrass(ctx: CanvasRenderingContext2D, size: number, b: BiomeDef): vo
   // Motif de surface. Sa FORME porte la matière autant que sa couleur : recolorer
   // des brins d'herbe en blanc donne une prairie pâle, pas de la neige.
   ctx.lineCap = "round";
-  for (let i = 0; i < b.fleckCount; i++) {
-    const x = noise(i, 21) * size;
-    const y = noise(i, 22) * size;
-    const tone = noise(i, 25) > 0.45 ? b.fleckLight : b.fleckDark;
-    const v = noise(i, 23);
+  for (let i: number = 0; i < b.fleckCount; i++) {
+    const x: number = noise(i, 21) * size;
+    const y: number = noise(i, 22) * size;
+    const tone: string = noise(i, 25) > 0.45 ? b.fleckLight : b.fleckDark;
+    const v: number = noise(i, 23);
 
     if (b.motif === "flake") {
       // Points épars : neige ou cendre en suspension.
       ctx.fillStyle = tone;
-      const r = 0.8 + v * 1.6;
+      const r: number = 0.8 + v * 1.6;
       tiled((dx, dy) => {
         ctx.beginPath();
         ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2);
@@ -80,7 +80,7 @@ function drawGrass(ctx: CanvasRenderingContext2D, size: number, b: BiomeDef): vo
     } else if (b.motif === "rock") {
       // Éclats anguleux : gravats et pierraille.
       ctx.fillStyle = tone;
-      const w = 2 + v * 3.5, h = 1.5 + noise(i, 26) * 2.5;
+      const w: number = 2 + v * 3.5, h: number = 1.5 + noise(i, 26) * 2.5;
       tiled((dx, dy) => {
         ctx.beginPath();
         ctx.moveTo(x + dx, y + dy);
@@ -91,9 +91,9 @@ function drawGrass(ctx: CanvasRenderingContext2D, size: number, b: BiomeDef): vo
       });
     } else {
       // Traits : dressés pour l'herbe, couchés pour les roseaux du marais.
-      const len = 2.5 + v * 3.5;
-      const lean = (noise(i, 24) - 0.5) * (b.motif === "reed" ? 5 : 2.4);
-      const rise = b.motif === "reed" ? len * 0.35 : len;
+      const len: number = 2.5 + v * 3.5;
+      const lean: number = (noise(i, 24) - 0.5) * (b.motif === "reed" ? 5 : 2.4);
+      const rise: number = b.motif === "reed" ? len * 0.35 : len;
       ctx.strokeStyle = tone;
       ctx.lineWidth = 1.6;
       tiled((dx, dy) => {
@@ -109,12 +109,12 @@ function drawGrass(ctx: CanvasRenderingContext2D, size: number, b: BiomeDef): vo
 /** Crée la texture de sol du biome si absente. Idempotent ; sans DOM, ne fait rien. */
 export function ensureTerrainTextures(scene: Phaser.Scene, biome?: string): void {
   if (typeof document === "undefined") return;
-  const key = grassTextureKey(biome);
+  const key: string = grassTextureKey(biome);
   if (scene.textures.exists(key)) return;
-  const size = 256;
-  const cv = document.createElement("canvas");
+  const size: number = 256;
+  const cv: HTMLCanvasElement = document.createElement("canvas");
   cv.width = cv.height = size;
-  const ctx = cv.getContext("2d");
+  const ctx: CanvasRenderingContext2D | null = cv.getContext("2d");
   if (!ctx) return;
   drawGrass(ctx, size, biomeFor(biome));
   scene.textures.addCanvas(key, cv);
@@ -130,12 +130,12 @@ export function drawDirtPath(
   biome?: string, width = PATH_WIDTH,
 ): void {
   if (pts.length < 2) return;
-  const b = biomeFor(biome);
+  const b: BiomeDef = biomeFor(biome);
   const stroke = (w: number, color: number, alpha = 1) => {
     g.lineStyle(w, color, alpha);
     g.beginPath();
     g.moveTo(pts[0]!.x, pts[0]!.y);
-    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i]!.x, pts[i]!.y);
+    for (let i: number = 1; i < pts.length; i++) g.lineTo(pts[i]!.x, pts[i]!.y);
     g.strokePath();
   };
   // La route suit le biome : un sentier de terre battue au milieu d'un col gelé
