@@ -10,7 +10,7 @@ import Phaser from "phaser";
 import { ACCENT, TEXT } from "../theme";
 import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
 import { scaleFont, touchSize } from "../viewport";
-import { uiFramedPanel } from "./panel";
+import { uiFramedPanel, uiPanelPad } from "./panel";
 import { rowColors, type RowState } from "./listRow";
 import { uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
 
@@ -140,16 +140,19 @@ export function uiLevelGrid(
     }).setOrigin(0.5, 0);
     const name = scene.add.text(0, 0, t.name, {
       fontSize: "12px", color: colors.titleColor, fontFamily: FONT_BODY,
-      align: "center", wordWrap: { width: layout.cellW - 12 },
+      align: "center", wordWrap: { width: layout.cellW - uiPanelPad(scene) * 2 },
     }).setOrigin(0.5, 0);
-    const top0 = -cellH / 2 + 6;
+    // Marge dérivée de l'ORNEMENT, pas d'un chiffre : à 6 unités du bord, le
+    // numéro se posait sur la volute d'angle du panneau ouvragé (marge 22).
+    const pad = uiPanelPad(scene);
+    const top0 = -cellH / 2 + pad;
     num.setY(top0);
     name.setY(top0 + num.height + 2);
     cell.add([num, name]);
 
     if (t.state === "done") {
       const s = t.stars ?? 0;
-      cell.add(scene.add.text(0, cellH / 2 - 14, "★".repeat(s) + "☆".repeat(3 - s), {
+      cell.add(scene.add.text(0, cellH / 2 - pad - 7, "★".repeat(s) + "☆".repeat(3 - s), {
         fontSize: "13px", color: TEXT.gold, fontFamily: FONT_BODY,
       }).setOrigin(0.5));
     }

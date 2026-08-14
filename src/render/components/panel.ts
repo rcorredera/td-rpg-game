@@ -5,7 +5,7 @@
 import Phaser from "phaser";
 import { ACCENT, skinPanelTint, UI_TINT } from "../theme";
 import { fitInsets } from "../nineSlicePlan";
-import { ensureUiSkinTextures, uiSkinActive, uiSkinInsets, UI_SKIN_PANEL } from "../uiSkin";
+import { ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets, UI_SKIN_PANEL } from "../uiSkin";
 
 /** Panneau nine-slice teinté (remplace les rectangles plats). */
 export function uiPanel(
@@ -43,6 +43,19 @@ export function uiPanel(
  */
 export function decorativeEdgeVisible(scene: Phaser.Scene): boolean {
   return !uiSkinActive(scene);
+}
+
+/**
+ * Marge intérieure d'un panneau : distance minimale entre son bord et tout
+ * contenu posé dessus.
+ *
+ * Elle vient de la marge RÉELLE de l'habillage, jamais d'un chiffre choisi à la
+ * main : le panneau ouvragé du pack porte une volute de 22 unités dans chaque
+ * angle, et les valeurs héritées de l'ancien fond plat (6 sur une vignette de
+ * chapitre) posaient le texte en plein dessus.
+ */
+export function uiPanelPad(scene: Phaser.Scene): number {
+  return uiSkinActive(scene) ? uiSkinInset(UI_SKIN_PANEL) : 10;
 }
 
 export interface UiFramedPanelOpts {
