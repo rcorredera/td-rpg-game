@@ -4,23 +4,21 @@ Prototype v0 d'un TD médiéval (« Bastion », univers du Roi-Charogne) avec m�
 valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 
 ## État actuel (2026-06)
-- **Audio — SFX + réglages + musique de menu en place (ADR-037/038/039)** : registre
-  `render/audio.ts` (même principe que `sprites.ts`/`icons.ts`), SFX CC0 Kenney (*Interface
-  Sounds* + *Impact Sounds*) branchés sur les `SimEvent` de tir/impact/dégât château + mort
-  ennemi/héros (ces deux derniers n'avaient encore aucun consommateur côté rendu) et sur
-  `uiButton` (clic UI, un seul hook pour tout le jeu). **Réglages (ADR-038)** : `Profile.audio`
-  remplace le mute unique — 4 interrupteurs indépendants (Tout/Musique/Notifications/Dégâts) +
-  volume par paliers de 10 %, dans une modale ouverte depuis le bouton son du bandeau (icône note
-  de musique du pack Tiny Swords, `EMBLEM.sound`). **Musique de menu — fait (ADR-039)** : piste
-  fournie par le PO, transformée en boucle propre par montage ffmpeg (fondu enchaîné sur le point
-  de raccord, aucune source Kenney bouclable n'ayant été trouvée) ; joue uniquement au Campement,
-  jamais en run. ⚠ **Licence à confirmer** : nom de fichier cohérent avec un export Pixabay Music,
-  aucune métadonnée embarquée ne le garantit — à corriger dans `public/assets/README.md` une fois
-  confirmé. **SFX de combat retouchés (ADR-040)** : playtest PO — clic UI trop sec (`select_001`,
-  fait) et SFX de dégâts trop proches entre eux / pas assez médiévaux (Kenney n'a pas de pack
-  combat fantasy) — remplacés par le **RPG Sound Pack** (CC0, OpenGameArt : swing d'arme,
-  whoosh magique, déflagration, grognement de créature, cliquetis d'armure). Sujet audio
-  considéré clos côté PO sauf confirmation de licence de la musique.
+- **Audio — SFX + réglages + musique de menu en place (ADR-037/038/039/040/041)** : registre
+  `render/audio.ts` (même principe que `sprites.ts`/`icons.ts`), SFX branchés sur les `SimEvent`
+  de tir/impact/dégât château + mort ennemi/héros (ces deux derniers n'avaient encore aucun
+  consommateur côté rendu) et sur `uiButton` (clic UI, un seul hook pour tout le jeu). **Réglages
+  (ADR-038)** : `Profile.audio` remplace le mute unique — 4 interrupteurs indépendants
+  (Tout/Musique/Notifications/Dégâts) + volume par paliers de 10 %, dans une modale ouverte depuis
+  le bouton son du bandeau (icône note de musique du pack Tiny Swords, `EMBLEM.sound`). **Musique
+  de menu (ADR-039)** : piste fournie par le PO, transformée en boucle propre par montage ffmpeg
+  (fondu enchaîné sur le point de raccord) ; joue uniquement au Campement, jamais en run ; volume
+  baissé à 0.35 après playtest (ADR-041). Licence non confirmée mais jugée non bloquante par le
+  PO — les prochains ajouts audio seront CC0/domaine public/IA uniquement. **SFX retouchés en deux
+  passes de playtest** : clic UI adouci et dégâts diversifiés/médiévalisés via le **RPG Sound
+  Pack** (CC0, OpenGameArt — ADR-040), puis tir de catapulte recorrigé (un swing d'épée ne
+  convenait pas à un engin de siège → thud bois Kenney, ADR-041). Sujet audio considéré clos côté
+  PO, en attente de confirmation finale au prochain playtest.
 - **Modes** : Histoire (10 chapitres, déblocage séquentiel, ch.2-10 en contenu généré provisoire) ;
   Failles infinies = mode séparé, verrouillé tant que l'Histoire n'est pas achevée, à implémenter (v1).
 - **Méta** : 2 monnaies — Éclats ◆ (unlocks Arsenal + Forge) et Sceaux ⚜ (sorts du héros, gagnés

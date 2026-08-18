@@ -16,8 +16,8 @@ les tests — c'est voulu.
 | `tiny-swords/` | UI 9-slice, bâtiments, FX, décors — voir plus bas | **Pixel Frog** — pixelfrog-assets.itch.io | **CC0** |
 | `kenney-td/` | `sheet.png` seule (planche 64×64, 23 colonnes) — ne sert plus qu'aux FX | Kenney (kenney.nl) | **CC0** |
 | `kenney-ui/` | 4 images : `btn-grey`, `btn-yellow`, `panel-grey`, `divider` | Kenney (kenney.nl) | **CC0** |
-| `audio/` (SFX) | 8 SFX (tirs, impact, morts, dégât château, clic UI) — voir détail plus bas | Kenney (kenney.nl) | **CC0** |
-| `audio/music-menu.ogg` | Musique de menu, boucle fabriquée par montage (ADR-039) — voir détail plus bas | Nastelbom (déclaré) | **⚠ à confirmer** |
+| `audio/` (SFX) | 8 SFX (tirs, impact, morts, dégât château, clic UI) — voir détail plus bas | Kenney (kenney.nl) + RPG Sound Pack | **CC0** |
+| `audio/music-menu.ogg` | Musique de menu, boucle fabriquée par montage (ADR-039) — voir détail plus bas | Nastelbom (déclaré) | non confirmée, non bloquant (ADR-041) |
 | `../fonts/` | Cinzel (titres) + Alegreya (textes) | Natanael Gama / Juan Pablo del Peral | **OFL 1.1** |
 
 CC0 = domaine public : usage commercial autorisé, crédit non obligatoire.
@@ -50,17 +50,17 @@ exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir b
 - **Terrain/Tileset** — tuiles d'île avec falaise sur eau. Ne correspond pas aux 10 biomes.
 - Variantes de couleur inutilisées, avatars, table en bois, curseurs, sources `.aseprite`.
 
-## `audio/` — détail (ADR-037/038/040)
+## `audio/` — détail (ADR-037/038/040/041)
 
-8 SFX, deux sources. Kenney pour l'UI/tir d'archerie ; **RPG Sound Pack** (artisticdude,
-opengameart.org/content/rpg-sound-pack, **CC0**, 405 favoris) pour les sons de combat/mort —
-Kenney n'a pas de pack combat fantasy dédié, et les sons génériques d'impact (ADR-037) se
-ressemblaient trop entre eux au playtest (ADR-040).
+8 SFX, deux sources. Kenney pour l'UI/tir d'archerie/tir de catapulte ; **RPG Sound Pack**
+(artisticdude, opengameart.org/content/rpg-sound-pack, **CC0**, 405 favoris) pour les sons de
+magie/mort — Kenney n'a pas de pack combat fantasy dédié, et les sons génériques d'impact
+(ADR-037) se ressemblaient trop entre eux au playtest (ADR-040).
 
 | Fichier | Pack source | Fichier d'origine |
 |---|---|---|
 | `sfx-shot-archer.ogg` | Kenney — Interface Sounds | `pluck_001.ogg` |
-| `sfx-shot-catapult.ogg` | RPG Sound Pack | `battle/swing2.wav` |
+| `sfx-shot-catapult.ogg` | Kenney — Impact Sounds | `impactWood_heavy_000.ogg` (ADR-041 : un swing d'épée ne convenait pas à un engin de siège) |
 | `sfx-shot-frost.ogg` | RPG Sound Pack | `battle/magic1.wav` |
 | `sfx-impact.ogg` | RPG Sound Pack | `battle/spell.wav` |
 | `sfx-enemy-died.ogg` | RPG Sound Pack | `NPC/gutteral beast/mnstr3.wav` |
@@ -74,9 +74,9 @@ entier, même règle que pour `tiny-swords/`.
 ## `audio/music-menu.ogg` — détail (ADR-039)
 
 Fichier fourni directement par le PO (`nastelbom-fantasy-454036.mp3`, ~1 min 37, sans métadonnée
-embarquée) — nom cohérent avec un export **Pixabay Music**, non confirmé. **⚠ Licence à valider
-avant fusion sur `main`** : la licence Pixabay Content actuelle autorise l'usage commercial sans
-crédit obligatoire, mais rien dans le fichier lui-même ne le garantit.
+embarquée) — nom cohérent avec un export **Pixabay Music**, non confirmé. Le PO a validé que ce
+n'est pas un blocage de fusion (ADR-041) : les prochains ajouts audio seront restreints à
+CC0/domaine public/généré par IA.
 
 Le fichier original n'était pas bouclable (silence de tête, fondu de sortie vers le silence en
 fin de piste). `music-menu.ogg` est une boucle FABRIQUÉE par montage ffmpeg : segment actif isolé

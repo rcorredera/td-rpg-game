@@ -49,9 +49,11 @@ réglages l'interdisent pendant qu'elle joue, mais ne la démarre jamais lui-mê
 - ⚠ La boucle redémarre du début à chaque `scene.restart()` du Campement (resize/rotation,
   ADR-025) — léger accroc audible à cette occasion, accepté : `MenuScene` reconstruit déjà tout
   son écran à neuf au resize, la musique suit la même logique.
-- Licence à confirmer avec le PO avant fusion : le nom de fichier laisse penser à un export
-  Pixabay Music (licence Pixabay, libre y compris commercial) mais aucune métadonnée ne le
-  garantit — `public/assets/README.md` documente la provenance déclarée, à corriger si besoin.
+- Licence : le nom de fichier laisse penser à un export Pixabay Music (licence Pixabay, libre y
+  compris commercial) mais aucune métadonnée ne le garantit. Le PO a validé que ce n'est PAS un
+  blocage de fusion (2026-08-18, ADR-041) — la source des prochains ajouts audio sera restreinte
+  à CC0/domaine public/généré par IA, ce qui referme le sujet sans exiger de preuve rétroactive
+  sur ce fichier précis. `public/assets/README.md` documente la provenance déclarée.
 
 ## Alternatives écartées
 

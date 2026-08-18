@@ -134,7 +134,7 @@ const MUSIC_MENU: string = "music_menu";
 const MUSIC_MENU_FILE: string = "music-menu.ogg";
 /** Mix relatif sous le volume global (ADR-038) : un fond musical ne doit
  *  jamais dominer les SFX de gameplay. */
-const MUSIC_VOLUME: number = 0.45;
+const MUSIC_VOLUME: number = 0.35;
 
 export function preloadMusic(scene: Phaser.Scene): void {
   scene.load.audio(MUSIC_MENU, `assets/audio/${MUSIC_MENU_FILE}`);
