@@ -60,7 +60,9 @@ const FILES: Record<IconKey, string> = {
  * couleurs et son relief ; le teinter reviendrait à les jeter.
  */
 // eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
-export const EMBLEM = { bastion: "ts_castle", armory: "ts_shield", chronicles: "ts_swords" } as const;
+export const EMBLEM = {
+  bastion: "ts_castle", armory: "ts_shield", chronicles: "ts_swords", sound: "ts_music",
+} as const;
 
 export type EmblemKey = keyof typeof EMBLEM;
 
@@ -71,6 +73,9 @@ const EMBLEM_FILES: Record<EmblemKey, string> = {
   // (manifest.webmanifest), où leur netteté vectorielle compte.
   armory: "tiny-swords/ui/icon-06.png",
   chronicles: "tiny-swords/ui/icon-05.png",
+  // Bouton mute (ADR-037) : état éteint rendu par ALPHA réduit sur le bouton
+  // entier, jamais par teinte — un emblème raster arrive avec ses couleurs.
+  sound: "tiny-swords/ui/icon-12.png",
 };
 
 /**

@@ -27,8 +27,8 @@ describe("registre d'icônes UI", () => {
     // monochrome que le rendu teinte pour porter un état, un emblème arrive du
     // pack avec ses couleurs. Les préfixer distinctement empêche de teinter l'un
     // en croyant manipuler l'autre.
-    for (const role of ["bastion", "armory", "chronicles"]) expect(EMBLEM).toHaveProperty(role);
-    const keys: ("ts_castle" | "ts_shield" | "ts_swords")[] = Object.values(EMBLEM);
+    for (const role of ["bastion", "armory", "chronicles", "sound"]) expect(EMBLEM).toHaveProperty(role);
+    const keys: ("ts_castle" | "ts_shield" | "ts_swords" | "ts_music")[] = Object.values(EMBLEM);
     expect(new Set(keys).size).toBe(keys.length);
     for (const k of keys) expect(k).toMatch(/^ts_[a-z]+$/);
     expect(keys.some(k => Object.values(ICON).includes(k as never))).toBe(false);

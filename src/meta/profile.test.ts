@@ -8,7 +8,7 @@ import type { SaveAdapter } from "./save";
 function fresh(): Profile {
   return {
     shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
-    unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
+    unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], muted: false,
   };
 }
 
@@ -77,6 +77,19 @@ describe("ProfileService — fin de run", () => {
     expect(svc.storyCompleted()).toBe(false);
     svc.applyRunResult(result({ victory: true }), CONTENT.chapters.length - 1);
     expect(svc.storyCompleted()).toBe(true);
+  });
+});
+
+describe("ProfileService — son coupé", () => {
+  it("bascule et persiste, désactivé par défaut", () => {
+    const a: MemAdapter = new MemAdapter();
+    const svc: ProfileService = new ProfileService(a);
+    expect(svc.isMuted()).toBe(false);
+    expect(svc.toggleMuted()).toBe(true);
+    expect(svc.isMuted()).toBe(true);
+    expect(a.saves).toBe(1);
+    expect(svc.toggleMuted()).toBe(false);
+    expect(svc.isMuted()).toBe(false);
   });
 });
 

@@ -12,9 +12,10 @@ import Phaser from "phaser";
 import type { ProfileService } from "../meta/profile";
 import { onSceneResize, preloadUi, setupCamera } from "./ui";
 import { touchSize, viewport } from "./viewport";
-import { ICON, preloadIcons } from "./icons";
+import { EMBLEM, ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
 import { preloadSprites } from "./assets";
+import { applyMuted, preloadAudio } from "./audio";
 import { ACCENT, TEXT } from "./theme";
 import type { Viewport } from "./viewport";
 import { uiButton, uiChip, uiModal, type UiChip, type UiModal } from "./components";
@@ -37,15 +38,20 @@ export class MenuScene extends Phaser.Scene {
   private currentShopTab: ShopTab = "arsenal";
   private bestiaryTab: BestiaryTab = "creatures";
   private fsBtn: Phaser.GameObjects.Container | null = null;
+  private soundBtn: Phaser.GameObjects.Container | null = null;
 
   constructor() { super("menu"); }
   init(data: { profileSvc: ProfileService }) { this.profileSvc = data.profileSvc; }
   // Le campement charge aussi les sprites du monde : le Bestiaire affiche
   // désormais les créatures et les tours, pas seulement leur description.
-  preload() { preloadUi(this); preloadIcons(this); preloadSprites(this); }
+  preload() { preloadUi(this); preloadIcons(this); preloadSprites(this); preloadAudio(this); }
 
   create() {
     setupCamera(this);
+    // SoundManager partagé par toutes les scènes (une seule instance Phaser.Game,
+    // ADR-037) : le Campement démarre toujours en premier (main.ts), donc c'est
+    // ici que l'état persisté prend effet pour tout le jeu.
+    applyMuted(this, this.profileSvc.isMuted());
     this.panel = null;
     // Le fond couvre la vue entière, pas seulement la zone de jeu : sur un écran
     // large, le débord doit rester habillé plutôt que noir (ADR-010). Grain +
@@ -110,6 +116,30 @@ export class MenuScene extends Phaser.Scene {
           else this.scale.startFullscreen();
         }).container.setDepth(50);
     }
+    this.buildSoundBtn();
+  }
+
+  /** Bouton mute (ADR-037), à gauche du plein écran. Reconstruit à chaque
+   *  bascule plutôt que mis à jour en place : `uiButton` ne renvoie pas la
+   *  référence de l'icône interne — même limite que `fsBtn`, qui se resynchronise
+   *  via un `scene.restart()` au resize ; ici on rappelle directement au clic. */
+  private buildSoundBtn() {
+    this.soundBtn?.destroy();
+    const s: number = touchSize(38);
+    const muted: boolean = this.profileSvc.isMuted();
+    const gap: number = this.scale.fullscreen.available ? s + 10 : 0;
+    const btn: Phaser.GameObjects.Container = uiButton(
+      this, viewport().safeRight - s / 2 - 10 - gap, s / 2 + 10, "",
+      { w: s, h: s, compact: true, icon: EMBLEM.sound },
+      () => {
+        applyMuted(this, this.profileSvc.toggleMuted());
+        this.buildSoundBtn();
+      },
+    ).container.setDepth(50);
+    // État « éteint » : alpha réduit sur le bouton entier, pas de teinte — un
+    // emblème raster arrive avec ses propres couleurs (ADR-031).
+    btn.setAlpha(muted ? 0.4 : 1);
+    this.soundBtn = btn;
   }
 
   /** Écarte les deux chips d'après leur largeur RÉELLE. Des X en dur les faisaient

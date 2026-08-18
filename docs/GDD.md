@@ -60,19 +60,30 @@ Règle d'intégration : un seul pack principal (Kenney TD + Kenney UI) plutôt q
 
 **État de l'intégration** : chrome d'UI sur **Kenney UI** (`render/ui.ts`). **Monde sur le pack Kenney Tower Defense top-down** (CC0, vectoriel) via la couche swappable (ADR-005) : terrain en tuiles, ennemis (tanks/avion)/héros/tours/base en sprites retained-mode. **Polish fait** : décor dispersé (buissons/plantes, hors routes via distance-au-segment), pads de tour propres (plateforme à cible) **+ anneau doré pulsé et croix « + » sur les slots vides** (lisibilité « construire ici »), ennemis agrandis, **flammes/explosions sprites** (#296, tweenées) sur tir/mort/impact base, **chemins lissés** (spline Catmull-Rom *visuelle* à travers les waypoints — la sim suit toujours les segments linéaires, ADR-001), **menu de slot au-dessus des entités** (depth 2000). **Reste** : herbe encore un peu plate (texture/teinte de fond), rotation du canon de tourelle vers la cible, fond de menu décoré.
 
-## Audio (plan — sourcing sans budget)
+## Audio (ADR-037)
 
-Hors scope v0 pour l'implémentation, mais le sourcing est tranché : **bibliothèques libres, coût zéro** — ni enregistrement, ni génération payante.
+**SFX — fait.** 8 sons CC0 Kenney (packs *Interface Sounds* + *Impact Sounds*, sourcing sans
+budget comme prévu ci-dessous) : tirs (un par tour), impact/explosion, mort d'ennemi, dégât
+château, mort du héros, clic UI. Registre `render/audio.ts` — même famille que
+`sprites.ts`/`icons.ts` (rôle → fichier, ADR-005/012), **pas dans `src/content/`** comme envisagé
+initialement : le mapping événement → son est une question de PRÉSENTATION (quel SFX habille quel
+`SimEvent`), pas une valeur d'équilibrage, donc hors du périmètre d'ADR-003 — exactement le même
+raisonnement que pour `sprites.ts`. Volume global + mute persistés dans le profil
+(`Profile.muted`), bouton dans le bandeau du Campement.
+
+**Musique de fond — reportée.** Aucun pack Kenney (packs audio, seule source explorée pour
+l'instant) n'offre de piste bouclable adaptée au ton du jeu — seulement des jingles courts
+(8-bit/sax/pizzicato). Sources encore à explorer pour une boucle d'ambiance :
 
 | Source | Licence | Usage |
 |---|---|---|
-| **Kenney.nl** (packs audio) | CC0 (aucun crédit requis) | Premier choix : UI, impacts, packs RPG/médiéval cohérents |
 | **freesound.org** | filtrer CC0/CC-BY | Compléments ponctuels (créditer si CC-BY) |
-| **OpenGameArt.org** | CC0/CC-BY/GPL | SFX + musiques de jeu |
+| **OpenGameArt.org** | CC0/CC-BY/GPL | Musiques de jeu bouclables |
 | **Pixabay** (SFX & musique) | licence Pixabay (libre) | Ambiances, musiques de menu |
 | **jsfxr / sfxr** | outil libre | Générer des blips rétro custom en 30s, zéro asset |
 
-Intégration prévue : audio Phaser, mapping **événement → son dans le content** (les `SimEvent` existants — shot, explosion, enemyDied, castleHit, heroDied — couvrent déjà tous les déclencheurs gameplay ; ajouter les sons UI), volume global + mute persistés dans le profil. Attention mobile : l'audio web ne démarre qu'après le premier tap (autoplay policy).
+Autoplay policy mobile (l'audio web ne démarre qu'après un premier geste) : non traitée à part,
+le premier tap du joueur (menu, avant tout son) suffit à Phaser pour débloquer l'`AudioContext`.
 
 ## Étoiles (notation des chapitres)
 

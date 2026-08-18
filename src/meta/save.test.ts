@@ -23,7 +23,7 @@ describe("LocalStorageSaveAdapter", () => {
     const p: Profile = new LocalStorageSaveAdapter().load();
     expect(p).toEqual({
       shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
-      unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
+      unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], muted: false,
     });
   });
 
@@ -45,6 +45,11 @@ describe("LocalStorageSaveAdapter", () => {
       }),
     });
     expect(new LocalStorageSaveAdapter().load().chaptersWon).toEqual([0]);
+  });
+
+  it("migration muted : absent d'un vieux profil ⇒ son actif par défaut", () => {
+    mockStorage({ [KEY]: JSON.stringify({ shards: 5 }) });
+    expect(new LocalStorageSaveAdapter().load().muted).toBe(false);
   });
 
   it("JSON corrompu : repart sur un profil neuf sans crasher", () => {

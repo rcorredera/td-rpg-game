@@ -7,7 +7,7 @@ import { buildTower, castAccountSpell, castWhirlwind, clampToBattlefield, comput
 
 const FRESH_PROFILE: Profile = {
   shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
-  unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
+  unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], muted: false,
 };
 
 /** Profil doté de tous les paliers d'armurerie : rang 3 et spécialisations ouverts.

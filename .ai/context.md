@@ -4,6 +4,15 @@ Prototype v0 d'un TD médiéval (« Bastion », univers du Roi-Charogne) avec m�
 valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 
 ## État actuel (2026-06)
+- **Audio — SFX en place, musique de fond en attente (ADR-037)** : registre `render/audio.ts`
+  (même principe que `sprites.ts`/`icons.ts`), 8 SFX CC0 Kenney (*Interface Sounds* + *Impact
+  Sounds*) branchés sur les `SimEvent` de tir/impact/dégât château + mort ennemi/héros (ces deux
+  derniers n'avaient encore aucun consommateur côté rendu) et sur `uiButton` (clic UI, un seul
+  hook pour tout le jeu). Mute persisté (`Profile.muted`), bouton dans le bandeau du Campement
+  (icône note de musique du pack Tiny Swords, `EMBLEM.sound`). **Musique de fond reportée** :
+  aucun pack Kenney (seule source explorée pour l'instant) n'offre de piste bouclable adaptée au
+  ton du jeu — juste des jingles courts. À reprendre avec une autre source CC0 quand le PO voudra
+  trancher, même démarche itérative que le skin (ADR-016).
 - **Modes** : Histoire (10 chapitres, déblocage séquentiel, ch.2-10 en contenu généré provisoire) ;
   Failles infinies = mode séparé, verrouillé tant que l'Histoire n'est pas achevée, à implémenter (v1).
 - **Méta** : 2 monnaies — Éclats ◆ (unlocks Arsenal + Forge) et Sceaux ⚜ (sorts du héros, gagnés

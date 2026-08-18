@@ -15,7 +15,7 @@ import {
 function blankProfile(): Profile {
   return {
     shards: 0, sceaux: 0, introSeen: true, chaptersWon: [], chapterStars: {},
-    bestiary: [], unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
+    bestiary: [], unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], muted: false,
   };
 }
 

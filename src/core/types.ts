@@ -259,6 +259,8 @@ export interface Profile {
   skills: { whirlwind: number; rally: number };
   /** Top 5 des runs, triés par vagues puis kills. */
   bestRuns: BestRun[];
+  /** Son coupé (SFX). Réglage global, indépendant d'un run (ADR-037). */
+  muted: boolean;
 }
 
 // ---------- État de run ----------

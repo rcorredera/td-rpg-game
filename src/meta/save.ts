@@ -26,6 +26,7 @@ function freshProfile(): Profile {
     forge: {},
     skills: { whirlwind: 1, rally: 1 },
     bestRuns: [],
+    muted: false,
   };
 }
 
@@ -49,6 +50,7 @@ function normalize(parsed: Partial<Profile>): Profile {
       rally: typeof parsed.skills?.rally === "number" ? parsed.skills.rally : 1,
     },
     bestRuns: Array.isArray(parsed.bestRuns) ? parsed.bestRuns : fresh.bestRuns,
+    muted: typeof parsed.muted === "boolean" ? parsed.muted : fresh.muted,
   };
 }
 

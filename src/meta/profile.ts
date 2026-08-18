@@ -24,6 +24,16 @@ export class ProfileService {
     this.adapter.save(this.profile);
   }
 
+  isMuted(): boolean { return this.profile.muted; }
+
+  /** Bascule le son coupé et persiste. Renvoie le nouvel état, pour que
+   *  l'appelant (bouton d'UI) sache quoi afficher sans relire le profil. */
+  toggleMuted(): boolean {
+    this.profile.muted = !this.profile.muted;
+    this.adapter.save(this.profile);
+    return this.profile.muted;
+  }
+
   chapterWon(chapterIndex: number): boolean {
     return this.profile.chaptersWon.includes(chapterIndex);
   }
