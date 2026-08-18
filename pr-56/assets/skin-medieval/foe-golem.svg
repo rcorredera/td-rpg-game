@@ -1,0 +1,15 @@
+<!-- Golem de pierre — le cuirassé. Silhouette CARRÉE, angles vifs, pas une
+     courbe : la brute est ovale et molle, lui est minéral. Les plaques visibles
+     annoncent l'armure, qui est toute sa mécanique. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g stroke="#241a12" stroke-width="2.8" stroke-linejoin="round">
+    <path d="M20 50h8v8h-8zM36 50h8v8h-8z" fill="#5a5750"/>
+    <path d="M6 26h10v20H6zM48 26h10v20H48z" fill="#6e6a61"/>
+    <path d="M16 24h32v28H16z" fill="#6e6a61"/>
+    <path d="M20 28h24v10H20z" fill="#8b877c"/>
+    <path d="M22 8h20v16H22z" fill="#8b877c"/>
+  </g>
+  <path d="M26 13h5v5h-5zM33 13h5v5h-5z" fill="#f5a24a"/>
+  <path d="M24 42h16v3H24zM18 32h6v4h-6zM40 32h6v4h-6z" fill="#4a473f"/>
+  <path d="M28 24h8v4h-8z" fill="#3c3933"/>
+</svg>

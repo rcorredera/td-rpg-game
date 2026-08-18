@@ -1,0 +1,7 @@
+<!-- Quitter le plein écran — les mêmes équerres, retournées vers l'intérieur. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path fill="#fff" d="M28 28H6v-7h15V6h7Z"/>
+  <path fill="#fff" d="M36 28h22v-7H43V6h-7Z"/>
+  <path fill="#fff" d="M28 36H6v7h15v15h7Z"/>
+  <path fill="#fff" d="M36 36h22v7H43v15h-7Z"/>
+</svg>
