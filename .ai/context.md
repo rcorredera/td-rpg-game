@@ -4,17 +4,21 @@ Prototype v0 d'un TD médiéval (« Bastion », univers du Roi-Charogne) avec m�
 valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 
 ## État actuel (2026-06)
-- **Audio — SFX + réglages en place, musique de fond en attente (ADR-037/038)** : registre
-  `render/audio.ts` (même principe que `sprites.ts`/`icons.ts`), 8 SFX CC0 Kenney (*Interface
+- **Audio — SFX + réglages + musique de menu en place (ADR-037/038/039)** : registre
+  `render/audio.ts` (même principe que `sprites.ts`/`icons.ts`), SFX CC0 Kenney (*Interface
   Sounds* + *Impact Sounds*) branchés sur les `SimEvent` de tir/impact/dégât château + mort
   ennemi/héros (ces deux derniers n'avaient encore aucun consommateur côté rendu) et sur
   `uiButton` (clic UI, un seul hook pour tout le jeu). **Réglages (ADR-038)** : `Profile.audio`
   remplace le mute unique — 4 interrupteurs indépendants (Tout/Musique/Notifications/Dégâts) +
   volume par paliers de 10 %, dans une modale ouverte depuis le bouton son du bandeau (icône note
-  de musique du pack Tiny Swords, `EMBLEM.sound`). **Musique de fond reportée** : aucun pack
-  Kenney (seule source explorée pour l'instant) n'offre de piste bouclable adaptée au ton du jeu —
-  juste des jingles courts. Le réglage « Musique » existe déjà, prêt pour quand une source CC0
-  sera trouvée — à reprendre avec une autre source, même démarche itérative que le skin (ADR-016).
+  de musique du pack Tiny Swords, `EMBLEM.sound`). **Musique de menu — fait (ADR-039)** : piste
+  fournie par le PO, transformée en boucle propre par montage ffmpeg (fondu enchaîné sur le point
+  de raccord, aucune source Kenney bouclable n'ayant été trouvée) ; joue uniquement au Campement,
+  jamais en run. ⚠ **Licence à confirmer** : nom de fichier cohérent avec un export Pixabay Music,
+  aucune métadonnée embarquée ne le garantit — à corriger dans `public/assets/README.md` une fois
+  confirmé. **Retouche en cours (playtest PO)** : clic UI jugé trop sec (`click_001` → `select_001`,
+  fait) ; SFX de dégâts jugés trop proches entre eux et pas assez médiévaux — Kenney n'a pas de pack
+  combat fantasy, piste CC-BY/CC-BY-SA sur OpenGameArt à trancher avec le PO.
 - **Modes** : Histoire (10 chapitres, déblocage séquentiel, ch.2-10 en contenu généré provisoire) ;
   Failles infinies = mode séparé, verrouillé tant que l'Histoire n'est pas achevée, à implémenter (v1).
 - **Méta** : 2 monnaies — Éclats ◆ (unlocks Arsenal + Forge) et Sceaux ⚜ (sorts du héros, gagnés

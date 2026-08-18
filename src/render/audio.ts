@@ -1,7 +1,7 @@
 // ============================================================
 // render/audio.ts — Registre des SFX (ADR-037) + routage par catégorie
-// (ADR-038). Même principe que sprites.ts/icons.ts (ADR-005/012) : un rôle →
-// un fichier, point de swap unique.
+// (ADR-038) + musique de menu (ADR-039). Même principe que sprites.ts/icons.ts
+// (ADR-005/012) : un rôle → un fichier, point de swap unique.
 //
 // Les réglages (`AudioSettings`) sont mis en cache ici (`current`) plutôt que
 // transmis à chaque appel : `playSfx` est invoqué depuis `uiButton`, le point
@@ -91,22 +91,72 @@ export function sfxEnabled(settings: AudioSettings, key: SfxKey): boolean {
   return settings.master && settings[CATEGORY_BY_KEY[key]];
 }
 
+/** Cœur pur : la musique doit-elle tourner, compte tenu de `master` et de la
+ *  catégorie « musique » ? Ne dit RIEN sur le CONTEXTE (menu vs run) — c'est
+ *  à l'appelant (MenuScene) de savoir s'il est un endroit qui joue de la
+ *  musique (ADR-039). */
+export function musicEnabled(settings: AudioSettings): boolean {
+  return settings.master && settings.music;
+}
+
 let current: AudioSettings = DEFAULT_AUDIO_SETTINGS;
 
 /** Applique les réglages persistés (`ProfileService.audioSettings`) : mémorise
- *  l'état pour le filtrage par catégorie (`sfxEnabled`) ET pilote le
- *  SoundManager Phaser (`mute` global, `volume` global — appliqués aux DEUX à
- *  la fois, `master` sert de coupe-tout indépendamment des catégories). À
- *  appeler au `create()` de chaque scène : `scene.sound` est PARTAGÉ par
- *  toutes les scènes d'un même `Phaser.Game`. */
+ *  l'état pour le filtrage par catégorie (`sfxEnabled`/`musicEnabled`) ET
+ *  pilote le SoundManager Phaser (`mute` global, `volume` global — appliqués
+ *  aux DEUX à la fois, `master` sert de coupe-tout indépendamment des
+ *  catégories). À appeler au `create()` de chaque scène : `scene.sound` est
+ *  PARTAGÉ par toutes les scènes d'un même `Phaser.Game`.
+ *
+ *  Ne DÉMARRE jamais la musique (seul `playMenuMusic` le fait, appelé
+ *  explicitement par le contexte qui en veut) — mais la COUPE si les
+ *  réglages ne l'autorisent plus, y compris pendant qu'elle joue. */
 export function applyAudioSettings(scene: Phaser.Scene, settings: AudioSettings): void {
   current = settings;
   scene.sound.mute = !settings.master;
   scene.sound.volume = settings.volume;
+  if (!musicEnabled(current)) stopMenuMusic();
 }
 
 /** Joue un SFX si sa catégorie et `master` sont actifs. */
 export function playSfx(scene: Phaser.Scene, key: SfxKey): void {
   if (!sfxEnabled(current, key)) return;
   scene.sound.play(SFX[key], { volume: VOLUME[key] ?? 0.7 });
+}
+
+// ---------------------------------------------------------------------------
+// Musique de menu (ADR-039). Piste unique, en boucle, jouée UNIQUEMENT dans
+// MenuScene — jamais pendant un run (demande PO explicite). Distincte des SFX :
+// une instance longue-durée à démarrer/arrêter, pas un tir-et-oublie.
+// ---------------------------------------------------------------------------
+
+const MUSIC_MENU: string = "music_menu";
+const MUSIC_MENU_FILE: string = "music-menu.ogg";
+/** Mix relatif sous le volume global (ADR-038) : un fond musical ne doit
+ *  jamais dominer les SFX de gameplay. */
+const MUSIC_VOLUME: number = 0.45;
+
+export function preloadMusic(scene: Phaser.Scene): void {
+  scene.load.audio(MUSIC_MENU, `assets/audio/${MUSIC_MENU_FILE}`);
+}
+
+let musicSound: Phaser.Sound.BaseSound | null = null;
+
+/** Démarre la musique de menu si les réglages l'autorisent. Idempotent : ne
+ *  redémarre pas une instance déjà en cours — `MenuScene` la rappelle à
+ *  chaque `create()`, y compris après un `scene.restart()` au resize. */
+export function playMenuMusic(scene: Phaser.Scene): void {
+  if (!musicEnabled(current)) return;
+  if (musicSound?.isPlaying) return;
+  musicSound = scene.sound.add(MUSIC_MENU, { loop: true, volume: MUSIC_VOLUME });
+  musicSound.play();
+}
+
+/** Arrête la musique de menu — appelé au `shutdown` de `MenuScene` (départ en
+ *  run) ET par `applyAudioSettings` si la catégorie « musique » est coupée
+ *  pendant qu'elle joue. */
+export function stopMenuMusic(): void {
+  musicSound?.stop();
+  musicSound?.destroy();
+  musicSound = null;
 }

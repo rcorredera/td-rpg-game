@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import type { AudioSettings } from "../core/types";
 import { CONTENT } from "../content/index";
-import { SFX, sfxEnabled, shotSfx, type SfxKey } from "./audio";
+import { SFX, musicEnabled, sfxEnabled, shotSfx, type SfxKey } from "./audio";
 
 const ALL_ON: AudioSettings = { master: true, music: true, notifications: true, damage: true, volume: 0.8 };
 
@@ -57,5 +57,18 @@ describe("routage par catégorie/master (ADR-038)", () => {
     const s: AudioSettings = { ...ALL_ON, damage: false, notifications: true };
     const gameplayKeys: SfxKey[] = (Object.keys(SFX) as SfxKey[]).filter(k => k !== "uiClick");
     for (const key of gameplayKeys) expect(sfxEnabled(s, key)).toBe(false);
+  });
+});
+
+describe("musique de menu (ADR-039)", () => {
+  it("active seulement si master ET musique sont actifs", () => {
+    expect(musicEnabled(ALL_ON)).toBe(true);
+    expect(musicEnabled({ ...ALL_ON, master: false })).toBe(false);
+    expect(musicEnabled({ ...ALL_ON, music: false })).toBe(false);
+    expect(musicEnabled({ ...ALL_ON, master: false, music: false })).toBe(false);
+  });
+
+  it("indépendante des catégories notifications/dégâts", () => {
+    expect(musicEnabled({ ...ALL_ON, notifications: false, damage: false })).toBe(true);
   });
 });

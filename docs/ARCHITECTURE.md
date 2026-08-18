@@ -87,6 +87,12 @@ key)` est le cœur pur testé (aucune dépendance Phaser) qui décide si un SFX 
 (`uiModal`) ouverte depuis le bouton son du bandeau, volume en paliers de 10 % (pas de slider —
 aucun composant de ce type dans `render/components/`).
 
+**Musique de menu (ADR-039)** : `music-menu.ogg` — boucle fabriquée par montage ffmpeg à partir
+d'une piste fournie par le PO (fondu enchaîné de 4 s entre fin et début du segment actif, pour un
+raccord de bouclage sans silence ni saut de volume). Jouée UNIQUEMENT dans `MenuScene`
+(`playMenuMusic`/`stopMenuMusic`) — jamais pendant un run, arrêtée inconditionnellement au
+`shutdown` de la scène. Catégorie « musique » indépendante des SFX (`musicEnabled`, cœur pur).
+
 `render/icons.ts` (ADR-012) : registre des icônes d'UI — les écrans nomment un **rôle**
 (`story`, `bestiary`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
 qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji

@@ -71,9 +71,16 @@ initialement : le mapping événement → son est une question de PRÉSENTATION 
 raisonnement que pour `sprites.ts`.
 
 **Réglages — fait (ADR-038).** Modale accessible depuis le bouton son du bandeau du Campement :
-4 interrupteurs indépendants (**Tout** coupe sans effacer les préférences, **Musique** — réservé,
-aucun son encore rattaché —, **Notifications** = sons d'UI, **Dégâts** = SFX de gameplay) et un
-volume global par paliers de 10 %. Persisté dans `Profile.audio`.
+4 interrupteurs indépendants (**Tout** coupe sans effacer les préférences, **Musique**,
+**Notifications** = sons d'UI, **Dégâts** = SFX de gameplay) et un volume global par paliers de
+10 %. Persisté dans `Profile.audio`.
+
+**Musique de menu — fait (ADR-039).** Piste fournie par le PO, transformée en boucle propre par
+montage (fondu enchaîné sur le point de raccord). Joue uniquement au Campement, jamais pendant un
+run. **Retouches en cours** : le clic UI d'origine (`click_001` de Kenney) jugé trop sec — remplacé
+par `select_001`, plus doux. Les SFX de dégâts (tirs/impacts/morts) jugés trop proches les uns des
+autres et pas assez médiévaux — Kenney n'a pas de pack combat fantasy dédié, une autre source CC0/CC-BY
+est à l'étude (OpenGameArt a des candidats).
 
 **Musique de fond — reportée.** Aucun pack Kenney (packs audio, seule source explorée pour
 l'instant) n'offre de piste bouclable adaptée au ton du jeu — seulement des jingles courts

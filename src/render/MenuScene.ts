@@ -15,7 +15,7 @@ import { touchSize, viewport } from "./viewport";
 import { EMBLEM, ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
 import { preloadSprites } from "./assets";
-import { applyAudioSettings, preloadAudio } from "./audio";
+import { applyAudioSettings, playMenuMusic, preloadAudio, preloadMusic, stopMenuMusic } from "./audio";
 import { ACCENT, TEXT } from "./theme";
 import type { Viewport } from "./viewport";
 import { layoutCursor, uiButton, uiChip, uiModal, type LayoutCursor, type UiChip, type UiModal } from "./components";
@@ -45,7 +45,7 @@ export class MenuScene extends Phaser.Scene {
   init(data: { profileSvc: ProfileService }) { this.profileSvc = data.profileSvc; }
   // Le campement charge aussi les sprites du monde : le Bestiaire affiche
   // désormais les créatures et les tours, pas seulement leur description.
-  preload() { preloadUi(this); preloadIcons(this); preloadSprites(this); preloadAudio(this); }
+  preload() { preloadUi(this); preloadIcons(this); preloadSprites(this); preloadAudio(this); preloadMusic(this); }
 
   create() {
     setupCamera(this);
@@ -53,6 +53,11 @@ export class MenuScene extends Phaser.Scene {
     // ADR-037) : le Campement démarre toujours en premier (main.ts), donc c'est
     // ici que l'état persisté prend effet pour tout le jeu.
     applyAudioSettings(this, this.profileSvc.audioSettings());
+    // Musique de menu (ADR-039) : idempotente (ne redémarre pas si déjà en cours,
+    // cas du scene.restart() au resize), jamais jouée en run — coupée au shutdown
+    // de cette scène (départ en run), pas seulement si les réglages l'interdisent.
+    playMenuMusic(this);
+    this.events.on("shutdown", () => stopMenuMusic());
     this.panel = null;
     // Le fond couvre la vue entière, pas seulement la zone de jeu : sur un écran
     // large, le débord doit rester habillé plutôt que noir (ADR-010). Grain +
@@ -150,7 +155,10 @@ export class MenuScene extends Phaser.Scene {
     // Toute mutation (interrupteur ou volume) doit repasser par applyAudioSettings :
     // ProfileService ne fait que persister, c'est ce point qui pousse l'état vers le
     // SoundManager Phaser ET le cache de catégorie de render/audio.ts (ADR-038).
-    const sync = () => applyAudioSettings(this, this.profileSvc.audioSettings());
+    // applyAudioSettings COUPE la musique si les réglages l'interdisent désormais, mais ne la
+    // démarre jamais lui-même (il ne sait pas si le contexte actuel en veut) — playMenuMusic()
+    // s'en charge ici, et ne fait rien si les réglages ne l'autorisent pas ou si elle joue déjà.
+    const sync = () => { applyAudioSettings(this, this.profileSvc.audioSettings()); playMenuMusic(this); };
     const rebuild = (content: Phaser.GameObjects.Container) => {
       content.removeAll(true);
       const s: AudioSettings = this.profileSvc.audioSettings();
