@@ -60,7 +60,7 @@ Règle d'intégration : un seul pack principal (Kenney TD + Kenney UI) plutôt q
 
 **État de l'intégration** : chrome d'UI sur **Kenney UI** (`render/ui.ts`). **Monde sur le pack Kenney Tower Defense top-down** (CC0, vectoriel) via la couche swappable (ADR-005) : terrain en tuiles, ennemis (tanks/avion)/héros/tours/base en sprites retained-mode. **Polish fait** : décor dispersé (buissons/plantes, hors routes via distance-au-segment), pads de tour propres (plateforme à cible) **+ anneau doré pulsé et croix « + » sur les slots vides** (lisibilité « construire ici »), ennemis agrandis, **flammes/explosions sprites** (#296, tweenées) sur tir/mort/impact base, **chemins lissés** (spline Catmull-Rom *visuelle* à travers les waypoints — la sim suit toujours les segments linéaires, ADR-001), **menu de slot au-dessus des entités** (depth 2000). **Reste** : herbe encore un peu plate (texture/teinte de fond), rotation du canon de tourelle vers la cible, fond de menu décoré.
 
-## Audio (ADR-037)
+## Audio (ADR-037, réglages ADR-038)
 
 **SFX — fait.** 8 sons CC0 Kenney (packs *Interface Sounds* + *Impact Sounds*, sourcing sans
 budget comme prévu ci-dessous) : tirs (un par tour), impact/explosion, mort d'ennemi, dégât
@@ -68,8 +68,12 @@ château, mort du héros, clic UI. Registre `render/audio.ts` — même famille 
 `sprites.ts`/`icons.ts` (rôle → fichier, ADR-005/012), **pas dans `src/content/`** comme envisagé
 initialement : le mapping événement → son est une question de PRÉSENTATION (quel SFX habille quel
 `SimEvent`), pas une valeur d'équilibrage, donc hors du périmètre d'ADR-003 — exactement le même
-raisonnement que pour `sprites.ts`. Volume global + mute persistés dans le profil
-(`Profile.muted`), bouton dans le bandeau du Campement.
+raisonnement que pour `sprites.ts`.
+
+**Réglages — fait (ADR-038).** Modale accessible depuis le bouton son du bandeau du Campement :
+4 interrupteurs indépendants (**Tout** coupe sans effacer les préférences, **Musique** — réservé,
+aucun son encore rattaché —, **Notifications** = sons d'UI, **Dégâts** = SFX de gameplay) et un
+volume global par paliers de 10 %. Persisté dans `Profile.audio`.
 
 **Musique de fond — reportée.** Aucun pack Kenney (packs audio, seule source explorée pour
 l'instant) n'offre de piste bouclable adaptée au ton du jeu — seulement des jingles courts

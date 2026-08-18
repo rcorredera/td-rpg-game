@@ -3,13 +3,19 @@
 // meilleurs runs), achats d'unlocks, de forge et de niveaux de sorts.
 // ============================================================
 
-import type { Profile, RallyLevel, RunResult, SkillTrack, UnlockDef, WhirlwindLevel } from "../core/types";
+import type {
+  AudioCategory, AudioSettings, Profile, RallyLevel, RunResult, SkillTrack, UnlockDef, WhirlwindLevel,
+} from "../core/types";
 import { CONTENT, UNLOCKS } from "../content/index";
 import type { SaveAdapter } from "./save";
 
 const BEST_RUNS_KEPT: number = 5;
+const VOLUME_STEP: number = 0.1;
 
 export type SkillId = "whirlwind" | "rally";
+/** Interrupteur de `AudioSettings` autre que le volume — `master` coupe tout
+ *  d'un coup sans effacer les préférences par catégorie (ADR-038). */
+export type AudioFlag = AudioCategory | "master";
 
 export class ProfileService {
   private profile: Profile;
@@ -24,14 +30,25 @@ export class ProfileService {
     this.adapter.save(this.profile);
   }
 
-  isMuted(): boolean { return this.profile.muted; }
+  audioSettings(): AudioSettings { return this.profile.audio; }
 
-  /** Bascule le son coupé et persiste. Renvoie le nouvel état, pour que
-   *  l'appelant (bouton d'UI) sache quoi afficher sans relire le profil. */
-  toggleMuted(): boolean {
-    this.profile.muted = !this.profile.muted;
+  /** Bascule un interrupteur (`master`, ou une catégorie) et persiste. Renvoie
+   *  le nouvel état pour que l'appelant (UI) l'affiche sans relire le profil. */
+  toggleAudioFlag(flag: AudioFlag): boolean {
+    const next: boolean = !this.profile.audio[flag];
+    this.profile.audio[flag] = next;
     this.adapter.save(this.profile);
-    return this.profile.muted;
+    return next;
+  }
+
+  /** Pas de `VOLUME_STEP` (10 %), bornée [0, 1]. Pas de slider (ADR-038) : la
+   *  précision au pixel n'apporte rien à un réglage de volume. */
+  stepVolume(direction: 1 | -1): number {
+    const v: number = Math.min(1, Math.max(0, this.profile.audio.volume + direction * VOLUME_STEP));
+    // Évite les résidus flottants (0.7000000000000001) qui rendraient l'affichage en % instable.
+    this.profile.audio.volume = Math.round(v * 100) / 100;
+    this.adapter.save(this.profile);
+    return this.profile.audio.volume;
   }
 
   chapterWon(chapterIndex: number): boolean {

@@ -1,13 +1,13 @@
 // Tests unitaires du core — la sim doit tourner sans navigateur (ADR-001).
 import { describe, expect, it } from "vitest";
 import type { ContentPack, EnemyDef, EnemyState, Profile, RewardRules, RunResult, RunState, SimEvent, TowerDef, TowerLevelStats, Vec2, WhirlwindLevel } from "./types";
-import { BATTLEFIELD } from "./types";
+import { BATTLEFIELD, DEFAULT_AUDIO_SETTINGS } from "./types";
 import { CONTENT, UNLOCKS } from "../content/index";
 import { buildTower, castAccountSpell, castWhirlwind, clampToBattlefield, computeResult, createRun, moveHero, sellRefundFor, sellTower, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
 
 const FRESH_PROFILE: Profile = {
   shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
-  unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], muted: false,
+  unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], audio: { ...DEFAULT_AUDIO_SETTINGS },
 };
 
 /** Profil doté de tous les paliers d'armurerie : rang 3 et spécialisations ouverts.

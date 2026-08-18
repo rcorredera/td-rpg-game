@@ -20,6 +20,7 @@ import {
   buildTower, castRally, castWhirlwind, createRun, computeResult,
   specializeTower, startNextWave, tick, upgradeTower,
 } from "../core/sim";
+import { DEFAULT_AUDIO_SETTINGS } from "../core/types";
 import type { ContentPack, PlayableChapter, Profile, RunResult, RunState, SimEvent, TowerDef, TowerState, Vec2 } from "../core/types";
 import { playableChapter } from "./datasheet";
 
@@ -90,7 +91,7 @@ function emptyProfile(over: Partial<Profile> = {}): Profile {
   return {
     shards: 0, sceaux: 0, introSeen: true, chaptersWon: [], chapterStars: {},
     bestiary: [], unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 },
-    bestRuns: [], muted: false, ...over,
+    bestRuns: [], audio: { ...DEFAULT_AUDIO_SETTINGS }, ...over,
   };
 }
 

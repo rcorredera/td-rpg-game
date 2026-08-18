@@ -1,8 +1,12 @@
-// Garantit que le registre SFX couvre tout le contenu : ajouter une tour sans
-// son tir casse ce test (même discipline que sprites.test.ts, ADR-005/037).
+// Garantit que le registre SFX couvre tout le contenu (ADR-005/037) et que le
+// routage par catégorie/master est correct (ADR-038) — sans scène Phaser,
+// `sfxEnabled` est un cœur pur.
 import { describe, expect, it } from "vitest";
+import type { AudioSettings } from "../core/types";
 import { CONTENT } from "../content/index";
-import { SFX, shotSfx, type SfxKey } from "./audio";
+import { SFX, sfxEnabled, shotSfx, type SfxKey } from "./audio";
+
+const ALL_ON: AudioSettings = { master: true, music: true, notifications: true, damage: true, volume: 0.8 };
 
 describe("registre SFX (audio.ts)", () => {
   it("mappe chaque tour de CONTENT vers un tir SFX valide", () => {
@@ -20,5 +24,38 @@ describe("registre SFX (audio.ts)", () => {
     const keys: string[] = Object.values(SFX);
     expect(new Set(keys).size).toBe(keys.length);
     for (const k of keys) expect(k).toMatch(/^sfx_[a-z]+(?:_[a-z]+)*$/);
+  });
+});
+
+describe("routage par catégorie/master (ADR-038)", () => {
+  it("tout actif ⇒ tout joue", () => {
+    for (const key of Object.keys(SFX) as SfxKey[]) expect(sfxEnabled(ALL_ON, key)).toBe(true);
+  });
+
+  it("master coupe TOUT, même une catégorie individuellement active", () => {
+    const s: AudioSettings = { ...ALL_ON, master: false };
+    for (const key of Object.keys(SFX) as SfxKey[]) expect(sfxEnabled(s, key)).toBe(false);
+  });
+
+  it("couper « dégâts » n'affecte pas le clic UI (catégorie « notifications »)", () => {
+    const s: AudioSettings = { ...ALL_ON, damage: false };
+    expect(sfxEnabled(s, "shotArcher")).toBe(false);
+    expect(sfxEnabled(s, "castleHit")).toBe(false);
+    expect(sfxEnabled(s, "uiClick")).toBe(true);
+  });
+
+  it("couper « notifications » n'affecte pas les SFX de dégâts", () => {
+    const s: AudioSettings = { ...ALL_ON, notifications: false };
+    expect(sfxEnabled(s, "uiClick")).toBe(false);
+    expect(sfxEnabled(s, "enemyDied")).toBe(true);
+  });
+
+  it("chaque SFX de gameplay (hors clic UI) est catégorisé « dégâts »", () => {
+    // Garde-fou : un nouveau SFX ajouté sans entrée dans CATEGORY_BY_KEY tomberait
+    // dans TypeScript en erreur de compilation (Record exhaustif) — ce test documente
+    // l'attente et casserait s'il fallait un jour introduire une 3e catégorie de gameplay.
+    const s: AudioSettings = { ...ALL_ON, damage: false, notifications: true };
+    const gameplayKeys: SfxKey[] = (Object.keys(SFX) as SfxKey[]).filter(k => k !== "uiClick");
+    for (const key of gameplayKeys) expect(sfxEnabled(s, key)).toBe(false);
   });
 });

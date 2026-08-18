@@ -79,6 +79,14 @@ dans `Profile.muted` (`ProfileService.isMuted`/`toggleMuted`), appliqué via `sc
 le `SoundManager` Phaser est UNE instance partagée par toutes les scènes du même `Phaser.Game`.
 Musique de fond : hors périmètre (aucune source CC0 Kenney bouclable trouvée).
 
+**Réglages audio (ADR-038)** : `Profile.audio: AudioSettings` (`master`, `music`, `notifications`,
+`damage`, `volume`) remplace le mute unique d'ADR-037. `render/audio.ts` garde un cache
+module-level (`current`) mis à jour par `applyAudioSettings(scene, settings)` — évite de faire
+transiter `ProfileService` jusqu'à `uiButton`, appelé par une centaine d'écrans. `sfxEnabled(settings,
+key)` est le cœur pur testé (aucune dépendance Phaser) qui décide si un SFX joue. UI : modale
+(`uiModal`) ouverte depuis le bouton son du bandeau, volume en paliers de 10 % (pas de slider —
+aucun composant de ce type dans `render/components/`).
+
 `render/icons.ts` (ADR-012) : registre des icônes d'UI — les écrans nomment un **rôle**
 (`story`, `bestiary`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
 qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji

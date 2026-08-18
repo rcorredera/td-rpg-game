@@ -21,7 +21,7 @@ import type { ProfileService } from "../meta/profile";
 import { onSceneResize, preloadUi, setupCamera } from "./ui";
 import { preloadIcons } from "./icons";
 import { preloadSprites } from "./assets";
-import { applyMuted, playSfx, preloadAudio, shotSfx } from "./audio";
+import { applyAudioSettings, playSfx, preloadAudio, shotSfx } from "./audio";
 import { enemyView, heroView, towerView } from "./sprites";
 import { projectileFor, type ProjectileStyle } from "./projectiles";
 import { SpriteLayer } from "./EntityLayer";
@@ -88,7 +88,7 @@ export class GameScene extends Phaser.Scene {
     setupCamera(this);
     // SoundManager partagé par toutes les scènes (une seule instance Phaser.Game,
     // ADR-037) : appliqué ici aussi pour rester correct même si l'ordre de boot change.
-    applyMuted(this, this.profileSvc.isMuted());
+    applyAudioSettings(this, this.profileSvc.audioSettings());
     const terrainBuild: TerrainBuild = buildTerrain(this, this.ch);
     this.terrain = terrainBuild.container;
     this.slotMarkers = terrainBuild.slotMarkers;
