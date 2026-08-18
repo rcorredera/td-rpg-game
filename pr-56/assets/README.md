@@ -16,7 +16,8 @@ les tests — c'est voulu.
 | `tiny-swords/` | UI 9-slice, bâtiments, FX, décors — voir plus bas | **Pixel Frog** — pixelfrog-assets.itch.io | **CC0** |
 | `kenney-td/` | `sheet.png` seule (planche 64×64, 23 colonnes) — ne sert plus qu'aux FX | Kenney (kenney.nl) | **CC0** |
 | `kenney-ui/` | 4 images : `btn-grey`, `btn-yellow`, `panel-grey`, `divider` | Kenney (kenney.nl) | **CC0** |
-| `audio/` | 8 SFX (tirs, impact, morts, dégât château, clic UI) — voir détail plus bas | Kenney (kenney.nl) | **CC0** |
+| `audio/` (SFX) | 8 SFX (tirs, impact, morts, dégât château, clic UI) — voir détail plus bas | Kenney (kenney.nl) | **CC0** |
+| `audio/music-menu.ogg` | Musique de menu, boucle fabriquée par montage (ADR-039) — voir détail plus bas | Nastelbom (déclaré) | **⚠ à confirmer** |
 | `../fonts/` | Cinzel (titres) + Alegreya (textes) | Natanael Gama / Juan Pablo del Peral | **OFL 1.1** |
 
 CC0 = domaine public : usage commercial autorisé, crédit non obligatoire.
@@ -49,11 +50,9 @@ exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir b
 - **Terrain/Tileset** — tuiles d'île avec falaise sur eau. Ne correspond pas aux 10 biomes.
 - Variantes de couleur inutilisées, avatars, table en bois, curseurs, sources `.aseprite`.
 
-## `audio/` — détail (ADR-037)
+## `audio/` — détail (ADR-037/038)
 
-8 SFX extraits de deux packs Kenney CC0, renommés par rôle (`render/audio.ts`). Aucune musique de
-fond : Kenney ne propose que des jingles courts (8-bit/sax/pizzicato, hors ton), pas de piste
-bouclable — reporté à une recherche dédiée.
+8 SFX extraits de deux packs Kenney CC0, renommés par rôle (`render/audio.ts`).
 
 | Fichier | Pack source | Fichier d'origine |
 |---|---|---|
@@ -64,7 +63,26 @@ bouclable — reporté à une recherche dédiée.
 | `sfx-enemy-died.ogg` | Impact Sounds | `impactSoft_medium_000.ogg` |
 | `sfx-castle-hit.ogg` | Impact Sounds | `impactBell_heavy_000.ogg` |
 | `sfx-hero-died.ogg` | Impact Sounds | `impactPunch_heavy_000.ogg` |
-| `sfx-ui-click.ogg` | Interface Sounds | `click_001.ogg` |
+| `sfx-ui-click.ogg` | Interface Sounds | `select_001.ogg` (remplace `click_001.ogg`, jugé trop sec au playtest) |
 
 Les deux packs sources (chacun bien plus fourni que les 8 fichiers retenus) ne sont pas
 versionnés en entier, même règle que pour `tiny-swords/`.
+
+⚠ **Retouche à venir** : les SFX de dégâts (tirs/impacts/morts) ci-dessus sont jugés trop
+proches les uns des autres et pas assez médiévaux — Kenney n'a pas de pack de combat fantasy
+dédié (vérifié). Piste explorée : OpenGameArt (candidats CC-BY/CC-BY-SA trouvés — attribution ou
+partage à l'identique à trancher avant tout branchement).
+
+## `audio/music-menu.ogg` — détail (ADR-039)
+
+Fichier fourni directement par le PO (`nastelbom-fantasy-454036.mp3`, ~1 min 37, sans métadonnée
+embarquée) — nom cohérent avec un export **Pixabay Music**, non confirmé. **⚠ Licence à valider
+avant fusion sur `main`** : la licence Pixabay Content actuelle autorise l'usage commercial sans
+crédit obligatoire, mais rien dans le fichier lui-même ne le garantit.
+
+Le fichier original n'était pas bouclable (silence de tête, fondu de sortie vers le silence en
+fin de piste). `music-menu.ogg` est une boucle FABRIQUÉE par montage ffmpeg : segment actif isolé
+(0,57 s → 92,7 s de l'original) puis fondu enchaîné de 4 s entre la fin et le début de ce segment
+— la fin du fichier de boucle se fond dans son propre début, donc aucun silence ni saut de volume
+au point de raccord (vérifié par lecture bout à bout + détection de silence). 88,13 s, Vorbis
+~130 kb/s, ~1,4 Mo — nettement plus gros que les SFX (quelques Ko), normal pour une piste longue.
