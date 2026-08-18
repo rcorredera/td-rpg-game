@@ -1,7 +1,9 @@
 // Tests de persistence : migration des vieux profils, corruption, indispo localStorage (ADR-002).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LocalStorageSaveAdapter } from "./save";
-import type { Profile } from "../core/types";
+import type { AudioSettings, Profile } from "../core/types";
+
+const FRESH_AUDIO: AudioSettings = { master: true, music: true, notifications: true, damage: true, volume: 0.8 };
 
 const KEY: string = "tdrpg_profile_v1";
 
@@ -23,7 +25,7 @@ describe("LocalStorageSaveAdapter", () => {
     const p: Profile = new LocalStorageSaveAdapter().load();
     expect(p).toEqual({
       shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
-      unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
+      unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], audio: FRESH_AUDIO,
     });
   });
 
@@ -45,6 +47,23 @@ describe("LocalStorageSaveAdapter", () => {
       }),
     });
     expect(new LocalStorageSaveAdapter().load().chaptersWon).toEqual([0]);
+  });
+
+  it("migration audio : absent d'un vieux profil ⇒ tout actif, volume 0.8", () => {
+    mockStorage({ [KEY]: JSON.stringify({ shards: 5 }) });
+    expect(new LocalStorageSaveAdapter().load().audio).toEqual(FRESH_AUDIO);
+  });
+
+  it("migration audio : profil partiel (une seule catégorie écrite) complété champ par champ", () => {
+    mockStorage({ [KEY]: JSON.stringify({ shards: 5, audio: { damage: false } }) });
+    expect(new LocalStorageSaveAdapter().load().audio).toEqual({ ...FRESH_AUDIO, damage: false });
+  });
+
+  it("migration audio : volume hors bornes dans une vieille sauvegarde, reclampé", () => {
+    mockStorage({ [KEY]: JSON.stringify({ audio: { volume: 4.2 } }) });
+    expect(new LocalStorageSaveAdapter().load().audio.volume).toBe(1);
+    mockStorage({ [KEY]: JSON.stringify({ audio: { volume: -1 } }) });
+    expect(new LocalStorageSaveAdapter().load().audio.volume).toBe(0);
   });
 
   it("JSON corrompu : repart sur un profil neuf sans crasher", () => {

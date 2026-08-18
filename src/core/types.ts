@@ -259,7 +259,31 @@ export interface Profile {
   skills: { whirlwind: number; rally: number };
   /** Top 5 des runs, triés par vagues puis kills. */
   bestRuns: BestRun[];
+  /** Réglages audio, indépendants d'un run (ADR-038). */
+  audio: AudioSettings;
 }
+
+/** Catégorie de SFX/musique commutable indépendamment (ADR-038). `music` n'a
+ *  encore aucun son (ADR-037) mais le réglage existe déjà : une future musique
+ *  de fond respectera une préférence déjà persistée plutôt que de repartir de
+ *  zéro. */
+export type AudioCategory = "music" | "notifications" | "damage";
+
+export interface AudioSettings {
+  /** Coupe tout le son d'un coup, sans effacer les préférences par catégorie. */
+  master: boolean;
+  music: boolean;
+  notifications: boolean;
+  damage: boolean;
+  /** Volume global 0..1, appliqué par-dessus le mix de chaque son (`render/audio.ts`). */
+  volume: number;
+}
+
+/** Source unique du profil neuf ET du repli de migration (`meta/save.ts`) — dupliquer ce
+ *  défaut aurait fini par diverger (voir `.ai/pitfalls.md`, la leçon des géométries recopiées). */
+export const DEFAULT_AUDIO_SETTINGS: AudioSettings = {
+  master: true, music: true, notifications: true, damage: true, volume: 0.8,
+};
 
 // ---------- État de run ----------
 

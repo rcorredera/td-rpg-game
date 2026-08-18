@@ -21,6 +21,7 @@ import type { ProfileService } from "../meta/profile";
 import { onSceneResize, preloadUi, setupCamera } from "./ui";
 import { preloadIcons } from "./icons";
 import { preloadSprites } from "./assets";
+import { applyAudioSettings, playSfx, preloadAudio, shotSfx } from "./audio";
 import { enemyView, heroView, towerView } from "./sprites";
 import { projectileFor, type ProjectileStyle } from "./projectiles";
 import { SpriteLayer } from "./EntityLayer";
@@ -81,10 +82,13 @@ export class GameScene extends Phaser.Scene {
     this.castleHitAt = -9999;
   }
 
-  preload() { preloadUi(this); preloadSprites(this); preloadIcons(this); }
+  preload() { preloadUi(this); preloadSprites(this); preloadIcons(this); preloadAudio(this); }
 
   create() {
     setupCamera(this);
+    // SoundManager partagé par toutes les scènes (une seule instance Phaser.Game,
+    // ADR-037) : appliqué ici aussi pour rester correct même si l'ordre de boot change.
+    applyAudioSettings(this, this.profileSvc.audioSettings());
     const terrainBuild: TerrainBuild = buildTerrain(this, this.ch);
     this.terrain = terrainBuild.container;
     this.slotMarkers = terrainBuild.slotMarkers;
@@ -233,6 +237,7 @@ export class GameScene extends Phaser.Scene {
     for (const e of evs) {
       if (e.type === "explosion") {
         this.fxPool.spawnFlame(e.pos.x, e.pos.y, 0.4 + e.radius / 90);
+        playSfx(this, "impact");
         // Grosse zone = sort de compte : on ajoute la volée de flèches qui tombe,
         // au lieu d'une simple déflagration indifférenciée.
         if (e.radius >= CONTENT.accountSpell.radius * 0.9) {
@@ -245,6 +250,7 @@ export class GameScene extends Phaser.Scene {
         const style: ProjectileStyle = projectileFor(e.towerDefId);
         const now: number = this.time.now;
         this.fxPool.addShot({ from: e.from, to: e.to, start: now, until: now + style.flightMs, style });
+        playSfx(this, shotSfx(e.towerDefId));
         // Recul de la tour au départ du coup : l'animation de tir part de l'arme,
         // pas seulement du projectile.
         const shooter: TowerState | undefined = this.run.towers.find(t => {
@@ -258,7 +264,10 @@ export class GameScene extends Phaser.Scene {
         const end: Vec2 = main[main.length - 1]!;
         this.fxPool.spawnFlame(end.x - 18, end.y - 6, 0.8 + e.damage * 0.12);
         this.castleHitAt = this.time.now;
+        playSfx(this, "castleHit");
       }
+      if (e.type === "enemyDied") playSfx(this, "enemyDied");
+      if (e.type === "heroDied") playSfx(this, "heroDied");
     }
   }
 

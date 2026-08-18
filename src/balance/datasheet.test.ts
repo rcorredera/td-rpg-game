@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CONTENT } from "../content/index";
 import { createRun, startNextWave, tick } from "../core/sim";
+import { DEFAULT_AUDIO_SETTINGS } from "../core/types";
 import type { ContentPack, EnemyState, PlayableChapter, Profile, RunState, TowerDef, TowerSpecDef, Vec2, WaveDef } from "../core/types";
 import { PLAY_SAFE_BOTTOM } from "../render/viewport";
 import { castleAnchor, CASTLE_HALF } from "../render/castle";
@@ -15,7 +16,7 @@ import {
 function blankProfile(): Profile {
   return {
     shards: 0, sceaux: 0, introSeen: true, chaptersWon: [], chapterStars: {},
-    bestiary: [], unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
+    bestiary: [], unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], audio: { ...DEFAULT_AUDIO_SETTINGS },
   };
 }
 

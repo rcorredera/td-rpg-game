@@ -69,6 +69,30 @@ ne porte plus que le chrome (échelle de rendu, polices, curseurs, caméra, pré
 
 `render/components/tileContent.ts` (ADR-029) : composition VERTICALE du contenu d'une tuile (icône, titre, sous-titre, jauge), pure et testée. Le contenu remplit la boîte qu'on lui donne, l'icône absorbant la place restante jusqu'à `ICON_RASTER_PX`. Même famille que `hubLayout` : la mise en page a une règle métier, donc elle sort du composant.
 
+`render/audio.ts` (ADR-037) : registre SFX, même principe que `sprites.ts`/`icons.ts` — un rôle
+(`shotArcher`, `enemyDied`…) → une clé de son, point de swap unique. `shotSfx(towerDefId)` mappe
+une tour à son tir avec la même discipline que `towerView` (lève sur un defId inconnu). Branché
+sur les `SimEvent` déjà consommés par `GameScene.consumeEvents` (`shot`/`explosion`/`castleHit`,
+plus `enemyDied`/`heroDied` qui n'avaient encore aucun consommateur côté rendu) et sur `uiButton`
+(`render/components/button.ts`), point d'entrée unique de tout clic habillé du jeu. Mute persisté
+dans `Profile.muted` (`ProfileService.isMuted`/`toggleMuted`), appliqué via `scene.sound.mute` —
+le `SoundManager` Phaser est UNE instance partagée par toutes les scènes du même `Phaser.Game`.
+Musique de fond : hors périmètre (aucune source CC0 Kenney bouclable trouvée).
+
+**Réglages audio (ADR-038)** : `Profile.audio: AudioSettings` (`master`, `music`, `notifications`,
+`damage`, `volume`) remplace le mute unique d'ADR-037. `render/audio.ts` garde un cache
+module-level (`current`) mis à jour par `applyAudioSettings(scene, settings)` — évite de faire
+transiter `ProfileService` jusqu'à `uiButton`, appelé par une centaine d'écrans. `sfxEnabled(settings,
+key)` est le cœur pur testé (aucune dépendance Phaser) qui décide si un SFX joue. UI : modale
+(`uiModal`) ouverte depuis le bouton son du bandeau, volume en paliers de 10 % (pas de slider —
+aucun composant de ce type dans `render/components/`).
+
+**Musique de menu (ADR-039)** : `music-menu.ogg` — boucle fabriquée par montage ffmpeg à partir
+d'une piste fournie par le PO (fondu enchaîné de 4 s entre fin et début du segment actif, pour un
+raccord de bouclage sans silence ni saut de volume). Jouée UNIQUEMENT dans `MenuScene`
+(`playMenuMusic`/`stopMenuMusic`) — jamais pendant un run, arrêtée inconditionnellement au
+`shutdown` de la scène. Catégorie « musique » indépendante des SFX (`musicEnabled`, cœur pur).
+
 `render/icons.ts` (ADR-012) : registre des icônes d'UI — les écrans nomment un **rôle**
 (`story`, `bestiary`…), jamais un fichier ni un emoji. SVG monochromes maison, teintés au rendu, ce
 qui permet de faire porter un état par la couleur (verrouillé, Faille, base en péril). Aucun emoji

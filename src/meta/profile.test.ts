@@ -1,6 +1,7 @@
 // Tests de la logique méta : gains de fin de run, achats, progression.
 import { describe, expect, it } from "vitest";
 import type { BestRun, Profile, RunResult, UnlockDef } from "../core/types";
+import { DEFAULT_AUDIO_SETTINGS } from "../core/types";
 import { CONTENT, UNLOCKS } from "../content/index";
 import { ProfileService } from "./profile";
 import type { SaveAdapter } from "./save";
@@ -8,7 +9,7 @@ import type { SaveAdapter } from "./save";
 function fresh(): Profile {
   return {
     shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
-    unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [],
+    unlocks: [], forge: {}, skills: { whirlwind: 1, rally: 1 }, bestRuns: [], audio: { ...DEFAULT_AUDIO_SETTINGS },
   };
 }
 
@@ -77,6 +78,52 @@ describe("ProfileService — fin de run", () => {
     expect(svc.storyCompleted()).toBe(false);
     svc.applyRunResult(result({ victory: true }), CONTENT.chapters.length - 1);
     expect(svc.storyCompleted()).toBe(true);
+  });
+});
+
+describe("ProfileService — réglages audio (ADR-038)", () => {
+  it("son actif par défaut sur les 4 interrupteurs", () => {
+    const svc: ProfileService = new ProfileService(new MemAdapter());
+    expect(svc.audioSettings()).toEqual({ master: true, music: true, notifications: true, damage: true, volume: 0.8 });
+  });
+
+  it("bascule un interrupteur indépendamment des autres, et persiste", () => {
+    const a: MemAdapter = new MemAdapter();
+    const svc: ProfileService = new ProfileService(a);
+    expect(svc.toggleAudioFlag("damage")).toBe(false);
+    expect(svc.audioSettings()).toEqual({ master: true, music: true, notifications: true, damage: false, volume: 0.8 });
+    expect(a.saves).toBe(1);
+    expect(svc.toggleAudioFlag("damage")).toBe(true);
+    expect(svc.audioSettings().damage).toBe(true);
+  });
+
+  it("« master » coupe tout SANS effacer les préférences par catégorie", () => {
+    const svc: ProfileService = new ProfileService(new MemAdapter());
+    svc.toggleAudioFlag("music"); // music à false avant de tout couper
+    svc.toggleAudioFlag("master"); // master à false
+    expect(svc.audioSettings()).toEqual({ master: false, music: false, notifications: true, damage: true, volume: 0.8 });
+    svc.toggleAudioFlag("master"); // master à true : music reste éteint, pas réinitialisé
+    expect(svc.audioSettings().music).toBe(false);
+    expect(svc.audioSettings().master).toBe(true);
+  });
+
+  it("deux profils neufs ont chacun leurs réglages, pas un objet partagé", () => {
+    // Régression : DEFAULT_AUDIO_SETTINGS est un objet unique — sans copie,
+    // basculer un interrupteur d'un profil aurait muté tous les profils neufs suivants.
+    const svcA: ProfileService = new ProfileService(new MemAdapter());
+    const svcB: ProfileService = new ProfileService(new MemAdapter());
+    svcA.toggleAudioFlag("damage");
+    expect(svcA.audioSettings().damage).toBe(false);
+    expect(svcB.audioSettings().damage).toBe(true);
+  });
+
+  it("volume : pas de 10%, borné [0, 1], résidus flottants nettoyés", () => {
+    const svc: ProfileService = new ProfileService(new MemAdapter());
+    expect(svc.stepVolume(-1)).toBeCloseTo(0.7, 5);
+    for (let i: number = 0; i < 10; i++) svc.stepVolume(-1); // largement sous le plancher
+    expect(svc.audioSettings().volume).toBe(0);
+    for (let i: number = 0; i < 20; i++) svc.stepVolume(1); // largement au-dessus du plafond
+    expect(svc.audioSettings().volume).toBe(1);
   });
 });
 

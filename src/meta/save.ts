@@ -5,7 +5,8 @@
 // est complété avec les défauts, jamais jeté.
 // ============================================================
 
-import type { Profile } from "../core/types";
+import { DEFAULT_AUDIO_SETTINGS } from "../core/types";
+import type { AudioSettings, Profile } from "../core/types";
 
 const KEY: string = "tdrpg_profile_v1";
 
@@ -26,6 +27,9 @@ function freshProfile(): Profile {
     forge: {},
     skills: { whirlwind: 1, rally: 1 },
     bestRuns: [],
+    // Copie : DEFAULT_AUDIO_SETTINGS est un objet partagé, un profil doit avoir le sien
+    // (sinon toggleAudioFlag muterait la constante pour tous les profils neufs suivants).
+    audio: { ...DEFAULT_AUDIO_SETTINGS },
   };
 }
 
@@ -49,6 +53,20 @@ function normalize(parsed: Partial<Profile>): Profile {
       rally: typeof parsed.skills?.rally === "number" ? parsed.skills.rally : 1,
     },
     bestRuns: Array.isArray(parsed.bestRuns) ? parsed.bestRuns : fresh.bestRuns,
+    audio: normalizeAudio(parsed.audio),
+  };
+}
+
+/** Champ par champ, comme le reste du profil : un vieux client qui n'a écrit
+ *  qu'une partie de `AudioSettings` (ou aucune) ne perd que ce qu'il n'avait pas. */
+function normalizeAudio(parsed: Partial<AudioSettings> | undefined): AudioSettings {
+  const fresh: AudioSettings = DEFAULT_AUDIO_SETTINGS;
+  return {
+    master: typeof parsed?.master === "boolean" ? parsed.master : fresh.master,
+    music: typeof parsed?.music === "boolean" ? parsed.music : fresh.music,
+    notifications: typeof parsed?.notifications === "boolean" ? parsed.notifications : fresh.notifications,
+    damage: typeof parsed?.damage === "boolean" ? parsed.damage : fresh.damage,
+    volume: typeof parsed?.volume === "number" ? Math.min(1, Math.max(0, parsed.volume)) : fresh.volume,
   };
 }
 

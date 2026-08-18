@@ -10,14 +10,16 @@
 
 import Phaser from "phaser";
 import type { ProfileService } from "../meta/profile";
-import { onSceneResize, preloadUi, setupCamera } from "./ui";
+import { FONT_BODY, onSceneResize, preloadUi, setupCamera } from "./ui";
 import { touchSize, viewport } from "./viewport";
-import { ICON, preloadIcons } from "./icons";
+import { EMBLEM, ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
 import { preloadSprites } from "./assets";
+import { applyAudioSettings, playMenuMusic, preloadAudio, preloadMusic, stopMenuMusic } from "./audio";
 import { ACCENT, TEXT } from "./theme";
 import type { Viewport } from "./viewport";
-import { uiButton, uiChip, uiModal, type UiChip, type UiModal } from "./components";
+import { layoutCursor, uiButton, uiChip, uiModal, type LayoutCursor, type UiChip, type UiModal } from "./components";
+import type { AudioFlag } from "../meta/profile";
 import { buildBestiary } from "./menu/bestiaryView";
 import { buildChronicles } from "./menu/chroniclesView";
 import { buildHome } from "./menu/homeView";
@@ -26,7 +28,7 @@ import { buildShop } from "./menu/shopView";
 import { buildStory } from "./menu/storyView";
 import { CX, LORE_INTRO, TITLE } from "./menu/theme";
 import type { BestiaryTab, MenuCtx, ShopTab, View } from "./menu/types";
-import type { Profile } from "../core/types";
+import type { AudioSettings, Profile } from "../core/types";
 
 export class MenuScene extends Phaser.Scene {
   private profileSvc!: ProfileService;
@@ -37,15 +39,25 @@ export class MenuScene extends Phaser.Scene {
   private currentShopTab: ShopTab = "arsenal";
   private bestiaryTab: BestiaryTab = "creatures";
   private fsBtn: Phaser.GameObjects.Container | null = null;
+  private soundBtn: Phaser.GameObjects.Container | null = null;
 
   constructor() { super("menu"); }
   init(data: { profileSvc: ProfileService }) { this.profileSvc = data.profileSvc; }
   // Le campement charge aussi les sprites du monde : le Bestiaire affiche
   // désormais les créatures et les tours, pas seulement leur description.
-  preload() { preloadUi(this); preloadIcons(this); preloadSprites(this); }
+  preload() { preloadUi(this); preloadIcons(this); preloadSprites(this); preloadAudio(this); preloadMusic(this); }
 
   create() {
     setupCamera(this);
+    // SoundManager partagé par toutes les scènes (une seule instance Phaser.Game,
+    // ADR-037) : le Campement démarre toujours en premier (main.ts), donc c'est
+    // ici que l'état persisté prend effet pour tout le jeu.
+    applyAudioSettings(this, this.profileSvc.audioSettings());
+    // Musique de menu (ADR-039) : idempotente (ne redémarre pas si déjà en cours,
+    // cas du scene.restart() au resize), jamais jouée en run — coupée au shutdown
+    // de cette scène (départ en run), pas seulement si les réglages l'interdisent.
+    playMenuMusic(this);
+    this.events.on("shutdown", () => stopMenuMusic());
     this.panel = null;
     // Le fond couvre la vue entière, pas seulement la zone de jeu : sur un écran
     // large, le débord doit rester habillé plutôt que noir (ADR-010). Grain +
@@ -110,6 +122,76 @@ export class MenuScene extends Phaser.Scene {
           else this.scale.startFullscreen();
         }).container.setDepth(50);
     }
+    this.buildSoundBtn();
+  }
+
+  /** Bouton son (ADR-037/038), à gauche du plein écran — ouvre la modale de
+   *  réglages plutôt que de couper directement (4 interrupteurs + volume,
+   *  trop pour un simple clic). Reconstruit à chaque bascule de `master` pour
+   *  refléter l'état sans garder de référence à l'icône interne (même limite
+   *  que `fsBtn`, qui se resynchronise via un `scene.restart()` au resize). */
+  private buildSoundBtn() {
+    this.soundBtn?.destroy();
+    const s: number = touchSize(38);
+    const master: boolean = this.profileSvc.audioSettings().master;
+    const gap: number = this.scale.fullscreen.available ? s + 10 : 0;
+    const btn: Phaser.GameObjects.Container = uiButton(
+      this, viewport().safeRight - s / 2 - 10 - gap, s / 2 + 10, "",
+      { w: s, h: s, compact: true, icon: EMBLEM.sound },
+      () => this.openAudioSettings(),
+    ).container.setDepth(50);
+    // État « éteint » : alpha réduit sur le bouton entier, pas de teinte — un
+    // emblème raster arrive avec ses propres couleurs (ADR-031).
+    btn.setAlpha(master ? 1 : 0.4);
+    this.soundBtn = btn;
+  }
+
+  /** Modale de réglages audio (ADR-038) : 4 interrupteurs (master + 3
+   *  catégories) et le volume par paliers de 10 %. `uiModal` ne se met pas à
+   *  jour en place — `rebuild()` vide et redessine le contenu à chaque clic,
+   *  même limite déjà documentée pour `uiButton` (.ai/pitfalls.md). */
+  private openAudioSettings() {
+    const w: number = 560, h: number = 460;
+    // Toute mutation (interrupteur ou volume) doit repasser par applyAudioSettings :
+    // ProfileService ne fait que persister, c'est ce point qui pousse l'état vers le
+    // SoundManager Phaser ET le cache de catégorie de render/audio.ts (ADR-038).
+    // applyAudioSettings COUPE la musique si les réglages l'interdisent désormais, mais ne la
+    // démarre jamais lui-même (il ne sait pas si le contexte actuel en veut) — playMenuMusic()
+    // s'en charge ici, et ne fait rien si les réglages ne l'autorisent pas ou si elle joue déjà.
+    const sync = () => { applyAudioSettings(this, this.profileSvc.audioSettings()); playMenuMusic(this); };
+    const rebuild = (content: Phaser.GameObjects.Container) => {
+      content.removeAll(true);
+      const s: AudioSettings = this.profileSvc.audioSettings();
+      const cursor: LayoutCursor = layoutCursor(-h / 2 + 90);
+      const flagRow = (label: string, flag: AudioFlag, value: boolean) => {
+        const y: number = cursor.next(44, 12);
+        content.add(this.add.text(-w / 2 + 40, y, label, { fontSize: "16px", color: TEXT.light, fontFamily: FONT_BODY }).setOrigin(0, 0.5));
+        content.add(uiButton(this, w / 2 - 100, y, value ? "ON" : "OFF",
+          { w: 90, h: 38, gold: value },
+          () => { this.profileSvc.toggleAudioFlag(flag); sync(); rebuild(content); this.buildSoundBtn(); }).container);
+      };
+      flagRow("Tout (son)", "master", s.master);
+      flagRow("Musique", "music", s.music);
+      flagRow("Notifications", "notifications", s.notifications);
+      flagRow("Dégâts", "damage", s.damage);
+
+      const volY: number = cursor.next(44, 12);
+      content.add(this.add.text(-w / 2 + 40, volY, "Volume", { fontSize: "16px", color: TEXT.light, fontFamily: FONT_BODY }).setOrigin(0, 0.5));
+      content.add(uiButton(this, w / 2 - 150, volY, "−", { w: 40, h: 38, compact: true },
+        () => { this.profileSvc.stepVolume(-1); sync(); rebuild(content); }).container);
+      content.add(this.add.text(w / 2 - 100, volY, `${Math.round(s.volume * 100)}%`, {
+        fontSize: "16px", color: TEXT.gold, fontFamily: FONT_BODY,
+      }).setOrigin(0.5));
+      content.add(uiButton(this, w / 2 - 50, volY, "+", { w: 40, h: 38, compact: true },
+        () => { this.profileSvc.stepVolume(1); sync(); rebuild(content); }).container);
+    };
+    let modal: UiModal;
+    // eslint-disable-next-line prefer-const -- le bouton "Fermer" doit capturer cette même variable (référence circulaire volontaire : le callback est construit avant que la modale existe).
+    modal = uiModal(this, {
+      w, h, title: "Réglages du son", dimAlpha: 0.75,
+      build: rebuild,
+      buttons: [{ label: "Fermer", w: 200, gold: true, onClick: () => modal.close() }],
+    });
   }
 
   /** Écarte les deux chips d'après leur largeur RÉELLE. Des X en dur les faisaient

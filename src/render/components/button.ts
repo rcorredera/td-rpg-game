@@ -3,6 +3,7 @@
 // ============================================================
 
 import Phaser from "phaser";
+import { playSfx } from "../audio";
 import { UI_TINT } from "../theme";
 import { CURSOR_POINT, FONT_DISPLAY } from "../ui";
 import { touchSize } from "../viewport";
@@ -174,6 +175,10 @@ export function uiButton(
     const from: Vec2 | null = downAt;
     downAt = null;
     if (!from || Math.hypot(p.x - from.x, p.y - from.y) > DRAG_SLOP) return;
+    // Point d'entrée unique : TOUT bouton habillé du jeu passe par ici au
+    // relâchement valide, donc un seul hook couvre le clic UI entier (ADR-037),
+    // même principe que skinPressVisual pour l'état enfoncé (ADR-035).
+    playSfx(scene, "uiClick");
     cb();
   });
   img.on("pointerout", () => { downAt = null; if (skin) skinPressVisual(scene, img, keyUp, keyDown, movers, baseY, false); });

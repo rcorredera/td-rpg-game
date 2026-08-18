@@ -63,7 +63,7 @@ const ON_DISK: Set<string> = new Set(ASSET_FILES.map(basename));
 /** Noms de fichiers cités dans le code, quelle que soit la façon dont le chemin est bâti. */
 // La négation en tête écarte les appels de méthode : sans elle, `scene.load.svg(…)`
 // est lu comme un fichier nommé « load.svg ».
-const CITED: string[] = [...new Set(CODE.match(/(?<![.\w])[A-Za-z0-9_@-]+\.(?:png|svg|json)/g) ?? [])];
+const CITED: string[] = [...new Set(CODE.match(/(?<![.\w])[A-Za-z0-9_@-]+\.(?:png|svg|json|ogg)/g) ?? [])];
 
 describe("intégrité des assets", () => {
   it("ne cite aucun fichier absent du disque", () => {
