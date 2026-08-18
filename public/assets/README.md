@@ -50,28 +50,26 @@ exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir b
 - **Terrain/Tileset** — tuiles d'île avec falaise sur eau. Ne correspond pas aux 10 biomes.
 - Variantes de couleur inutilisées, avatars, table en bois, curseurs, sources `.aseprite`.
 
-## `audio/` — détail (ADR-037/038)
+## `audio/` — détail (ADR-037/038/040)
 
-8 SFX extraits de deux packs Kenney CC0, renommés par rôle (`render/audio.ts`).
+8 SFX, deux sources. Kenney pour l'UI/tir d'archerie ; **RPG Sound Pack** (artisticdude,
+opengameart.org/content/rpg-sound-pack, **CC0**, 405 favoris) pour les sons de combat/mort —
+Kenney n'a pas de pack combat fantasy dédié, et les sons génériques d'impact (ADR-037) se
+ressemblaient trop entre eux au playtest (ADR-040).
 
 | Fichier | Pack source | Fichier d'origine |
 |---|---|---|
-| `sfx-shot-archer.ogg` | Interface Sounds | `pluck_001.ogg` |
-| `sfx-shot-catapult.ogg` | Impact Sounds | `impactWood_heavy_000.ogg` |
-| `sfx-shot-frost.ogg` | Interface Sounds | `glass_001.ogg` |
-| `sfx-impact.ogg` | Impact Sounds | `impactSoft_heavy_000.ogg` |
-| `sfx-enemy-died.ogg` | Impact Sounds | `impactSoft_medium_000.ogg` |
-| `sfx-castle-hit.ogg` | Impact Sounds | `impactBell_heavy_000.ogg` |
-| `sfx-hero-died.ogg` | Impact Sounds | `impactPunch_heavy_000.ogg` |
-| `sfx-ui-click.ogg` | Interface Sounds | `select_001.ogg` (remplace `click_001.ogg`, jugé trop sec au playtest) |
+| `sfx-shot-archer.ogg` | Kenney — Interface Sounds | `pluck_001.ogg` |
+| `sfx-shot-catapult.ogg` | RPG Sound Pack | `battle/swing2.wav` |
+| `sfx-shot-frost.ogg` | RPG Sound Pack | `battle/magic1.wav` |
+| `sfx-impact.ogg` | RPG Sound Pack | `battle/spell.wav` |
+| `sfx-enemy-died.ogg` | RPG Sound Pack | `NPC/gutteral beast/mnstr3.wav` |
+| `sfx-castle-hit.ogg` | Kenney — Impact Sounds | `impactBell_heavy_000.ogg` |
+| `sfx-hero-died.ogg` | RPG Sound Pack | `inventory/armor-light.wav` |
+| `sfx-ui-click.ogg` | Kenney — Interface Sounds | `select_001.ogg` |
 
-Les deux packs sources (chacun bien plus fourni que les 8 fichiers retenus) ne sont pas
-versionnés en entier, même règle que pour `tiny-swords/`.
-
-⚠ **Retouche à venir** : les SFX de dégâts (tirs/impacts/morts) ci-dessus sont jugés trop
-proches les uns des autres et pas assez médiévaux — Kenney n'a pas de pack de combat fantasy
-dédié (vérifié). Piste explorée : OpenGameArt (candidats CC-BY/CC-BY-SA trouvés — attribution ou
-partage à l'identique à trancher avant tout branchement).
+Les packs sources (chacun bien plus fourni que ce qui est retenu) ne sont pas versionnés en
+entier, même règle que pour `tiny-swords/`.
 
 ## `audio/music-menu.ogg` — détail (ADR-039)
 

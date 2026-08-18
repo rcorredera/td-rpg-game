@@ -77,10 +77,14 @@ raisonnement que pour `sprites.ts`.
 
 **Musique de menu — fait (ADR-039).** Piste fournie par le PO, transformée en boucle propre par
 montage (fondu enchaîné sur le point de raccord). Joue uniquement au Campement, jamais pendant un
-run. **Retouches en cours** : le clic UI d'origine (`click_001` de Kenney) jugé trop sec — remplacé
-par `select_001`, plus doux. Les SFX de dégâts (tirs/impacts/morts) jugés trop proches les uns des
-autres et pas assez médiévaux — Kenney n'a pas de pack combat fantasy dédié, une autre source CC0/CC-BY
-est à l'étude (OpenGameArt a des candidats).
+run. ⚠ Licence à confirmer avec le PO avant fusion (voir `public/assets/README.md`).
+
+**SFX de combat retouchés — fait (ADR-040).** Playtest PO : clic UI trop sec (`click_001` →
+`select_001`) et SFX de dégâts trop proches entre eux / pas assez médiévaux. Kenney n'a pas de
+pack combat fantasy — remplacés par le **RPG Sound Pack** (CC0, OpenGameArt) : swing d'arme
+(catapulte), whoosh magique (givre), déflagration (impact/sorts du héros), grognement de créature
+(mort d'ennemi), cliquetis d'armure (mort du héros). Tir d'archerie et dégât château inchangés
+(déjà distincts).
 
 **Musique de fond — reportée.** Aucun pack Kenney (packs audio, seule source explorée pour
 l'instant) n'offre de piste bouclable adaptée au ton du jeu — seulement des jingles courts

@@ -16,9 +16,11 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   de raccord, aucune source Kenney bouclable n'ayant été trouvée) ; joue uniquement au Campement,
   jamais en run. ⚠ **Licence à confirmer** : nom de fichier cohérent avec un export Pixabay Music,
   aucune métadonnée embarquée ne le garantit — à corriger dans `public/assets/README.md` une fois
-  confirmé. **Retouche en cours (playtest PO)** : clic UI jugé trop sec (`click_001` → `select_001`,
-  fait) ; SFX de dégâts jugés trop proches entre eux et pas assez médiévaux — Kenney n'a pas de pack
-  combat fantasy, piste CC-BY/CC-BY-SA sur OpenGameArt à trancher avec le PO.
+  confirmé. **SFX de combat retouchés (ADR-040)** : playtest PO — clic UI trop sec (`select_001`,
+  fait) et SFX de dégâts trop proches entre eux / pas assez médiévaux (Kenney n'a pas de pack
+  combat fantasy) — remplacés par le **RPG Sound Pack** (CC0, OpenGameArt : swing d'arme,
+  whoosh magique, déflagration, grognement de créature, cliquetis d'armure). Sujet audio
+  considéré clos côté PO sauf confirmation de licence de la musique.
 - **Modes** : Histoire (10 chapitres, déblocage séquentiel, ch.2-10 en contenu généré provisoire) ;
   Failles infinies = mode séparé, verrouillé tant que l'Histoire n'est pas achevée, à implémenter (v1).
 - **Méta** : 2 monnaies — Éclats ◆ (unlocks Arsenal + Forge) et Sceaux ⚜ (sorts du héros, gagnés
