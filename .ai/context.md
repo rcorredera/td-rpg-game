@@ -17,8 +17,17 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   PO — les prochains ajouts audio seront CC0/domaine public/IA uniquement. **SFX retouchés en deux
   passes de playtest** : clic UI adouci et dégâts diversifiés/médiévalisés via le **RPG Sound
   Pack** (CC0, OpenGameArt — ADR-040), puis tir de catapulte recorrigé (un swing d'épée ne
-  convenait pas à un engin de siège → thud bois Kenney, ADR-041). Sujet audio considéré clos côté
-  PO, en attente de confirmation finale au prochain playtest.
+  convenait pas à un engin de siège → thud bois Kenney, ADR-041). Playtest suivant (2026-08-18) :
+  catapulte jugée réaliste (validée), mais **2 SFX encore à remplacer** — le PO cherchera
+  lui-même la source (CC0/domaine public/IA), donner la fiche besoin ci-dessous plutôt que
+  fouiller les packs déjà sourcés (Kenney/RPG Sound Pack n'ont rien de mieux dedans, déjà vérifié) :
+  - **Tir d'archer** (`sfx-shot-archer.ogg`, actuel `pluck_001` Kenney) : pas du tout réaliste,
+    c'est un pincement de corde d'interface, pas un lâcher de flèche. Besoin : un vrai bruit d'arc
+    (corde qui claque + sifflement de flèche), court (<0,5 s), format ogg/wav.
+  - **Tir de givre** (`sfx-shot-frost.ogg`, actuel `battle/magic1.wav` RPG Sound Pack) : trop fort/
+    trop agressif, « on dirait un tir de laser ». Besoin : un whoosh givré plus doux/étouffé
+    (boule de neige/glace, pas un rayon d'énergie), court, format ogg/wav.
+  Sujet audio sinon considéré clos côté PO.
 - **Modes** : Histoire (10 chapitres, déblocage séquentiel, ch.2-10 en contenu généré provisoire) ;
   Failles infinies = mode séparé, verrouillé tant que l'Histoire n'est pas achevée, à implémenter (v1).
 - **Méta** : 2 monnaies — Éclats ◆ (unlocks Arsenal + Forge) et Sceaux ⚜ (sorts du héros, gagnés
