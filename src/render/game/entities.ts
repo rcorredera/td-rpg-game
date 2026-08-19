@@ -10,7 +10,7 @@ import { specOf } from "../../core/sim";
 import type { EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2 } from "../../core/types";
 import { flyPose, idlePose, walkPose } from "../animation";
 import type { UnitPose } from "../animation";
-import { ENEMY_SIZE_FALLBACK, enemyView } from "../sprites";
+import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare } from "../sprites";
 import { HERO_C, SIGNAL } from "../palette";
 import { STATUS } from "../theme";
 import { C } from "./constants";
@@ -154,8 +154,12 @@ export class BattlefieldEntities {
     const y: number = (def.flying ? e.pos.y - 14 : e.pos.y) + pose.dy;
     const face: number = this.facingOf(e.uid, e.pos.x);
     const size: number = this.enemySize(e);
+    // Proportions natives conservées (`fitSquare`, ADR-046) : un sprite importé
+    // rogné à sa silhouette (chauve-souris large, gobelin haut) ne fait pas ~1:1
+    // comme le skin SVG maison — un carré forcé l'écrasait ou l'étirait.
+    const { w: fitW, h: fitH } = fitSquare(s.frame.width, s.frame.height, size);
     s.setOrigin(0.5, 0.62)
-      .setDisplaySize(size * pose.scaleX, size * pose.scaleY)
+      .setDisplaySize(fitW * pose.scaleX, fitH * pose.scaleY)
       .setRotation(pose.tilt * face)
       .setFlipX(face < 0);
     s.setPosition(Math.round(e.pos.x), Math.round(y));
@@ -235,7 +239,10 @@ export class BattlefieldEntities {
     const lunge: number = foe ? wind : 0;
     const tilt: number = foe ? (k < 0.55 ? -0.12 * (k / 0.55) : 0.22 * (1 - (k - 0.55) / 0.45)) : 0;
 
-    heroSprite.setFlipX(face < 0).setDisplaySize(58, 58)
+    // Proportions natives conservées (`fitSquare`, ADR-046) : le héros généré
+    // par IA (ADR-045) n'est pas exactement carré.
+    const heroFit = fitSquare(heroSprite.frame.width, heroSprite.frame.height, 58);
+    heroSprite.setFlipX(face < 0).setDisplaySize(heroFit.w, heroFit.h)
       .setRotation(tilt * face)
       .setPosition(Math.round(x + face * lunge), Math.round(y))
       .setDepth(100 + h.pos.y);

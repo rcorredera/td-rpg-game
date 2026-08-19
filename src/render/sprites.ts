@@ -137,3 +137,21 @@ export function tileFor(kind: TileKind): SpriteRef {
 /** Frames valides sur la planche TD (23×13 = 299). Conservé : la planche sert
  *  encore aux FX (flamme d'explosion) le temps de leur reprise. */
 export const SHEET_FRAME_MAX: number = 298;
+
+/**
+ * Dimensions d'affichage qui FONT TENIR une texture de `nativeW`×`nativeH` dans
+ * une case `target`×`target`, en conservant ses proportions natives.
+ *
+ * Le skin maison (ADR-016) dessinait tout sur un canevas carré 128×128, donc
+ * `setDisplaySize(size, size)` était sans risque. Les sprites importés
+ * (CraftPix, IA — ADR-043/044/045) sont rognés à leur silhouette réelle : une
+ * chauve-souris aux ailes déployées fait ~2:1, un gobelin casqué plutôt 0.6:1.
+ * Forcer un carré les écrase ou les étire selon le sens — constaté à l'écran,
+ * en combat ET dans le Bestiaire. Le plus grand côté est calé sur `target`,
+ * l'autre suit au même ratio ; jamais l'inverse (qui déborderait la case).
+ */
+export function fitSquare(nativeW: number, nativeH: number, target: number): { w: number; h: number } {
+  if (nativeW <= 0 || nativeH <= 0) return { w: target, h: target };
+  const scale: number = target / Math.max(nativeW, nativeH);
+  return { w: nativeW * scale, h: nativeH * scale };
+}
