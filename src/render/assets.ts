@@ -28,7 +28,6 @@ export function frame(col: number, row: number): number {
 const MEDIEVAL: Record<string, [file: string, px: number]> = {
   spr_tower_catapult: ["tower-catapult.svg", 128],
   spr_tower_catapult_3: ["tower-catapult-3.svg", 128],
-  spr_tower_frost_3: ["tower-frost-3.svg", 128],
   spr_keep: ["keep-bastion.svg", 192],
   spr_pad: ["pad-slot.svg", 128],
 };
@@ -63,8 +62,9 @@ const CRAFTPIX: Record<string, string> = {
   // pas une simple teinte du palier 3 — assez distincte pour le mériter.
   spr_tower_archer_longbow: "tower-archer-longbow-ai.png",
   spr_tower_archer_volley: "tower-archer-volley-ai.png",
-  // Tour de givre, palier 1-2 : palier 3 reste en SVG maison pour l'instant.
+  // Tour de givre, les deux paliers. Catapulte reste en SVG maison.
   spr_tower_frost: "tower-frost-ai.png",
+  spr_tower_frost_3: "tower-frost-3-ai.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */
