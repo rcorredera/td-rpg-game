@@ -7,6 +7,7 @@ import type Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../../content/index";
 import type { Profile, RallyLevel, SkillTrack, WhirlwindLevel } from "../../core/types";
 import type { SkillId } from "../../meta/profile";
+import { playSfx } from "../audio";
 import { layoutCursor, type LayoutCursor, type UiScrollList } from "../components";
 import { header, row, scrollArea, tabs } from "./helpers";
 import { CX, DIM, GOLD, OK, SCEAU, TXT } from "./theme";
@@ -38,7 +39,7 @@ function buildArsenalRows(ctx: MenuCtx, cursor: LayoutCursor, c: Phaser.GameObje
     row(ctx, cursor, c, u.name, u.desc,
       owned ? "Acquis" : `${u.cost} ◆`,
       owned ? OK : affordable ? GOLD : "#e74c3c",
-      owned || !affordable ? null : () => { if (ctx.profileSvc.buy(u.id)) { ctx.refreshCurrencies(); ctx.navigate("shop"); } },
+      owned || !affordable ? null : () => { if (ctx.profileSvc.buy(u.id)) { playSfx(ctx.scene, "purchase"); ctx.refreshCurrencies(); ctx.navigate("shop"); } },
       owned ? "done" : affordable ? "normal" : "unaffordable");
   });
 }
@@ -61,7 +62,7 @@ function buildForgeRows(ctx: MenuCtx, cursor: LayoutCursor, c: Phaser.GameObject
       const affordable: boolean = prof.shards >= cost;
       row(ctx, cursor, c, `${t.name}  ${stars}`, `+${pct}% dégâts permanents par niveau (actuel : +${lvl * pct}%).`,
         `${cost} ◆`, affordable ? GOLD : "#e74c3c",
-        affordable ? () => { if (ctx.profileSvc.buyForge(t.id)) { ctx.refreshCurrencies(); ctx.navigate("shop"); } } : null,
+        affordable ? () => { if (ctx.profileSvc.buyForge(t.id)) { playSfx(ctx.scene, "purchase"); ctx.refreshCurrencies(); ctx.navigate("shop"); } } : null,
         affordable ? "normal" : "unaffordable");
     }
   });
@@ -100,7 +101,7 @@ function buildHeroRows(ctx: MenuCtx, cursor: LayoutCursor, c: Phaser.GameObjects
     } else {
       const affordable: boolean = ctx.profileSvc.get().sceaux >= cost;
       row(ctx, cursor, c, title, sk.desc(lvl), `${cost} ⚜`, affordable ? SCEAU : "#e74c3c",
-        affordable ? () => { if (ctx.profileSvc.buySkill(sk.id)) { ctx.refreshCurrencies(); ctx.navigate("shop"); } } : null,
+        affordable ? () => { if (ctx.profileSvc.buySkill(sk.id)) { playSfx(ctx.scene, "purchase"); ctx.refreshCurrencies(); ctx.navigate("shop"); } } : null,
         affordable ? "normal" : "unaffordable");
     }
   });

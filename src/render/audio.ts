@@ -20,13 +20,19 @@ import type { AudioCategory, AudioSettings } from "../core/types";
 // eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const SFX = {
   shotArcher: "sfx_shot_archer",
+  shotArcherSpec: "sfx_shot_archer_spec",
   shotCatapult: "sfx_shot_catapult",
   shotFrost: "sfx_shot_frost",
+  shotFrostFire: "sfx_shot_frost_fire",
   impact: "sfx_impact",
   enemyDied: "sfx_enemy_died",
   castleHit: "sfx_castle_hit",
   heroDied: "sfx_hero_died",
+  heroAttack: "sfx_hero_attack",
   uiClick: "sfx_ui_click",
+  purchase: "sfx_purchase",
+  bestiaryOpen: "sfx_bestiary_open",
+  chroniclesOpen: "sfx_chronicles_open",
 } as const;
 
 export type SfxKey = keyof typeof SFX;
@@ -34,13 +40,19 @@ export type SfxKey = keyof typeof SFX;
 /** Fichier source de chaque SFX (dossier `public/assets/audio/`). */
 const FILES: Record<SfxKey, string> = {
   shotArcher: "sfx-shot-archer.ogg",
+  shotArcherSpec: "sfx-shot-archer-spec.ogg",
   shotCatapult: "sfx-shot-catapult.ogg",
   shotFrost: "sfx-shot-frost.ogg",
+  shotFrostFire: "sfx-shot-frost-fire.ogg",
   impact: "sfx-impact.ogg",
   enemyDied: "sfx-enemy-died.ogg",
   castleHit: "sfx-castle-hit.ogg",
   heroDied: "sfx-hero-died.ogg",
+  heroAttack: "sfx-hero-attack.ogg",
   uiClick: "sfx-ui-click.ogg",
+  purchase: "sfx-purchase.ogg",
+  bestiaryOpen: "sfx-bestiary-open.ogg",
+  chroniclesOpen: "sfx-chronicles-open.ogg",
 };
 
 /** Volume par rôle (mix relatif, sous le volume global — ADR-038). Défaut
@@ -55,27 +67,37 @@ const VOLUME: Partial<Record<SfxKey, number>> = {
  *  déjà côté profil pour qu'un futur ajout le respecte sans migration de plus. */
 const CATEGORY_BY_KEY: Record<SfxKey, AudioCategory> = {
   shotArcher: "damage",
+  shotArcherSpec: "damage",
   shotCatapult: "damage",
   shotFrost: "damage",
+  shotFrostFire: "damage",
   impact: "damage",
   enemyDied: "damage",
   castleHit: "damage",
   heroDied: "damage",
+  heroAttack: "damage",
   uiClick: "notifications",
+  purchase: "notifications",
+  bestiaryOpen: "notifications",
+  chroniclesOpen: "notifications",
 };
 
-/** Tir d'une tour → SFX. Ajouter une tour = ajouter une entrée ici (même
+/** Tir d'une tour → SFX, variante selon la spécialisation niv.4 active (ADR-042) :
+ *  Archerie spécialisée (Salve/Arc long) sonne différemment de la base, et la
+ *  spécialisation « Givre ardent » (givre+brûlure) sonne comme un sort de feu,
+ *  pas de glace — `spec_blizzard` n'émet jamais de tir (aura continue) donc
+ *  n'a pas besoin d'entrée ici. Ajouter une tour = ajouter une entrée ici (même
  *  discipline que `sprites.ts` pour les skins, ADR-005). */
-const SHOT_BY_TOWER: Record<string, SfxKey> = {
-  tower_archer: "shotArcher",
-  tower_catapult: "shotCatapult",
-  tower_frost: "shotFrost",
+const SHOT_BY_TOWER: Record<string, (specId: string | null) => SfxKey> = {
+  tower_archer: (specId) => (specId ? "shotArcherSpec" : "shotArcher"),
+  tower_catapult: () => "shotCatapult",
+  tower_frost: (specId) => (specId === "spec_frostfire" ? "shotFrostFire" : "shotFrost"),
 };
 
-export function shotSfx(towerDefId: string): SfxKey {
-  const key: SfxKey | undefined = SHOT_BY_TOWER[towerDefId];
-  if (!key) throw new Error(`audio: tour non mappée « ${towerDefId} »`);
-  return key;
+export function shotSfx(towerDefId: string, specId: string | null = null): SfxKey {
+  const pick: ((specId: string | null) => SfxKey) | undefined = SHOT_BY_TOWER[towerDefId];
+  if (!pick) throw new Error(`audio: tour non mappée « ${towerDefId} »`);
+  return pick(specId);
 }
 
 /** Charge tous les SFX. Idempotent entre scènes (cache Phaser), comme preloadSprites/preloadIcons. */

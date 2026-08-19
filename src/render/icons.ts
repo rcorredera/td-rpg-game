@@ -16,7 +16,6 @@ import type Phaser from "phaser";
 export const ICON = {
   story: "ui_scroll",
   rift: "ui_portal",
-  bestiary: "ui_book",
   locked: "ui_lock",
   castle: "ui_castle",
   // Note de chapitre. Elle s'affichait en glyphes Unicode « ★ / ☆ », donc rendue
@@ -42,7 +41,6 @@ export type IconKey = keyof typeof ICON;
 const FILES: Record<IconKey, string> = {
   story: "ui-scroll.svg",
   rift: "ui-portal.svg",
-  bestiary: "ui-book.svg",
   locked: "ui-lock.svg",
   castle: "ui-castle.svg",
   star: "ui-star.svg",
@@ -62,6 +60,7 @@ const FILES: Record<IconKey, string> = {
 // eslint-disable-next-line @typescript-eslint/typedef -- `as const` garde un type littéral précis ; l'annoter le réélargirait.
 export const EMBLEM = {
   bastion: "ts_castle", armory: "ts_shield", chronicles: "ts_swords", sound: "ts_music",
+  bestiary: "ts_bestiary_book",
 } as const;
 
 export type EmblemKey = keyof typeof EMBLEM;
@@ -76,6 +75,11 @@ const EMBLEM_FILES: Record<EmblemKey, string> = {
   // Bouton mute (ADR-037) : état éteint rendu par ALPHA réduit sur le bouton
   // entier, jamais par teinte — un emblème raster arrive avec ses couleurs.
   sound: "tiny-swords/ui/icon-12.png",
+  // Grimoire fourni par le PO (ADR-043), pas du pack Tiny Swords — remplace la
+  // silhouette SVG maison de l'ancien rôle ICON.bestiary (supprimé, plus
+  // référencé nulle part) sur la tuile Bestiaire du Campement, comme les
+  // autres tuiles déjà migrées vers un emblème raster.
+  bestiary: "icons/bestiary-book.png",
 };
 
 /**

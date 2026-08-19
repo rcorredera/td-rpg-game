@@ -4,7 +4,7 @@ Prototype v0 d'un TD médiéval (« Bastion », univers du Roi-Charogne) avec m�
 valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 
 ## État actuel (2026-06)
-- **Audio — SFX + réglages + musique de menu en place (ADR-037/038/039/040/041)** : registre
+- **Audio — SFX + réglages + musique de menu en place (ADR-037/038/039/040/041/042)** : registre
   `render/audio.ts` (même principe que `sprites.ts`/`icons.ts`), SFX branchés sur les `SimEvent`
   de tir/impact/dégât château + mort ennemi/héros (ces deux derniers n'avaient encore aucun
   consommateur côté rendu) et sur `uiButton` (clic UI, un seul hook pour tout le jeu). **Réglages
@@ -17,17 +17,23 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   PO — les prochains ajouts audio seront CC0/domaine public/IA uniquement. **SFX retouchés en deux
   passes de playtest** : clic UI adouci et dégâts diversifiés/médiévalisés via le **RPG Sound
   Pack** (CC0, OpenGameArt — ADR-040), puis tir de catapulte recorrigé (un swing d'épée ne
-  convenait pas à un engin de siège → thud bois Kenney, ADR-041). Playtest suivant (2026-08-18) :
-  catapulte jugée réaliste (validée), mais **2 SFX encore à remplacer** — le PO cherchera
-  lui-même la source (CC0/domaine public/IA), donner la fiche besoin ci-dessous plutôt que
-  fouiller les packs déjà sourcés (Kenney/RPG Sound Pack n'ont rien de mieux dedans, déjà vérifié) :
-  - **Tir d'archer** (`sfx-shot-archer.ogg`, actuel `pluck_001` Kenney) : pas du tout réaliste,
-    c'est un pincement de corde d'interface, pas un lâcher de flèche. Besoin : un vrai bruit d'arc
-    (corde qui claque + sifflement de flèche), court (<0,5 s), format ogg/wav.
-  - **Tir de givre** (`sfx-shot-frost.ogg`, actuel `battle/magic1.wav` RPG Sound Pack) : trop fort/
-    trop agressif, « on dirait un tir de laser ». Besoin : un whoosh givré plus doux/étouffé
-    (boule de neige/glace, pas un rayon d'énergie), court, format ogg/wav.
-  Sujet audio sinon considéré clos côté PO.
+  convenait pas à un engin de siège → thud bois Kenney, ADR-041). Playtest du 2026-08-18 :
+  catapulte jugée réaliste (validée), archer/givre jugés pas assez réalistes → **résolu par
+  ADR-042** : le PO a directement fourni les sons (400 Sounds Pack + Free Fantasy SFX Pack by
+  TomMusic, itch.io) plutôt que d'attendre une fiche besoin — nouveau workflow adopté pour tout
+  futur ajout d'asset (UI/sprite/son) : lui dire précisément le type/format cherché, il source
+  lui-même. ADR-042 ajoute aussi des variantes de tir selon spécialisation niv.4 (Archerie,
+  Givre ardent → son de feu) et un son de coup d'épée pour le héros (cadencé par le rendu, la
+  sim n'a pas d'événement de coup discret). Sujet audio SFX considéré clos côté PO.
+  **Reste en attente** : image `mimJ9.jpg` fournie pour remplacer l'icône Bestiaire — c'est un
+  JPEG SANS canal alpha réel (le fond « transparent » est un damier dessiné en dur dans les
+  pixels, probablement un export d'outil IA) ; besoin d'une vraie version PNG/WebP avec
+  transparence avant de pouvoir la brancher comme les autres emblèmes (`EMBLEM.*`, raster brut).
+  Ambiances de fond par biome (`BGS Loops` du pack TomMusic : Beach/Cave/Forest Day-Night/
+  Interior Day-Night/Sea) demandées mais PAS encore câblées : aucun des 7 dossiers ne correspond
+  1:1 aux 10 biomes de chapitre (ash/marsh/forest/quarry/frost/barrow/ruins/tundra/blight/…) et
+  ADR-039 avait explicitement limité la musique au Campement (jamais en run) — décision à
+  reconfirmer avec le PO avant de construire un nouveau système d'ambiance in-run.
 - **Modes** : Histoire (10 chapitres, déblocage séquentiel, ch.2-10 en contenu généré provisoire) ;
   Failles infinies = mode séparé, verrouillé tant que l'Histoire n'est pas achevée, à implémenter (v1).
 - **Méta** : 2 monnaies — Éclats ◆ (unlocks Arsenal + Forge) et Sceaux ⚜ (sorts du héros, gagnés

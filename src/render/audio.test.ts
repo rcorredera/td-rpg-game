@@ -47,16 +47,22 @@ describe("routage par catégorie/master (ADR-038)", () => {
   it("couper « notifications » n'affecte pas les SFX de dégâts", () => {
     const s: AudioSettings = { ...ALL_ON, notifications: false };
     expect(sfxEnabled(s, "uiClick")).toBe(false);
+    expect(sfxEnabled(s, "purchase")).toBe(false);
+    expect(sfxEnabled(s, "bestiaryOpen")).toBe(false);
+    expect(sfxEnabled(s, "chroniclesOpen")).toBe(false);
     expect(sfxEnabled(s, "enemyDied")).toBe(true);
   });
 
-  it("chaque SFX de gameplay (hors clic UI) est catégorisé « dégâts »", () => {
-    // Garde-fou : un nouveau SFX ajouté sans entrée dans CATEGORY_BY_KEY tomberait
-    // dans TypeScript en erreur de compilation (Record exhaustif) — ce test documente
-    // l'attente et casserait s'il fallait un jour introduire une 3e catégorie de gameplay.
+  it("chaque SFX de dégâts (tirs/impacts/morts) est catégorisé « dégâts »", () => {
+    // Garde-fou : un nouveau SFX de gameplay ajouté sans entrée dans CATEGORY_BY_KEY
+    // tomberait dans TypeScript en erreur de compilation (Record exhaustif) — ce test
+    // documente l'attente pour les rôles de COMBAT. Les rôles d'UI/navigation
+    // (uiClick, purchase, bestiaryOpen, chroniclesOpen) sont volontairement exclus :
+    // « notifications », pas « dégâts » (ADR-042).
     const s: AudioSettings = { ...ALL_ON, damage: false, notifications: true };
-    const gameplayKeys: SfxKey[] = (Object.keys(SFX) as SfxKey[]).filter(k => k !== "uiClick");
-    for (const key of gameplayKeys) expect(sfxEnabled(s, key)).toBe(false);
+    const notificationKeys: SfxKey[] = ["uiClick", "purchase", "bestiaryOpen", "chroniclesOpen"];
+    const damageKeys: SfxKey[] = (Object.keys(SFX) as SfxKey[]).filter(k => !notificationKeys.includes(k));
+    for (const key of damageKeys) expect(sfxEnabled(s, key)).toBe(false);
   });
 });
 

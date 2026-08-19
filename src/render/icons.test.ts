@@ -14,9 +14,9 @@ describe("registre d'icônes UI", () => {
   it("couvre les rôles attendus par les écrans", () => {
     // Garde-fou : un rôle retiré du registre casse ici plutôt qu'à l'écran, où
     // l'icône manquante rendrait juste une texture verte de remplacement.
-    // `armory`/`chronicles` vivent dans EMBLEM (couvert ci-dessous) : des rasters
-    // du pack, pas des silhouettes teintables.
-    for (const role of ["story", "rift", "bestiary", "locked", "castle",
+    // `armory`/`chronicles`/`bestiary` vivent dans EMBLEM (couvert ci-dessous) :
+    // des rasters, pas des silhouettes teintables.
+    for (const role of ["story", "rift", "locked", "castle",
       "star", "starEmpty", "fullscreen", "fullscreenExit", "chevronDown"]) {
       expect(ICON).toHaveProperty(role);
     }
@@ -27,10 +27,10 @@ describe("registre d'icônes UI", () => {
     // monochrome que le rendu teinte pour porter un état, un emblème arrive du
     // pack avec ses couleurs. Les préfixer distinctement empêche de teinter l'un
     // en croyant manipuler l'autre.
-    for (const role of ["bastion", "armory", "chronicles", "sound"]) expect(EMBLEM).toHaveProperty(role);
-    const keys: ("ts_castle" | "ts_shield" | "ts_swords" | "ts_music")[] = Object.values(EMBLEM);
+    for (const role of ["bastion", "armory", "chronicles", "sound", "bestiary"]) expect(EMBLEM).toHaveProperty(role);
+    const keys: ("ts_castle" | "ts_shield" | "ts_swords" | "ts_music" | "ts_bestiary_book")[] = Object.values(EMBLEM);
     expect(new Set(keys).size).toBe(keys.length);
-    for (const k of keys) expect(k).toMatch(/^ts_[a-z]+$/);
+    for (const k of keys) expect(k).toMatch(/^ts_[a-z]+(?:_[a-z]+)*$/);
     expect(keys.some(k => Object.values(ICON).includes(k as never))).toBe(false);
   });
 });

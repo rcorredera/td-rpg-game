@@ -395,7 +395,7 @@ export interface RunResult {
 
 /** Événements émis par la sim pour le rendu (fx/sons). La sim ne connaît pas Phaser. */
 export type SimEvent =
-  | { type: "shot"; from: Vec2; to: Vec2; towerDefId: string }
+  | { type: "shot"; from: Vec2; to: Vec2; towerDefId: string; specId: string | null }
   | { type: "enemyDied"; pos: Vec2; gold: number }
   | { type: "castleHit"; damage: number }
   | { type: "heroDied" }
