@@ -879,8 +879,29 @@ export const CONTENT: ContentPack = {
   // dernier chapitre : sans elle le boss final n'est pas abattable (ADR-024).
   forge: { damageMultPerLevel: 0.10, upgradeCosts: [20, 45, 80, 130, 200, 300] },
 
-  // Vente de tour : 65% de l'investissement remboursé (GDD : 60-70%, à affiner au playtest).
-  economy: { sellRefundRate: 0.65, startingGold: 160 },
+  // Économie in-run (ADR-052). L'or d'un chapitre est BUDGÉTÉ et non émergent : au
+  // per-kill pur, le ch.20 versait 9 001 pièces pour 6 emplacements — soit 2,8 fois
+  // le plafond de dépense (537 pièces la tour rang 3 + spécialisation). Passé le
+  // ch.12, l'or cessait d'être une contrainte, tout était maxé dès la vague 6, et la
+  // forge ne décidait plus rien. Les budgets ci-dessous valent
+  // « emplacements x 537 x ratio », ratio montant de 0,50 (ch.1) à 0,84 (ch.19) : l'or
+  // seul ne finance JAMAIS une défense complète, l'écart se comble à la forge.
+  // Les chapitres à boss dédié (10 et 20) reçoivent la part pleine (1,05) : 12 vagues
+  // sur MOINS d'emplacements, le ratio par slot les affamait — mesuré, le ch.10 y
+  // devenait invincible même forge 6.
+  economy: {
+    sellRefundRate: 0.65, // GDD : 60-70%, à affiner au playtest
+    startingGold: 160,
+    // 25 % aux kills : assez pour garder le retour « j'ai tué, j'ai été payé » sur
+    // chaque créature, trop peu pour qu'une vague plus fournie enrichisse le joueur.
+    killGoldShare: 0.25,
+    chapterBudget: [
+      1610, 2220, 2300, 2380, 2460, 2530, 2610, 2690, 2760, 3940,
+      2920, 3000, 3070, 3150, 3230, 3310, 3380, 3460, 3540, 3380,
+    ],
+    // Hors table (Failles infinies, chapitres à venir) : la médiane du premier acte.
+    defaultChapterBudget: 2500,
+  },
 
   // Armurerie. Six paliers échelonnés plutôt que trois : à 120 Éclats au total, le
   // catalogue se vidait en 2 runs alors que le jeu compte 10 chapitres (ADR-021).
@@ -919,13 +940,24 @@ export const CONTENT: ContentPack = {
       1, 1.22, 1.44, 1.66, 1.88, 2.1, 2.32, 2.54, 2.76, 3,
       3.22, 3.44, 3.66, 3.88, 4.1, 4.32, 4.54, 4.76, 4.98, 5.2,
     ],
+    // Éclats par étoile (ADR-052), multiplicateur de chapitre compris : 3 étoiles au
+    // ch.20 valent 3 x 12 x 5,2 = 187 Éclats, soit deux rangs de forge. C'est le pont
+    // entre « maîtriser un chapitre » et « des tours plus fortes » — sans lui, le
+    // sans-faute ne rapportait qu'un bonus de PV de château presque identique à une
+    // victoire arrachée.
+    shardsPerStar: 12,
     heroBlockSecondsPerSceau: 9,
     sceauxVictoryBonus: 2,
     sceauxPerHeroDeath: 1,
   },
 
-  // Étoiles : "château beaucoup touché" = plus de 50% des PV perdus (GDD §Étoiles).
-  rating: { heavyDamagePct: 0.5 },
+  // Étoiles (GDD §Étoiles). "Beaucoup touché" = plus de 50 % des PV perdus. Les 3
+  // étoiles demandent 90 % des PV conservés et non 100 % (ADR-052) : à l'exigence
+  // stricte, une seule fuite sur dix vagues suffisait à les interdire — mesuré, les
+  // ch.3, 13 et 19 étaient 3-étoiles-impossibles même forge 6, pendant que les
+  // ch.14 à 18 les donnaient à forge 0. Un seuil en fait un objectif que la méta
+  // rapproche, ce que le tout-ou-rien ne pouvait pas faire.
+  rating: { heavyDamagePct: 0.5, perfectHpPct: 0.9 },
 
   accountSpell: { damage: 60, radius: 90, cooldownS: 25 },
 };

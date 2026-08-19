@@ -53,6 +53,48 @@ function posOnPath(path: Vec2[], lengths: number[], d: number): Vec2 {
 
 // ---------- création ----------
 
+/**
+ * Or que les créatures d'une vague rapporteraient au tarif plein — la CLÉ DE
+ * RÉPARTITION du budget, pas un montant versé. Une vague deux fois plus fournie
+ * reçoit deux fois plus du budget du chapitre, mais le budget, lui, ne bouge pas :
+ * c'est exactement ce que le per-kill ne savait pas faire (ADR-052).
+ */
+function waveGoldWeight(c: ContentPack, wave: WaveDef): number {
+  let total: number = 0;
+  for (const spawn of wave.spawns) {
+    const def: EnemyDef | undefined = c.enemies[spawn.enemyId];
+    if (def) total += def.goldReward * spawn.count;
+  }
+  const boss: EnemyDef | undefined = wave.miniBoss ? c.enemies[wave.miniBoss.enemyId] : undefined;
+  if (boss) total += boss.goldReward;
+  return total;
+}
+
+/** Répartition du budget d'un chapitre : facteur sur les kills + revenu par vague. */
+interface GoldBudget {
+  killGoldScale: number;
+  waveIncome: number[];
+}
+
+/**
+ * Résout le budget d'un chapitre une fois pour toutes. `killGoldShare` du budget part
+ * en récompenses de kill (mise à l'échelle pour tenir la cible), le reste tombe à la
+ * fin de chaque vague, au prorata du poids de la vague : les dernières vagues restent
+ * les plus lucratives, sans que leur effectif puisse gonfler le total.
+ */
+function resolveBudget(c: ContentPack, chapterIndex: number, waves: readonly WaveDef[]): GoldBudget {
+  const budget: number = c.economy.chapterBudget[chapterIndex] ?? c.economy.defaultChapterBudget;
+  const weights: number[] = waves.map(w => waveGoldWeight(c, w));
+  const totalWeight: number = weights.reduce((a, w) => a + w, 0);
+  // Un chapitre sans aucune créature payante ne doit pas produire une division par zéro.
+  if (totalWeight <= 0) return { killGoldScale: 0, waveIncome: waves.map(() => 0) };
+  const killPart: number = budget * c.economy.killGoldShare;
+  return {
+    killGoldScale: killPart / totalWeight,
+    waveIncome: weights.map(w => Math.round((budget - killPart) * (w / totalWeight))),
+  };
+}
+
 export function createRun(content: ContentPack, profile: Profile, chapterIndex = 0): RunState {
   const ch: ChapterDef | undefined = content.chapters[chapterIndex];
   if (!ch || !ch.playable) throw new Error(`chapitre ${chapterIndex} injouable`);
@@ -67,6 +109,7 @@ export function createRun(content: ContentPack, profile: Profile, chapterIndex =
   // l'avait pas achetée ; un plafond, lui, laisse toujours jouer (ADR-024).
   const maxTowerLevel: number = Math.max(BASE_MAX_TOWER_LEVEL, ...owned.map(u => u.maxTowerLevel ?? 0));
   const heroStart: Vec2 = ch.map.paths[0]!.waypoints[0]!;
+  const budget: GoldBudget = resolveBudget(content, chapterIndex, ch.waves);
   return {
     time: 0, timeAcc: 0, speed: 1, phase: "building", chapterIndex,
     gold: content.economy.startingGold + sum(u => u.startingGold),
@@ -86,6 +129,8 @@ export function createRun(content: ContentPack, profile: Profile, chapterIndex =
     hasAccountSpell: owned.some(u => u.accountSpell),
     maxTowerLevel,
     canSpecialize: owned.some(u => u.allowSpecialize),
+    killGoldScale: budget.killGoldScale,
+    waveIncome: budget.waveIncome,
     nextUid: 1, kills: 0, heroKills: 0, heroDeaths: 0, heroBlockSeconds: 0,
     skillLevels: { whirlwind: profile.skills?.whirlwind ?? 1, rally: profile.skills?.rally ?? 1 },
     forgeLevels: { ...profile.forge },
@@ -264,10 +309,16 @@ function damageEnemy(
   if (e.hp <= 0) {
     e.alive = false;
     const def: EnemyDef = c.enemies[e.defId]!;
-    s.gold += def.goldReward;
+    // Plancher à 1 quand la créature vaut quelque chose : à l'échelle d'un chapitre
+    // tardif le facteur descend sous 0,3, et un gobelin arrondi à 0 supprimerait le
+    // retour « j'ai tué, j'ai été payé » sur la piétaille — soit la moitié des morts.
+    const gold: number = def.goldReward > 0
+      ? Math.max(1, Math.round(def.goldReward * s.killGoldScale))
+      : 0;
+    s.gold += gold;
     s.kills += 1;
     if (byHero) s.heroKills += 1;
-    events.push({ type: "enemyDied", pos: { ...e.pos }, gold: def.goldReward });
+    events.push({ type: "enemyDied", pos: { ...e.pos }, gold });
   }
 }
 
@@ -462,6 +513,13 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
   if (s.castleHp <= 0) { s.castleHp = 0; s.phase = "defeat"; return; }
   if (s.phase === "wave" && s.pendingSpawns.length === 0 && s.enemies.every(e => !e.alive)) {
     s.enemies = [];
+    // Revenu de fin de vague (ADR-052) : versé sur une vague NETTOYÉE, pas sur une
+    // défaite — le château tombé, la phase est déjà "defeat" et on n'arrive pas ici.
+    const income: number = s.waveIncome[s.waveIndex] ?? 0;
+    if (income > 0) {
+      s.gold += income;
+      events.push({ type: "waveIncome", gold: income });
+    }
     if (s.waveIndex + 1 >= ch.waves.length) s.phase = "victory";
     else s.phase = "building";
   }
@@ -481,12 +539,31 @@ export function computeResult(s: RunState, c: ContentPack): RunResult {
   const base: number = wavesCleared * r.shardsPerWave;
   const hpBonus: number = victory ? Math.round((s.castleHp / ch.map.castleHp) * r.shardsCastleBonus) : 0;
   const victoryBonus: number = victory ? r.shardsVictoryBonus : 0;
+
+  // Étoiles (GDD §Étoiles) : 3 = quasi sans-faute, 1 = héros mort ET château très
+  // entamé, 2 = entre les deux. Le seuil des 3 étoiles est une PART de PV conservés
+  // et non plus l'absence totale de dégât : à l'exigence stricte, un unique PV perdu
+  // sur dix vagues suffisait à l'interdire, ce qui la rendait inatteignable sur
+  // plusieurs chapitres quel que soit l'investissement méta (ADR-052).
+  // Calculé AVANT les Éclats : les étoiles en font désormais partie.
+  let stars: number = 0;
+  if (victory) {
+    const hpPct: number = s.castleHpMax > 0 ? s.castleHp / s.castleHpMax : 0;
+    const dmgPct: number = 1 - hpPct;
+    if (hpPct >= c.rating.perfectHpPct && s.heroDeaths === 0) stars = 3;
+    else if (s.heroDeaths > 0 && dmgPct >= c.rating.heavyDamagePct) stars = 1;
+    else stars = 2;
+  }
+  // Les étoiles paient (ADR-052) : c'est ce qui relie la maîtrise d'un chapitre à la
+  // puissance des tours, au lieu de laisser l'or de la partie s'en charger seul.
+  const starBonus: number = stars * r.shardsPerStar;
+
   // Un chapitre tardif doit payer plus qu'un rejeu du premier, sinon la méta se
   // remplit en farmant la carte la plus facile (GDD §Économie).
   const chapterMult: number = r.shardsChapterMult?.[s.chapterIndex] ?? 1;
   const shards: number = Math.max(
     s.waveIndex >= 0 ? r.shardsFloor : 0,
-    Math.round((base + hpBonus + victoryBonus) * chapterMult),
+    Math.round((base + hpBonus + victoryBonus + starBonus) * chapterMult),
   );
   // Sceaux (monnaie héros) : récompense le TEMPS passé à retenir la horde, pas les
   // kills. Mesuré : un héros posté en dernier rempart tue moins mais fait gagner ;
@@ -496,14 +573,6 @@ export function computeResult(s: RunState, c: ContentPack): RunResult {
     + (victory ? r.sceauxVictoryBonus : 0)
     - s.heroDeaths * r.sceauxPerHeroDeath,
   );
-  // Étoiles (GDD §Étoiles) : 3 = sans-faute, 1 = héros mort ET château très entamé, 2 = entre les deux
-  let stars: number = 0;
-  if (victory) {
-    const dmgPct: number = 1 - s.castleHp / s.castleHpMax;
-    if (dmgPct <= 0 && s.heroDeaths === 0) stars = 3;
-    else if (s.heroDeaths > 0 && dmgPct >= c.rating.heavyDamagePct) stars = 1;
-    else stars = 2;
-  }
   return {
     victory, wavesCleared, castleHpLeft: s.castleHp, shards,
     kills: s.kills, heroKills: s.heroKills, heroBlockSeconds: s.heroBlockSeconds,

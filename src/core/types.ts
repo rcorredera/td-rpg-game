@@ -186,6 +186,35 @@ export interface UnlockDef {
   allowSpecialize?: boolean;
 }
 
+/**
+ * Économie in-run (ADR-052). L'or d'un chapitre n'ÉMERGE plus du nombre de créatures
+ * tuées : il est BUDGÉTÉ. Au per-kill pur, une vague plus fournie payait plus qu'elle
+ * ne coûtait — mesuré, le ch.20 versait 2,8 fois ce que ses 6 emplacements pouvaient
+ * dépenser, et la forge n'y décidait donc plus rien. Un budget que le contenu écrit
+ * reste borné quel que soit l'effectif des vagues : c'est aussi ce qui rend un mode à
+ * vagues infinies (Failles) équilibrable, là où le per-kill y diverge par construction.
+ */
+export interface EconomyRules {
+  /** Part de l'investissement remboursée à la vente d'une tour. */
+  sellRefundRate: number;
+  /** Or possédé à la première vague (avant bonus d'armurerie). */
+  startingGold: number;
+  /**
+   * Part du budget versée à la mort des créatures ; le reste tombe à la fin de chaque
+   * vague. À 0, tuer vite ne rapporte plus rien et la boucle « je tue, je suis payé »
+   * disparaît ; à 1, on retombe sur l'inflation d'origine.
+   */
+  killGoldShare: number;
+  /**
+   * Budget d'or d'un chapitre, hors or de départ (index = chapitre). Calibré sur
+   * « emplacements x coût d'une défense pleine » : sous 1, l'or seul ne finance PAS
+   * une défense complète — la différence se paie à la forge.
+   */
+  chapterBudget: number[];
+  /** Budget des chapitres hors table (modes futurs) : sans lui, un index absent vaudrait 0. */
+  defaultChapterBudget: number;
+}
+
 /** Barème des gains de fin de run, en Éclats (méta défense) et Sceaux (méta héros). */
 export interface RewardRules {
   /** Éclats par vague nettoyée. */
@@ -199,6 +228,10 @@ export interface RewardRules {
   /** Multiplicateur d'Éclats par chapitre (index = chapitre). Absent = 1 :
    *  sans lui, finir le chapitre 9 rapporte autant que rejouer le chapitre 1. */
   shardsChapterMult?: number[];
+  /** Éclats par étoile obtenue, multiplicateur de chapitre compris (ADR-052).
+   *  C'est ce qui fait des étoiles une PROGRESSION et non un simple badge : sans lui,
+   *  un sans-faute et une victoire arrachée paient à peu près la même chose. */
+  shardsPerStar: number;
   /** Secondes de blocage du héros nécessaires pour 1 Sceau. */
   heroBlockSecondsPerSceau: number;
   /** Sceaux forfaitaires de victoire. */
@@ -206,6 +239,20 @@ export interface RewardRules {
   /** Sceaux retirés par mort du héros. Le blocage récompense l'engagement ; sans
    *  contrepartie, se jeter dans la horde pour mourir aussitôt serait rentable. */
   sceauxPerHeroDeath: number;
+}
+
+/** Notation en étoiles (GDD §Étoiles). */
+export interface RatingRules {
+  /** « Château beaucoup touché » : part des PV perdus au-delà de laquelle on tombe à 1 étoile. */
+  heavyDamagePct: number;
+  /**
+   * Part des PV de château à conserver pour les 3 étoiles. À 1 (exigence d'origine),
+   * UN seul PV perdu sur dix vagues faisait retomber à 2 étoiles : les 3 étoiles
+   * n'étaient pas difficiles, elles étaient binaires — inatteignables sur plusieurs
+   * chapitres quel que soit le niveau de forge, et triviales sur d'autres. Un seuil
+   * en fait un objectif que la méta rapproche progressivement (ADR-052).
+   */
+  perfectHpPct: number;
 }
 
 export interface ContentPack {
@@ -220,16 +267,16 @@ export interface ContentPack {
   accountSpell: { damage: number; radius: number; cooldownS: number };
   /** Forge (méta, Éclats) : bonus de dégâts permanent par tour. upgradeCosts[i] = coût du niveau i+1. */
   forge: { damageMultPerLevel: number; upgradeCosts: number[] };
-  /** Économie in-run : taux de remboursement à la vente, or de départ (GDD §Économie). */
-  economy: { sellRefundRate: number; startingGold: number };
+  /** Économie in-run : budget d'or, remboursement à la vente (GDD §Économie, ADR-052). */
+  economy: EconomyRules;
   /** Déblocages d'armurerie, effets compris (ADR-021). */
   unlocks: UnlockDef[];
   /** Récompenses de fin de run (GDD §Économie). Vivaient en dur dans `computeResult`,
    *  hors de portée d'ADR-003 : c'est ce qui les a laissées dériver pendant que le
    *  reste de l'équilibrage bougeait. Toute la méta-progression se règle ici. */
   rewards: RewardRules;
-  /** Notation en étoiles (GDD §Étoiles) : seuil de "château beaucoup touché" (part des PV perdus). */
-  rating: { heavyDamagePct: number };
+  /** Notation en étoiles (GDD §Étoiles, ADR-052). */
+  rating: RatingRules;
 }
 
 // ---------- Méta (profil de compte) ----------
@@ -374,6 +421,12 @@ export interface RunState {
   skillLevels: { whirlwind: number; rally: number };
   /** Niveaux de forge par tour, copiés du profil au createRun. */
   forgeLevels: Record<string, number>;
+  /** Facteur appliqué à `goldReward` pour tenir le budget du chapitre (ADR-052).
+   *  Résolu une fois au `createRun` : la sim ne recalcule pas un budget à chaque mort. */
+  killGoldScale: number;
+  /** Or versé à la fin de chaque vague (index = vague) : la part du budget non
+   *  distribuée aux kills. */
+  waveIncome: number[];
   /** Types d'ennemis croisés pendant ce run (→ Bestiaire en fin de run). */
   seenEnemies: string[];
   /** Nombre de morts du héros pendant le run (→ étoiles). */
@@ -402,6 +455,7 @@ export interface RunResult {
 export type SimEvent =
   | { type: "shot"; from: Vec2; to: Vec2; towerDefId: string; specId: string | null }
   | { type: "enemyDied"; pos: Vec2; gold: number }
+  | { type: "waveIncome"; gold: number }
   | { type: "castleHit"; damage: number }
   | { type: "heroDied" }
   | { type: "explosion"; pos: Vec2; radius: number };

@@ -41,8 +41,8 @@ function mkContent(over: {
     scaling: { hpExponent: 1, castleDamageExponent: 0.5 },
     accountSpell: { damage: 0, radius: 1, cooldownS: 1 },
     forge: { damageMultPerLevel: 0.10, upgradeCosts: [20, 45] },
-    economy: { sellRefundRate: 0.65, startingGold: 120 },
-    rating: { heavyDamagePct: 0.5 },
+    economy: { sellRefundRate: 0.65, startingGold: 120, killGoldShare: 0.25, chapterBudget: [400], defaultChapterBudget: 400 },
+    rating: { heavyDamagePct: 0.5, perfectHpPct: 0.9 },
     rewards: CONTENT.rewards,
     // Catalogue réel : c'est lui qui porte les effets des paliers, donc `FULL_PROFILE`
     // n'ouvre le rang 4 que si le content minimal connaît les mêmes déblocages.
@@ -388,18 +388,54 @@ describe("sim core", () => {
     expect(e.hp).toBeCloseTo(1000 - 5 * 1, 0);
   });
 
-  it("étoiles : 3 = sans-faute, 2 = imparfait, 1 = héros mort + château très entamé, 0 = défaite", () => {
-    const rate = (phase: "victory" | "defeat", castleHp: number, heroDeaths: number) => {
+  const rateStars = (phase: "victory" | "defeat", castleHp: number, heroDeaths: number): number => {
+    const s: RunState = createRun(CONTENT, FRESH_PROFILE);
+    s.phase = phase; s.castleHp = castleHp; s.heroDeaths = heroDeaths;
+    return computeResult(s, CONTENT).stars;
+  };
+
+  it("étoiles : 3 = quasi sans-faute, 2 = imparfait, 1 = héros mort + château très entamé, 0 = défaite", () => {
+    const max: number = createRun(CONTENT, FRESH_PROFILE).castleHpMax;
+    expect(rateStars("victory", max, 0)).toBe(3);      // château intact, héros jamais mort
+    expect(rateStars("victory", max, 2)).toBe(2);      // héros mort, château intact
+    expect(rateStars("victory", Math.floor(max * 0.4), 1)).toBe(1); // héros mort ET >50% PV perdus
+    expect(rateStars("defeat", 0, 0)).toBe(0);
+  });
+
+  /**
+   * Le seuil, et pas seulement un point de part et d'autre : c'est la RÈGLE
+   * « 3 étoiles = au moins perfectHpPct des PV » qui doit tenir, pour n'importe quel
+   * total de PV de château. Un test qui n'aurait vérifié que « max » et « max - 1 »
+   * resterait vert si le seuil dérivait à 0,5 ou repassait à l'exigence stricte.
+   */
+  it("3 étoiles : seuil de PV conservés, pas absence totale de dégât", () => {
+    const max: number = createRun(CONTENT, FRESH_PROFILE).castleHpMax;
+    const threshold: number = CONTENT.rating.perfectHpPct;
+    expect(threshold).toBeGreaterThan(0.5); // sinon ce ne serait plus un sans-faute
+    expect(threshold).toBeLessThan(1);      // sinon on revient au tout-ou-rien
+    for (let hp: number = 0; hp <= max; hp++) {
+      const expected: number = hp / max >= threshold ? 3 : 2;
+      expect(rateStars("victory", hp, 0)).toBe(expected);
+    }
+    // Et une égratignure ne coûte plus l'étoile, elle qui l'interdisait à elle seule.
+    expect(rateStars("victory", max - 1, 0)).toBe(3);
+  });
+
+  it("les étoiles paient : plus d'étoiles = plus d'Éclats, à vagues égales", () => {
+    const shardsFor = (castleHp: number, heroDeaths: number): number => {
       const s: RunState = createRun(CONTENT, FRESH_PROFILE);
-      s.phase = phase; s.castleHp = castleHp; s.heroDeaths = heroDeaths;
-      return computeResult(s, CONTENT).stars;
+      s.phase = "victory"; s.waveIndex = 9; s.castleHp = castleHp; s.heroDeaths = heroDeaths;
+      return computeResult(s, CONTENT).shards;
     };
     const max: number = createRun(CONTENT, FRESH_PROFILE).castleHpMax;
-    expect(rate("victory", max, 0)).toBe(3);      // château intact, héros jamais mort
-    expect(rate("victory", max - 1, 0)).toBe(2);  // château touché
-    expect(rate("victory", max, 2)).toBe(2);      // héros mort mais château intact
-    expect(rate("victory", Math.floor(max * 0.4), 1)).toBe(1); // héros mort ET >50% PV perdus
-    expect(rate("defeat", 0, 0)).toBe(0);
+    const three: number = shardsFor(max, 0);
+    const two: number = shardsFor(max, 2);
+    const one: number = shardsFor(Math.floor(max * 0.4), 1);
+    expect(three).toBeGreaterThan(two);
+    expect(two).toBeGreaterThan(one);
+    // L'écart doit être VISIBLE, pas symbolique : c'est ce qui fait des étoiles une
+    // progression. Une étoile vaut au moins shardsPerStar (avant multiplicateur).
+    expect(three - two).toBeGreaterThanOrEqual(CONTENT.rewards.shardsPerStar);
   });
 
   it("un monstre renforcé explose plus fort sur le château (dégâts × √mult)", () => {
@@ -434,8 +470,8 @@ describe("sim core", () => {
       scaling: { hpExponent: 1, castleDamageExponent: 0.5 },
       accountSpell: { damage: 0, radius: 1, cooldownS: 1 },
       forge: { damageMultPerLevel: 0, upgradeCosts: [] },
-      economy: { sellRefundRate: 0.65, startingGold: 120 },
-      rating: { heavyDamagePct: 0.5 },
+      economy: { sellRefundRate: 0.65, startingGold: 120, killGoldShare: 0.25, chapterBudget: [400], defaultChapterBudget: 400 },
+      rating: { heavyDamagePct: 0.5, perfectHpPct: 0.9 },
       rewards: CONTENT.rewards,
       unlocks: [],
     };

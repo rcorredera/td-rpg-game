@@ -297,6 +297,7 @@ export class GameScene extends Phaser.Scene {
         playSfx(this, "castleHit");
       }
       if (e.type === "enemyDied") playSfx(this, "enemyDied");
+      if (e.type === "waveIncome") this.hud.flashIncome(e.gold);
       if (e.type === "heroDied") playSfx(this, "heroDied");
     }
   }

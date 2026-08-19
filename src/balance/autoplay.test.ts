@@ -86,13 +86,20 @@ describe("autoplay — compositions de défense", () => {
   });
 
   it("distingue une défense mono-tour d'un mélange", () => {
-    // Deux compositions qui donnent le même résultat signaleraient que l'option est
+    // Deux compositions qui donnent le même déroulé signaleraient que l'option est
     // ignorée — le rapport conclurait « pas de décision tactique » à tort.
+    //
+    // Comparé sur le DÉROULÉ des vagues et non sur les PV de château restants : sur un
+    // chapitre que les deux compositions gagnent sans une égratignure, les PV finaux
+    // sont égaux alors que les deux runs n'ont rien à voir. Le test tombait donc sur
+    // un chapitre 1 devenu confortable, sans qu'aucune option ait cessé de marcher.
     const solo: AutoplayReport = autoplayChapter(CONTENT, 0, { policy: "spread", towers: ["tower_archer"] });
     const mix: AutoplayReport = autoplayChapter(CONTENT, 0, {
       policy: "spread", towers: ["tower_archer", "tower_catapult"],
     });
-    expect(mix.result.castleHpLeft).not.toBe(solo.result.castleHpLeft);
+    const trace = (r: AutoplayReport): string =>
+      r.waves.map(w => `${w.seconds.toFixed(2)}/${w.goldAfter}/${w.castleHpAfter}`).join("|");
+    expect(trace(mix)).not.toBe(trace(solo));
   });
 
   it("ignore une tour inexistante sans planter", () => {
