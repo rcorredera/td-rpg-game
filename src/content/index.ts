@@ -151,6 +151,158 @@ const CH10_MAP: MapDef = {
   ],
 };
 
+// ---------- Cartes du deuxième acte (ch.11-20, ADR-049/050) : ch.10 devient un boss
+// intermédiaire, ch.20 le vrai boss final. Même convention que ch.2-10 (ADR-027).
+
+// Deuxième acte (ch.11-19) : géométries reprises 1-pour-1 des cartes du premier
+// acte (ch.2-10 déjà validées par `datasheet.test.ts` — zone jouable, distance
+// route/château/inter-dalles, portée des tours) plutôt que redessinées de zéro.
+// Seuls le nom, le biome et la lore changent : l'habillage suit le nouveau
+// monstre de chaque chapitre, la géométrie reste un terrain déjà éprouvé
+// (ADR-049/050). Ch.20 garde un tracé dédié, proche du ch.10 (boss final).
+
+// Ch.11 « Marais Fangeux » : reprend Ch.5 (une seule voie en lacets serrés) — la
+// Gelée Enragée n'a pas besoin d'un choix de voie pour saturer un couloir seul.
+const CH11_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [
+      { x: -20, y: 410 }, { x: 250, y: 410 }, { x: 250, y: 150 }, { x: 550, y: 150 },
+      { x: 550, y: 410 }, { x: 850, y: 410 }, { x: 980, y: 410 },
+    ] },
+  ],
+  slots: [
+    { x: 120, y: 340 }, { x: 170, y: 280 }, { x: 400, y: 220 }, { x: 460, y: 280 },
+    { x: 620, y: 340 }, { x: 700, y: 340 }, { x: 790, y: 340 }, { x: 900, y: 300 },
+  ],
+};
+
+// Ch.12 « Ombres du Cloître » : reprend Ch.2 (zigzag + raccourci de Faille).
+const CH12_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 410 }, { x: 260, y: 410 }, { x: 260, y: 200 }, { x: 620, y: 200 }, { x: 620, y: 395 }, { x: 980, y: 395 }] },
+    { waypoints: [{ x: 340, y: -20 }, { x: 340, y: 200 }, { x: 620, y: 200 }, { x: 620, y: 395 }, { x: 980, y: 395 }], portal: true },
+  ],
+  slots: [
+    { x: 150, y: 340 }, { x: 150, y: 255 }, { x: 430, y: 270 }, { x: 500, y: 130 },
+    { x: 720, y: 280 }, { x: 785, y: 335 }, { x: 430, y: 80 }, { x: 860, y: 285 },
+  ],
+};
+
+// Ch.13 « Passe des Lances » : reprend Ch.3 (deux méandres qui convergent).
+const CH13_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 120 }, { x: 200, y: 120 }, { x: 200, y: 260 }, { x: 400, y: 220 }, { x: 560, y: 300 }, { x: 980, y: 300 }] },
+    { waypoints: [{ x: -20, y: 420 }, { x: 220, y: 420 }, { x: 220, y: 300 }, { x: 400, y: 220 }, { x: 560, y: 300 }, { x: 980, y: 300 }] },
+  ],
+  slots: [
+    { x: 100, y: 180 }, { x: 300, y: 150 }, { x: 100, y: 350 }, { x: 300, y: 360 },
+    { x: 480, y: 340 }, { x: 650, y: 240 }, { x: 800, y: 230 }, { x: 880, y: 200 },
+  ],
+};
+
+// Ch.14 « Sanctuaire Corrompu » : reprend Ch.4 (deux voies anguleuses).
+const CH14_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 90 }, { x: 250, y: 90 }, { x: 250, y: 280 }, { x: 500, y: 280 }, { x: 750, y: 180 }, { x: 980, y: 180 }] },
+    { waypoints: [{ x: -20, y: 400 }, { x: 300, y: 400 }, { x: 300, y: 280 }, { x: 500, y: 280 }, { x: 750, y: 180 }, { x: 980, y: 180 }] },
+  ],
+  slots: [
+    { x: 120, y: 150 }, { x: 320, y: 180 }, { x: 150, y: 340 }, { x: 365, y: 350 },
+    { x: 625, y: 300 }, { x: 651, y: 150 }, { x: 850, y: 80 }, { x: 800, y: 260 },
+  ],
+};
+
+// Ch.15 « Écarlate » : reprend Ch.6 (trois cols qui se resserrent) — le Piqueur
+// Écarlate sature depuis plusieurs directions, comme les trois voies l'imposent.
+const CH15_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 40 }, { x: 300, y: 40 }, { x: 300, y: 220 }, { x: 480, y: 270 }, { x: 720, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 270 }, { x: 250, y: 270 }, { x: 480, y: 270 }, { x: 720, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 400 }, { x: 300, y: 400 }, { x: 300, y: 300 }, { x: 480, y: 270 }, { x: 720, y: 270 }, { x: 980, y: 270 }] },
+  ],
+  slots: [
+    { x: 150, y: 110 }, { x: 90, y: 330 }, { x: 220, y: 340 },
+    { x: 550, y: 210 }, { x: 650, y: 330 }, { x: 750, y: 210 }, { x: 820, y: 340 }, { x: 880, y: 170 },
+  ],
+};
+
+// Ch.16 « Charnier Gelé » : reprend Ch.7 (contournement + raccourci de Faille).
+const CH16_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 300 }, { x: 250, y: 300 }, { x: 250, y: 140 }, { x: 560, y: 140 }, { x: 560, y: 400 }, { x: 980, y: 400 }] },
+    { waypoints: [{ x: 400, y: -20 }, { x: 400, y: 140 }, { x: 560, y: 140 }, { x: 560, y: 400 }, { x: 980, y: 400 }], portal: true },
+  ],
+  slots: [
+    { x: 130, y: 220 }, { x: 320, y: 230 }, { x: 330, y: 60 }, { x: 650, y: 270 },
+    { x: 800, y: 300 }, { x: 930, y: 300 }, { x: 480, y: 80 }, { x: 500, y: 220 },
+  ],
+};
+
+// Ch.17 « Frontières Rompues » : reprend Ch.8 (trois voies qui fusionnent).
+const CH17_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 60 }, { x: 260, y: 60 }, { x: 260, y: 200 }, { x: 400, y: 270 }, { x: 650, y: 270 }, { x: 850, y: 180 }, { x: 980, y: 180 }] },
+    { waypoints: [{ x: -20, y: 270 }, { x: 230, y: 270 }, { x: 400, y: 270 }, { x: 650, y: 270 }, { x: 850, y: 180 }, { x: 980, y: 180 }] },
+    { waypoints: [{ x: -20, y: 400 }, { x: 260, y: 400 }, { x: 260, y: 300 }, { x: 400, y: 270 }, { x: 650, y: 270 }, { x: 850, y: 180 }, { x: 980, y: 180 }] },
+  ],
+  slots: [
+    { x: 150, y: 120 }, { x: 100, y: 210 }, { x: 150, y: 340 },
+    { x: 550, y: 210 }, { x: 600, y: 330 }, { x: 777, y: 284 }, { x: 773, y: 143 }, { x: 880, y: 70 },
+  ],
+};
+
+// Ch.18 « Cicatrice des Failles » : reprend Ch.9 (trois voies larges, quinconce).
+const CH18_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 90 }, { x: 350, y: 90 }, { x: 600, y: 190 }, { x: 750, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 270 }, { x: 400, y: 270 }, { x: 750, y: 270 }, { x: 980, y: 270 }] },
+    { waypoints: [{ x: -20, y: 400 }, { x: 350, y: 400 }, { x: 600, y: 330 }, { x: 750, y: 270 }, { x: 980, y: 270 }] },
+  ],
+  slots: [
+    { x: 200, y: 155 }, { x: 200, y: 335 },
+    { x: 560, y: 110 }, { x: 300, y: 340 }, { x: 700, y: 150 }, { x: 770, y: 350 }, { x: 830, y: 180 }, { x: 855, y: 350 },
+  ],
+};
+
+// Ch.19 « Voile Nocturne » : trois voies étroites qui convergent très tard —
+// l'Assassin Voilé « ne charge jamais deux fois la même route » (lore) : la carte
+// lui donne vraiment trois routes distinctes jusqu'au bout.
+const CH19_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 60 }, { x: 300, y: 60 }, { x: 550, y: 160 }, { x: 700, y: 240 }, { x: 980, y: 240 }] },
+    { waypoints: [{ x: -20, y: 240 }, { x: 400, y: 240 }, { x: 700, y: 240 }, { x: 980, y: 240 }] },
+    { waypoints: [{ x: -20, y: 400 }, { x: 300, y: 400 }, { x: 550, y: 320 }, { x: 700, y: 240 }, { x: 980, y: 240 }] },
+  ],
+  slots: [
+    { x: 160, y: 140 }, { x: 160, y: 340 }, { x: 300, y: 150 }, { x: 300, y: 330 },
+    { x: 720, y: 160 }, { x: 650, y: 335 }, { x: 820, y: 140 }, { x: 820, y: 340 },
+  ],
+};
+
+// Ch.20 « Trône Fangeux » : reste proche de la simplicité du ch.1/ch.10 — un S au
+// sol + un raccourci de Faille court, même logique que ch.10 (ne pas ajouter une
+// lecture de carte difficile au vrai combat de boss final, ADR-049/050).
+const CH20_MAP: MapDef = {
+  castleHp: 20,
+  paths: [
+    { waypoints: [{ x: -20, y: 300 }, { x: 320, y: 300 }, { x: 320, y: 390 }, { x: 660, y: 390 }, { x: 660, y: 200 }, { x: 980, y: 200 }] },
+    { waypoints: [{ x: 520, y: -20 }, { x: 520, y: 200 }, { x: 660, y: 200 }, { x: 980, y: 200 }], portal: true },
+  ],
+  slots: [
+    { x: 160, y: 225 }, { x: 460, y: 330 }, { x: 580, y: 100 }, { x: 460, y: 150 },
+    { x: 800, y: 280 }, { x: 760, y: 140 },
+  ],
+};
+
 /**
  * Créature introduite à chaque chapitre — une de plus par niveau, puis des mélanges
  * (ADR-022). Chacune neutralise une tour et en valorise une autre : le joueur ne
@@ -321,7 +473,7 @@ function makeWaves(num: number, pathCount: number): WaveDef[] {
       wave.miniBoss = num === 10
         ? { enemyId: "wyvern", hpMult: 2.8 }
         : num === 20
-          ? { enemyId: "the_gravedigger", hpMult: 1.4 }
+          ? { enemyId: "the_gravedigger", hpMult: 2.8 }
           : has("golem")
             ? { enemyId: "warlord", hpMult: 1.3 + 0.09 * d }
             : { enemyId: "brute", hpMult: 2.4 + 0.25 * d };
@@ -672,9 +824,23 @@ export const CONTENT: ContentPack = {
     makeChapter(7, "Les Tertres", "barrow", "Les morts d'hier grossissent les rangs d'aujourd'hui.", CH7_MAP),
     makeChapter(8, "La Herse Brisée", "ruins", "La première muraille est tombée. Reste la vôtre.", CH8_MAP),
     makeChapter(9, "Les Portes du Nord", "tundra", "Au-delà : son royaume. Il vous attend.", CH9_MAP),
-    // Final : boss multi-phases prévu (à chaque mort, il revient plus fort — GDD §Boss final).
-    // En attendant : mini-boss x12 en 12e vague.
-    makeChapter(10, "Le Roi-Charogne", "blight", "Le maître des hordes en personne.", CH10_MAP),
+    // Ch.10 : boss INTERMÉDIAIRE depuis ADR-049/050 (l'Histoire continue au ch.20).
+    makeChapter(10, "Le Roi-Charogne", "blight", "Le maître des hordes en personne — mais pas la fin.", CH10_MAP),
+    // Ch.11-20 : deuxième acte (ADR-049/050). Même convention que ch.2-10 : contenu
+    // généré provisoire, noms placeholders (à remplacer via docs/LORE.md).
+    makeChapter(11, "Marais Fangeux", "marsh", "Ce qui a fondu dans la Faille remonte à la surface.", CH11_MAP),
+    makeChapter(12, "Ombres du Cloître", "ruins", "Le silence, ici, n'a jamais été un signe de paix.", CH12_MAP),
+    makeChapter(13, "Passe des Lances", "barrow", "Quatre yeux montent la garde depuis des siècles.", CH13_MAP),
+    makeChapter(14, "Sanctuaire Corrompu", "blight", "Ce qui priait ici prie encore, autrement.", CH14_MAP),
+    makeChapter(15, "Écarlate", "ash", "La nuée ne se compte plus. Elle se combat.", CH15_MAP),
+    makeChapter(16, "Charnier Gelé", "frost", "Le froid n'a plus rien à mordre — il n'y a plus de chair.", CH16_MAP),
+    makeChapter(17, "Frontières Rompues", "quarry", "Les premiers visages humains depuis le Roi-Charogne.", CH17_MAP),
+    makeChapter(18, "Cicatrice des Failles", "tundra", "La Faille n'a jamais vraiment refermé.", CH18_MAP),
+    makeChapter(19, "Voile Nocturne", "forest", "Il ne charge jamais deux fois la même route.", CH19_MAP),
+    // Final : le vrai boss de fin (ADR-049/050). Mini-boss x1 en 12e vague, sans
+    // multiplicateur de difficulté supplémentaire par chapitre — il n'est utilisé
+    // qu'ici (`the_gravedigger`, jamais en trash).
+    makeChapter(20, "Trône Fangeux", "blight", "Le Roi Fangeux vous attend. Il n'attendra pas longtemps.", CH20_MAP),
   ],
 
   hero: {
@@ -743,8 +909,16 @@ export const CONTENT: ContentPack = {
     shardsFloor: 3,
     // Un chapitre tardif doit payer nettement plus qu'un rejeu du premier, sinon
     // farmer la carte la plus facile est strictement optimal (mesuré : ×1,11 seulement
-    // entre le ch.1 et le ch.10). Progression douce mais nette, ×1 → ×3.
-    shardsChapterMult: [1, 1.22, 1.44, 1.66, 1.88, 2.1, 2.32, 2.54, 2.76, 3],
+    // entre le ch.1 et le ch.10 à l'origine). Progression douce mais nette, ×1 → ×3
+    // sur le premier acte (ch.1-10) — étendue au même pas (+0,22/chapitre) sur le
+    // deuxième acte (ch.11-20, ADR-049/050) pour atteindre ×5,2 au vrai boss final.
+    // Sans cette extension, ch.20 retombait au multiplicateur par défaut ×1 (index
+    // hors tableau) et le ratio dernier/premier repassait sous ×1,2 — repéré par
+    // `economy.test.ts`.
+    shardsChapterMult: [
+      1, 1.22, 1.44, 1.66, 1.88, 2.1, 2.32, 2.54, 2.76, 3,
+      3.22, 3.44, 3.66, 3.88, 4.1, 4.32, 4.54, 4.76, 4.98, 5.2,
+    ],
     heroBlockSecondsPerSceau: 9,
     sceauxVictoryBonus: 2,
     sceauxPerHeroDeath: 1,

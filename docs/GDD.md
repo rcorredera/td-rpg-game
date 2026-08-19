@@ -17,8 +17,8 @@ Tower defense médiéval où chaque partie est une économie fermée (or gagné 
 | Écran | Contenu | Pourquoi ce nom |
 |---|---|---|
 | **Le Campement** (hub) | 3 portes : Histoire / Armurerie / Chroniques | Lieu de vie entre les batailles |
-| **Histoire** | Liste des 10 chapitres (ch.1 jouable, le reste « Bientôt »), état conquis par chapitre | Mode principal, remplace « Partir au combat » |
-| **Failles infinies** | Porte dédiée au hub — **mode séparé, pas un chapitre**, **verrouillé tant que l'Histoire n'est pas achevée** (Roi-Charogne terrassé = ch.10 conquis). Avant : 🔒 + compteur de chapitres. Après : teaser v1 | Boucle différente (sans fin, leaderboard) ≠ Histoire (scénarisée, finie) ; l'endgame récompense la campagne |
+| **Histoire** | Liste des 20 chapitres (ch.1-20 jouables, ADR-049/050), état conquis par chapitre, grille scrollable | Mode principal, remplace « Partir au combat » |
+| **Failles infinies** | Porte dédiée au hub — **mode séparé, pas un chapitre**, **verrouillé tant que l'Histoire n'est pas achevée** (Le Roi Fangeux terrassé = ch.20 conquis, ADR-050 — le Roi-Charogne du ch.10 n'est plus qu'un boss intermédiaire). Avant : 🔒 + compteur de chapitres. Après : teaser v1 | Boucle différente (sans fin, leaderboard) ≠ Histoire (scénarisée, finie) ; l'endgame récompense la campagne |
 | **Armurerie** | 3 onglets : Arsenal (unlocks ◆), Forge (bonus tours ◆), Héros (sorts ⚜ + teaser 2e héros) | Tout ce qui s'achète avec les monnaies *gagnées en jeu* |
 | **Chroniques** | Top 5 des runs (avec chapitre) | Hauts faits → futur leaderboard des Failles |
 
@@ -114,11 +114,13 @@ Chaque victoire de chapitre est notée 1-3 ★ (défaite = 0, chapitre non conqu
 
 La **meilleure** note est conservée par chapitre (jamais dégradée), affichée dans la liste Histoire et sur l'écran de victoire. Intention : la rejouabilité douce — finir la campagne d'abord, la « 3-étoiler » ensuite. Futur robinet possible : bonus d'Éclats au premier 3★ d'un chapitre (à décider).
 
-## Campagne — plan (ADR-004)
+## Campagne — plan (ADR-004, étendue ADR-049/050)
 
-10 chapitres **tous jouables** : le ch.1 est conçu à la main, les ch.2-10 ont un **contenu généré provisoire** — vagues au volume croissant, mais depuis l'ADR-027 chaque chapitre a sa **propre topologie** (1 à 3 voies selon le chapitre, en écho à son biome), plus deux layouts partagés ; ch.10 : 12 vagues + mini-boss ×12 en attendant le vrai boss. Noms de chapitres = placeholders à remplacer via le fichier de lore. **Déblocage séquentiel : conquérir le chapitre N ouvre le N+1** ; les chapitres verrouillés affichent « ??? » et un cadenas. À concevoir au fil de l'eau :
+**20 chapitres tous jouables**, en deux actes : le ch.1 est conçu à la main, les ch.2-20 ont un **contenu généré provisoire** — vagues au volume croissant, mais depuis l'ADR-027 chaque chapitre a sa **propre topologie** (1 à 3 voies selon le chapitre, en écho à son biome ; ch.11-19 réutilisent la géométrie de ch.2-10, déjà validée, avec un nouvel habillage). Noms de chapitres = placeholders à remplacer via le fichier de lore. **Déblocage séquentiel : conquérir le chapitre N ouvre le N+1** ; les chapitres verrouillés affichent « ??? » et un cadenas.
 
-- **Ch.10 — Le Roi-Charogne, boss multi-phases** : un boss qu'on tue… et qui revient plus fort. Design cible : à la mort de chaque phase, respawn avec plus de PV et une capacité supplémentaire (ex. phase 1 marche, phase 2 invoque des gobelins, phase 3 AoE qui assomme les tours). Nécessite une extension de la sim (états de boss, capacités scriptées) — à chiffrer avant le ch.10.
+- **Ch.10 — Le Roi-Charogne** : boss INTERMÉDIAIRE depuis ADR-049/050 (12 vagues, Vouivre en finale ×2,8) — ne conclut plus l'Histoire, mais reste un vrai pic de difficulté à mi-parcours.
+- **Ch.20 — Le Roi Fangeux, vrai boss final** : 12 vagues, boss dédié (`the_gravedigger`, jamais en trash, hpMult ×2,8) — hérite de l'invariant ADR-024 (infranchissable sans la Forge maxi) et du déblocage des Failles infinies, tous deux calculés dynamiquement sur le DERNIER chapitre jouable (aucun changement de code requis en ajoutant ch.11-20, cf. `.ai/pitfalls.md`).
+- **Boss multi-phases** (idée non retenue pour ch.10 ni ch.20) : un boss qu'on tue… et qui revient plus fort, respawn avec plus de PV et une capacité supplémentaire par phase. Nécessiterait une extension de la sim (états de boss, capacités scriptées) — non chiffré, reste une piste pour un futur "acte 3" plutôt qu'un besoin actuel.
 - **Multi-chemins** : une carte peut avoir plusieurs sources d'arrivée (`MapDef.paths`, chaque spawn choisit son chemin). Convention : tous les chemins mènent au château. Supporté par la sim dès maintenant (testé).
 - **Portails de Faille** : un chemin marqué `portal` n'apparaît que lorsqu'il sert. Règle : **annoncé pendant la phase building précédente** (« ⚠ Une Faille s'ouvrira à la prochaine vague ! »), actif le temps de la vague, puis disparaît. Supporté sim + rendu ; premier usage prévu dans les chapitres à venir.
 - **Tailles de cartes** : tranché — canevas 960×540 (16:9, ADR-027), sans scroll/zoom ; chaque chapitre a sa propre géométrie de carte (1 à 3 voies).
@@ -352,7 +354,7 @@ Failles infinies, arbre de talents héros, équipement/loot, **roster de héros*
 - **Or dégressif vs fixe** : fixe en v0 ; réévaluer après playtest si le snowball rend la mi-partie triviale.
 - Formule Éclats : robinet principal de la méta, valeurs actuelles posées au doigt mouillé, à équilibrer dès que la v0 est jouable.
 - **Deux monnaies (Éclats / Sceaux)** : choix volontaire pour équilibrer indépendamment tours et héros. Si le playtest montre que ça embrouille plus que ça ne motive, fusionner en une seule monnaie.
-- **Mode de jeu** : la v0 est un mode Histoire court — 10 vagues puis victoire, pas de vagues illimitées. Les Failles infinies (scaling agressif, leaderboard) restent la cible v1 ; l'historique des runs est déjà persisté pour préparer ça.
+- **Mode de jeu** : l'Histoire compte désormais 20 chapitres scriptés en deux actes (ADR-049/050, décision explicite du joueur plutôt que les Failles infinies initialement prévues comme seul contenu post-ch.10). Les Failles infinies (scaling agressif, leaderboard) restent la cible v1 pour l'ENDGAME (après ch.20) ; l'historique des runs est déjà persisté pour préparer ça.
 - **Soin du héros post-boss** : idée notée (pas encore designée) — après un gros combat (mini-boss vague 5/10, futur boss ch.10), trouver un moyen de lui rendre de la vie (regen passive après un délai, palier de soin au clear de vague, objet consommable...). À trancher : mécanique automatique ou récompense active du joueur ? Lié au respawn 8s actuel (§Héros) et au boss multi-phases ch.10 (encore à scoper, voir `.ai/context.md`).
 - **Wording des écrans** : « Armurerie » plutôt que « Boutique » (connotation achat réel) et « Chroniques » plutôt que « Runs » — à challenger au playtest si les joueurs ne s'y retrouvent pas.
 - **Taux de revente des tours** : 65% posé arbitrairement dans la fourchette 60-70% demandée — à affiner au playtest (trop haut = repositionnement gratuit permanent, trop bas = personne ne vend).

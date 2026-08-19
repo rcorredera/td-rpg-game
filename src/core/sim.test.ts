@@ -191,7 +191,7 @@ describe("sim core", () => {
   });
 
   it("contenu : les 10 chapitres sont jouables et cohérents (ennemis, chemins, slots)", () => {
-    expect(CONTENT.chapters).toHaveLength(10);
+    expect(CONTENT.chapters).toHaveLength(20);
     for (const ch of CONTENT.chapters) {
       expect(ch.playable).toBe(true);
       if (!ch.playable) continue;
