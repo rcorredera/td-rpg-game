@@ -25,7 +25,7 @@ import { flattenStretched } from "./nineSliceFlatten";
 import type { PixelBuffer } from "./nineSliceFlatten";
 import type { NineSlicePlan, StripPlan } from "./nineSlicePlan";
 import {
-  planNineSlice, planStrip, sliceInsets,
+  fitInsets, MID, planNineSlice, planStrip, sliceInsets,
   type Insets, type PieceRect, type SheetFrame, type StripFrame,
 } from "./nineSlicePlan";
 
@@ -107,7 +107,13 @@ const STRIPS = {
   // (ADR-035). Colonnes mesurées : ailes à x=[30,128)/[320,417), corps
   // x=[192,256) — pas le même pas que la petite planche (320 de large contre
   // 448), donc pas les mêmes offsets.
-  ts_ribbon_big: { file: "ribbons-big.png", cols: [0, 192, 320], row: RIBBON_ROW.teal, cell: 128, cellH: 64 },
+  // ⚠ Planche 448×640, CINQ rangées PLEINES de 128 px (une seule variante par
+  // couleur, pas de paire pointue/arrondie comme la petite planche) — `row` et
+  // `cellH` ne doivent PAS reprendre `RIBBON_ROW`/`cell:64`, calibrés pour
+  // l'autre fichier. `row: RIBBON_ROW.teal` (64) plaçait la fenêtre de mesure
+  // au MILIEU de la rangée teal (y=[0,128)), tronquant net la pointe haute du
+  // fanion à l'écran (constaté sur la tuile Histoire, ADR-043 debug).
+  ts_ribbon_big: { file: "ribbons-big.png", cols: [0, 192, 320], row: 0, cell: 128, cellH: 128 },
 } satisfies Record<string, StripSheet>;
 
 // eslint-disable-next-line @typescript-eslint/typedef -- `satisfies` garde un type littéral précis ; l'annoter le réélargirait.
@@ -425,6 +431,56 @@ function ensureBarFillGoldTexture(scene: Phaser.Scene): void {
   ctx.putImageData(out, 0, 0);
   tex.refresh();
   tex.setFilter(NEAREST);
+}
+
+/**
+ * Aplatit une bande déjà composée à sa taille finale `w`×`h` (embouts intacts,
+ * corps étiré) et renvoie une texture PLATE — jamais un `NineSlice` posé au
+ * rendu.
+ *
+ * Constaté à l'écran (ADR-043 debug) : un `NineSlice` en 3 tranches, sous la
+ * caméra à zoom fractionnaire de la vue (`attachViewport`, ADR-010), montre une
+ * COUTURE — la couleur de fond du panneau perce entre l'embout et le corps.
+ * Le défaut ne vient ni de la texture (un `Image` plein affichant la même
+ * planche à l'échelle est parfaitement continu), ni d'un `setScale` d'objet
+ * seul (un `NineSlice` isolé aux mêmes marges ne la montre pas non plus) : il
+ * n'apparaît qu'une fois le `NineSlice` posé dans la hiérarchie réelle de
+ * conteneurs de la tuile, sous ce zoom précis. Plutôt que de pourchasser cette
+ * combinaison exacte dans le moteur, on retire la cause commune à toutes les
+ * pistes qui échouent : le découpage en plusieurs quads AU RENDU. Une texture
+ * DÉJÀ aplatie sur canvas (même geste que `paintPlan`) s'affiche en un seul
+ * quad, comme l'`Image` témoin qui n'a jamais montré de couture.
+ *
+ * Mis en cache par taille entière (`key@wxh`) : une tuile ne change pas de
+ * largeur après sa construction, donc un ruban donné n'est cuit qu'une fois.
+ */
+export function uiSkinFlattenStrip(scene: Phaser.Scene, key: string, w: number, h: number): string {
+  const outW: number = Math.max(1, Math.round(w));
+  const outH: number = Math.max(1, Math.round(h));
+  const outKey: string = `${key}#${outW}x${outH}`;
+  if (scene.textures.exists(outKey)) return outKey;
+  if (!scene.textures.exists(key)) return key;
+
+  const src: HTMLImageElement | HTMLCanvasElement | Phaser.GameObjects.RenderTexture = scene.textures.get(key).getSourceImage();
+  const ins: Insets = uiSkinInsets(key);
+  const fitted: Insets = fitInsets(ins, outW, outH);
+  const tex: Phaser.Textures.CanvasTexture | null = scene.textures.createCanvas(outKey, outW, outH);
+  if (!tex) return key;
+  const ctx: CanvasRenderingContext2D = tex.getContext();
+  ctx.imageSmoothingEnabled = true;
+
+  const L: number = fitted.left;
+  const R: number = fitted.right;
+  const srcW: number = src.width;
+  const midSrcX: number = Math.round((ins.left + (srcW - ins.right)) / 2 - MID / 2);
+  ctx.drawImage(src as CanvasImageSource, 0, 0, ins.left, src.height, 0, 0, L, outH);
+  ctx.drawImage(src as CanvasImageSource, srcW - ins.right, 0, ins.right, src.height, outW - R, 0, R, outH);
+  const midW: number = Math.max(0, outW - L - R);
+  if (midW > 0) ctx.drawImage(src as CanvasImageSource, midSrcX, 0, MID, src.height, L, 0, midW, outH);
+
+  tex.refresh();
+  tex.setFilter(NEAREST);
+  return outKey;
 }
 
 /** Recompose les nine-slice. Idempotent : les composants l'appellent à chaque

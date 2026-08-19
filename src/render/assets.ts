@@ -49,10 +49,23 @@ const MEDIEVAL: Record<string, [file: string, px: number]> = {
   spr_pad: ["pad-slot.svg", 128],
 };
 
+/** Sprites CraftPix (raster, licence CraftPix — cf. ADR-043) : coexistent avec le skin
+ *  SVG maison le temps de la transition, même point de swap unique (ADR-005). */
+const CRAFTPIX: Record<string, string> = {
+  spr_scorpion: "scorpion.png",
+  spr_troll: "troll.png",
+  spr_ghost: "ghost.png",
+  spr_ogre: "ogre.png",
+  spr_dark_knight: "dark-knight.png",
+};
+
 /** À appeler dans le preload() des scènes qui affichent des entités. */
 export function preloadSprites(scene: Phaser.Scene): void {
   scene.load.spritesheet(TEX.td, "assets/kenney-td/sheet.png", { frameWidth: TILE, frameHeight: TILE });
   for (const [key, [file, px]] of Object.entries(MEDIEVAL)) {
     scene.load.svg(key, `assets/skin-medieval/${file}`, { width: px, height: px });
+  }
+  for (const [key, file] of Object.entries(CRAFTPIX)) {
+    scene.load.image(key, `assets/skin-craftpix/${file}`);
   }
 }

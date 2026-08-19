@@ -123,9 +123,9 @@ La **meilleure** note est conservée par chapitre (jamais dégradée), affichée
 - **Portails de Faille** : un chemin marqué `portal` n'apparaît que lorsqu'il sert. Règle : **annoncé pendant la phase building précédente** (« ⚠ Une Faille s'ouvrira à la prochaine vague ! »), actif le temps de la vague, puis disparaît. Supporté sim + rendu ; premier usage prévu dans les chapitres à venir.
 - **Tailles de cartes** : tranché — canevas 960×540 (16:9, ADR-027), sans scroll/zoom ; chaque chapitre a sa propre géométrie de carte (1 à 3 voies).
 
-## Bestiaire (ADR-022)
+## Bestiaire (ADR-022, étendu ADR-043)
 
-Dix créatures. Chacune est conçue pour **neutraliser une tour et en valoriser une
+Quatorze créatures. Chacune est conçue pour **neutraliser une tour et en valoriser une
 autre** — une créature qui n'invalide rien n'ajoute que de la difficulté, jamais de
 décision.
 
@@ -134,9 +134,13 @@ décision.
 | Gobelin / Orc / Brute | volume, encaissement | — | socle |
 | Chauve-souris | le ciel, léger | catapulte | archerie |
 | **Rat de faille** | saturation (14 PV, très serrés) | le mono-cible | catapulte |
+| **Scorpion des sables** | saturation cuirassée (armure 2) | le mono-cible léger | catapulte soutenue |
 | **Spectre** | insensible au ralentissement | tour de givre | puissance brute |
+| **Troll** | encaissement mono-cible lourd | le focus isolé | tours à zone |
 | **Gargouille** | volant *lourd* (115 PV) | catapulte | archerie investie |
+| **Ogre** | cuirassé intermédiaire (armure 6) | tirs légers | gros coups |
 | **Golem de pierre** | cuirassé (armure 11) | tirs rapides et faibles | gros coups, brûlure |
+| **Chevalier noir** | élite rapide et cuirassée (armure 4) | le volume dispersé | dégâts mono-cible investis |
 | **Chef de guerre** | boss terrestre (vagues 5 et 10) | les tours à zone | dégâts mono-cible |
 | **Vouivre** | boss **volant** (chapitre 10) | toute défense au sol | anti-aérien |
 
@@ -146,11 +150,13 @@ décision.
   préférer « Feu grégeois » à « Trébuchet ».
 - `slowImmune` — interdit de bâtir toute sa défense sur le contrôle.
 
-**Progression** : une créature apparaît à chacun des chapitres 2 à 5 (rat, spectre,
-gargouille, golem), les suivants les mélangent. La **3e vague** de chaque chapitre la
-présente seule : une mécanique s'enseigne avant de se combiner, et jamais quand elle
-est encore imparable — placée en 2e vague, le joueur n'avait que deux tours et perdait
-la moitié de son château.
+**Progression** : une créature apparaît à chacun des chapitres 2 à 9 (rat, spectre,
+gargouille, golem, puis scorpion, troll, ogre, chevalier noir), le chapitre 10 les
+mélange toutes. La **3e vague** de chaque chapitre la présente seule : une mécanique
+s'enseigne avant de se combiner, et jamais quand elle est encore imparable — placée en
+2e vague, le joueur n'avait que deux tours et perdait la moitié de son château. Le
+chevalier noir peut aussi se substituer au Chef de guerre comme mini-boss de vague 5 à
+partir du chapitre 9 (variété d'élite plutôt que systématiquement le même boss).
 
 Le Bestiaire **affiche les traits** (`cuirassé 11`, `insensible au froid`) à côté de
 « volant » : sa promesse est « connaître l'ennemi, c'est déjà le vaincre », et taire

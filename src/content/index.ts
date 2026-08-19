@@ -157,16 +157,23 @@ const CH10_MAP: MapDef = {
  * subit pas un nouveau monstre, il doit revoir sa composition.
  */
 const NEWCOMER: Record<number, string> = {
-  2: "rat",       // saturation → dégâts de zone
-  3: "wraith",    // insensible au froid → puissance brute
-  4: "gargoyle",  // volant lourd → anti-aérien investi
-  5: "golem",     // cuirassé → gros coups ou brûlure
+  2: "rat",         // saturation → dégâts de zone
+  3: "wraith",      // insensible au froid → puissance brute
+  4: "gargoyle",    // volant lourd → anti-aérien investi
+  5: "golem",       // cuirassé → gros coups ou brûlure
+  6: "scorpion",    // saturation légèrement cuirassée → dégâts de zone soutenus
+  7: "troll",       // encaissement lourd, mono-cible → tours à zone
+  8: "ogre",        // cuirassé intermédiaire → gros coups
+  9: "dark_knight", // élite rapide et cuirassée → mono-cible investi
 };
 
 /** Effectif de la vague de présentation, par créature : une nuée se découvre en
  *  nombre, un cuirassé à l'unité. Calibré au banc — la première version noyait le
  *  joueur sous neuf gargouilles et faisait tomber le chapitre 4 en une vague. */
-const FRESH_COUNT: Record<string, number> = { rat: 8, wraith: 3, gargoyle: 1.6, golem: 1.2 };
+const FRESH_COUNT: Record<string, number> = {
+  rat: 8, wraith: 3, gargoyle: 1.6, golem: 1.2,
+  scorpion: 6, troll: 2, ogre: 1.3, dark_knight: 1.5,
+};
 
 /** Créatures disponibles à un chapitre donné : le socle plus tout ce qui précède. */
 function rosterFor(num: number): string[] {
@@ -214,7 +221,7 @@ function makeWaves(num: number, pathCount: number): WaveDef[] {
         // Placée en 3e position et non en 2e — mesuré, le joueur n'avait alors que
         // deux tours et perdait la moitié de son château sans avoir eu les moyens
         // de répondre. Une mécanique ne s'enseigne pas quand elle est imparable.
-        if (fresh) spawns.push({ enemyId: fresh, count: Math.max(1, Math.round(FRESH_COUNT[fresh]! * k)), intervalS: fresh === "rat" ? 0.3 : 1.6, delayS: 1 });
+        if (fresh) spawns.push({ enemyId: fresh, count: Math.max(1, Math.round(FRESH_COUNT[fresh]! * k)), intervalS: fresh === "rat" || fresh === "scorpion" ? 0.3 : 1.6, delayS: 1 });
         else {
           spawns.push({ enemyId: "bat", count: Math.round(5 * k), intervalS: 0.65, delayS: 1 },
                       { enemyId: "orc", count: Math.round(3 * k), intervalS: 1.4, delayS: 4 });
@@ -222,12 +229,16 @@ function makeWaves(num: number, pathCount: number): WaveDef[] {
         break;
       case 3:
         // Front lourd : ce qui encaisse devant, ce qui sature derrière.
-        spawns.push(has("golem")
-          ? { enemyId: "golem", count: Math.max(1, Math.round(0.45 * k)), intervalS: 6, delayS: 1 }
-          : { enemyId: "brute", count: Math.max(1, Math.round(k)), intervalS: 3.5, delayS: 1 });
-        spawns.push(has("rat")
-          ? { enemyId: "rat", count: Math.round(6 * k), intervalS: 0.32, delayS: 3 }
-          : { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.5, delayS: 3 });
+        spawns.push(has("ogre")
+          ? { enemyId: "ogre", count: Math.max(1, Math.round(0.5 * k)), intervalS: 5.2, delayS: 1 }
+          : has("golem")
+            ? { enemyId: "golem", count: Math.max(1, Math.round(0.45 * k)), intervalS: 6, delayS: 1 }
+            : { enemyId: "brute", count: Math.max(1, Math.round(k)), intervalS: 3.5, delayS: 1 });
+        spawns.push(has("scorpion")
+          ? { enemyId: "scorpion", count: Math.round(6 * k), intervalS: 0.3, delayS: 3 }
+          : has("rat")
+            ? { enemyId: "rat", count: Math.round(6 * k), intervalS: 0.32, delayS: 3 }
+            : { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.5, delayS: 3 });
         break;
       default:
         // Mélange complet : le ciel s'alourdit, et le contrôle ne suffit plus
@@ -236,6 +247,8 @@ function makeWaves(num: number, pathCount: number): WaveDef[] {
                     { enemyId: "bat", count: Math.round(4 * k), intervalS: 0.7, delayS: 5 });
         if (has("gargoyle")) spawns.push({ enemyId: "gargoyle", count: Math.max(1, Math.round(0.7 * k)), intervalS: 3.5, delayS: 6 });
         if (has("wraith")) spawns.push({ enemyId: "wraith", count: Math.max(1, Math.round(1.4 * k)), intervalS: 1.1, delayS: 3 });
+        if (has("troll")) spawns.push({ enemyId: "troll", count: Math.max(1, Math.round(0.8 * k)), intervalS: 2.6, delayS: 4 });
+        if (has("dark_knight")) spawns.push({ enemyId: "dark_knight", count: Math.max(1, Math.round(0.6 * k)), intervalS: 3.0, delayS: 7 });
     }
     // Distribue les renforts sur les voies secondaires en tourniquet (1..pathCount-1) :
     // un chapitre à 3 voies alterne entre elles au lieu de toujours viser la voie 1.
@@ -248,9 +261,11 @@ function makeWaves(num: number, pathCount: number): WaveDef[] {
     // la Brute renforcée avant. Multiplicateurs volontairement bas (ADR-020) : un
     // boss est une cible ISOLÉE, les tours à zone n'y peuvent rien.
     if (w === 4) {
-      wave.miniBoss = has("golem")
-        ? { enemyId: "warlord", hpMult: 1 + 0.07 * d }
-        : { enemyId: "brute", hpMult: 2 + 0.25 * d };
+      wave.miniBoss = has("dark_knight")
+        ? { enemyId: "dark_knight", hpMult: 1.6 + 0.08 * d }
+        : has("golem")
+          ? { enemyId: "warlord", hpMult: 1 + 0.07 * d }
+          : { enemyId: "brute", hpMult: 2 + 0.25 * d };
     }
     // Boss final. Le ch.10 dresse la Vouivre — un boss VOLANT, qui invalide d'un
     // coup toute défense bâtie sur les catapultes (GDD §Boss final).
@@ -418,6 +433,33 @@ export const CONTENT: ContentPack = {
       lore: "Le froid ne mord pas ce qui est déjà glacé.\nIl traverse la vallée sans jamais ralentir le pas.",
       hp: 58, speed: 88, flying: false, goldReward: 16, damageToCastle: 2, meleeDps: 12,
       slowImmune: true,
+    },
+    // Question : la saturation, en plus dur que le rat. Réponse : dégâts de zone soutenus.
+    scorpion: {
+      id: "scorpion", name: "Scorpion des sables",
+      lore: "Il file bas, sous la portée des premières flèches.\nUn seul dard ne perce rien ; la nuée, si.",
+      hp: 20, speed: 95, flying: false, goldReward: 5, damageToCastle: 1, meleeDps: 5,
+      armor: 2,
+    },
+    // Question : l'encaissement mono-cible. Réponse : les tours à zone plutôt que le focus.
+    troll: {
+      id: "troll", name: "Troll",
+      lore: "Il se relève de tout ce qui ne le tue pas d'un coup.\nUne massue en avant, et derrière lui plus rien ne recule.",
+      hp: 130, speed: 45, flying: false, goldReward: 20, damageToCastle: 2, meleeDps: 18,
+    },
+    // Question : l'armure intermédiaire, entre la brute et le golem. Réponse : les gros coups.
+    ogre: {
+      id: "ogre", name: "Ogre",
+      lore: "Il porte son rocher comme d'autres un bouclier.\nCe qui l'égratigne l'agace ; ce qui le brise, il ne l'a pas vu venir.",
+      hp: 300, speed: 26, flying: false, goldReward: 40, damageToCastle: 5, meleeDps: 24,
+      armor: 6,
+    },
+    // Question : l'élite rapide et cuirassée. Réponse : du mono-cible investi, pas du volume.
+    dark_knight: {
+      id: "dark_knight", name: "Chevalier noir",
+      lore: "Il ne porte plus de couleurs, seulement une lame et un serment rompu.\nCe qui le ralentit ne l'arrête pas.",
+      hp: 200, speed: 55, flying: false, goldReward: 34, damageToCastle: 3, meleeDps: 20,
+      armor: 4,
     },
 
     // ---- Boss. Créatures à part entière et non une brute agrandie : un boss doit

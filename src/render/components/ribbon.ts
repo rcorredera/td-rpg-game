@@ -10,13 +10,11 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { fitInsets } from "../nineSlicePlan";
 import type { Insets } from "../nineSlicePlan";
 import {
-  ensureUiSkinTextures, uiSkinInsets, uiSkinSafeInsets,
+  ensureUiSkinTextures, uiSkinFlattenStrip, uiSkinInsets,
   UI_SKIN_RIBBON, UI_SKIN_RIBBON_BIG, UI_SKIN_RIBBON_OFF, UI_SKIN_RIBBON_RIFT,
 } from "../uiSkin";
-import type { SafeInsets } from "../uiSkin";
 
 /** Rôle du ruban — la couleur suit le sens, pas le goût. */
 export type RibbonTone = "normal" | "rift" | "off";
@@ -49,35 +47,47 @@ export function uiRibbonHeight(scene: Phaser.Scene, key: string = UI_SKIN_RIBBON
   return t.key === "__MISSING" ? 0 : t.getSourceImage().height;
 }
 
-/** Air laissé entre le libellé et le début de l'arrondi de l'embout. */
-const TEXT_AIR: number = 8;
+/** Air laissé entre le libellé et le début de l'arrondi de l'embout. Généreux :
+ *  à 8, le texte touchait quasiment le bord du corps plat sur la tuile
+ *  principale (mesuré : ~2 px de marge réelle une fois `safe` et `k` appliqués). */
+const TEXT_AIR: number = 20;
 
 /**
  * Pose un ruban centré sur `x`,`y`, assez large pour loger `textW`.
  *
- * La largeur se dimensionne sur la marge SÛRE (là où le corps plat commence),
- * pas sur la marge de découpe : celle-ci vaut 61 sur une texture de 130, dont
- * l'essentiel est déjà du corps — la réserver donnerait des rubans deux fois trop
- * larges. `maxW` borne l'étalement, `maxH` l'échelle : un ruban à sa taille
- * native mange toute une tuile secondaire.
+ * La largeur se dimensionne sur les marges de DÉCOUPE (`ins.left`/`ins.right`,
+ * la largeur exacte des embouts dans la texture aplatie) et non sur une marge
+ * « sûre » mesurée par couleur : `ts_ribbon_big` porte un motif tissé avec des
+ * reflets clairs, et un reflet à l'intérieur même de l'embout peut ressembler
+ * à la couleur du corps — le scan de `uiSkinSafeInsets` s'arrêtait alors bien
+ * avant le vrai bord de l'embout, produisant un ruban trop étroit où le texte
+ * débordait sur les ailes (constaté sur la tuile Histoire). Les marges de
+ * découpe, elles, sont GÉOMÉTRIQUEMENT exactes : `uiSkinFlattenStrip` dessine
+ * l'embout sur exactement `ins.left`/`ins.right` px, jamais moins — le corps
+ * étiré (`w - ins.left - ins.right`) est donc garanti d'être au moins aussi
+ * large que `textW` + air, quel que soit le motif de la planche.
+ * `maxW` borne l'étalement, `maxH` l'échelle : un ruban à sa taille native
+ * mange toute une tuile secondaire.
  */
 export function uiRibbon(
   scene: Phaser.Scene, x: number, y: number, textW: number, maxW: number,
   tone: RibbonTone = "normal", maxH = Infinity, big: boolean = false,
-): Phaser.GameObjects.NineSlice | null {
+): Phaser.GameObjects.Image | null {
   if (!uiRibbonAvailable(scene)) return null;
   const key: string = uiRibbonKey(scene, tone, big);
-  const ins: Insets = uiSkinInsets(key);
-  const safe: SafeInsets = uiSkinSafeInsets(key);
   const nativeH: number = uiRibbonHeight(scene, key);
-  // Réduction PROPORTIONNELLE (`setScale`) et non un étirement vertical : les
-  // embouts se déformeraient. Le pack est du pixel art, on ne l'agrandit jamais.
+  // Réduction PROPORTIONNELLE en unités FINALES — le pack est du pixel art, on
+  // ne l'agrandit jamais (k borné à 1).
   const k: number = Math.min(1, maxH / nativeH);
+  const ins: Insets = uiSkinInsets(key);
+  const h: number = nativeH * k;
 
-  const voulu: number = textW / k + safe.left + safe.right + TEXT_AIR * 2;
-  const w: number = Math.min(maxW / k, Math.max(ins.left + ins.right + 4, voulu));
-  const fitted: Insets = fitInsets(ins, w, nativeH);
-  const n: Phaser.GameObjects.NineSlice = scene.add.nineslice(x, y, key, undefined, w, nativeH, fitted.left, fitted.right, 0, 0);
-  if (k < 1) n.setScale(k);
-  return n;
+  const caps: number = (ins.left + ins.right) * k;
+  const voulu: number = caps + textW + TEXT_AIR * k * 2;
+  const w: number = Math.min(maxW, Math.max(caps + 4, voulu));
+  // Aplati sur canvas plutôt que posé en NineSlice : cf. `uiSkinFlattenStrip`,
+  // qui documente la couture observée sous la caméra à zoom fractionnaire de
+  // la vue (ADR-010) et pourquoi un NineSlice n'est plus fiable ici.
+  const flatKey: string = uiSkinFlattenStrip(scene, key, w, h);
+  return scene.add.image(x, y, flatKey);
 }

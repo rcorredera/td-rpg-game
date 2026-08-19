@@ -16,6 +16,7 @@ import { EMBLEM, ICON, preloadIcons } from "./icons";
 import { addBackdrop } from "./backdrop";
 import { preloadSprites } from "./assets";
 import { applyAudioSettings, playMenuMusic, preloadAudio, preloadMusic, stopMenuMusic } from "./audio";
+import { buildLabel } from "./buildInfo";
 import { ACCENT, TEXT } from "./theme";
 import type { Viewport } from "./viewport";
 import { layoutCursor, uiButton, uiChip, uiModal, type LayoutCursor, type UiChip, type UiModal } from "./components";
@@ -68,6 +69,12 @@ export class MenuScene extends Phaser.Scene {
     // à neuf plutôt que de repositionner chaque élément un par un.
     onSceneResize(this, () => this.scene.restart({ profileSvc: this.profileSvc }));
     this.buildMasthead(v);
+    // Étiquette de build (`render/buildInfo.ts`) : discrète, en coin, mais
+    // toujours là — c'est le point de repère pour ne plus se demander si le
+    // navigateur affiche une version en cache après une modif.
+    this.add.text(v.safeLeft + 6, v.safeBottom - 6, buildLabel(), {
+      fontSize: "10px", color: TEXT.dim, fontFamily: FONT_BODY,
+    }).setOrigin(0, 1).setAlpha(0.5).setDepth(999);
     // Posées au centre : `spreadCurrencies()` les écarte ensuite d'après leur
     // largeur réelle. Les créer à des abscisses en dur « puisqu'elles sont
     // recalculées » laisse traîner deux valeurs justes par accident.

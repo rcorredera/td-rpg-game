@@ -119,7 +119,7 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   if (opts.rawIcon) emblem.setScale(box.glyph / Math.max(emblem.width, emblem.height));
   else emblem.setDisplaySize(box.glyph, box.glyph).setTint(opts.iconColor ?? ACCENT.goldSoft);
   container.add(emblem);
-  const ruban: Phaser.GameObjects.NineSlice | null = uiRibbon(
+  const ruban: Phaser.GameObjects.Image | null = uiRibbon(
     scene, 0, box.titleTop + titleBlockH / 2, title.width, w - box.pad * 2,
     ribbonTone, ribbonH, opts.primary,
   );
