@@ -26,10 +26,7 @@ export function frame(col: number, row: number): number {
  *  projet. Rasterisées grand (les unités sont bien plus grosses qu'avant) puis
  *  réduites à l'affichage — jamais l'inverse, qui donnerait du flou. */
 const MEDIEVAL: Record<string, [file: string, px: number]> = {
-  spr_tower_archer: ["tower-archer.svg", 128],
   spr_tower_catapult: ["tower-catapult.svg", 128],
-  spr_tower_frost: ["tower-frost.svg", 128],
-  spr_tower_archer_3: ["tower-archer-3.svg", 128],
   spr_tower_catapult_3: ["tower-catapult-3.svg", 128],
   spr_tower_frost_3: ["tower-frost-3.svg", 128],
   spr_keep: ["keep-bastion.svg", 192],
@@ -58,6 +55,16 @@ const CRAFTPIX: Record<string, string> = {
   spr_wyvern: "wyvern-ai.png",
   // Héros généré par IA (ADR-045) : remplace le SVG maison précédent.
   spr_hero: "hero-ai.png",
+  // Tour d'archerie générée par IA (ADR-047), les deux paliers visuels
+  // (ADR-017) et ses deux spécialisations. Catapulte reste en SVG maison.
+  spr_tower_archer: "tower-archer-ai.png",
+  spr_tower_archer_3: "tower-archer-3-ai.png",
+  // Spécialisation "Arc long" : silhouette dédiée (arbalète à carreau unique),
+  // pas une simple teinte du palier 3 — assez distincte pour le mériter.
+  spr_tower_archer_longbow: "tower-archer-longbow-ai.png",
+  spr_tower_archer_volley: "tower-archer-volley-ai.png",
+  // Tour de givre, palier 1-2 : palier 3 reste en SVG maison pour l'instant.
+  spr_tower_frost: "tower-frost-ai.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */

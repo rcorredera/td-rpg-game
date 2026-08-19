@@ -25,6 +25,10 @@ const RECOIL_MS: number = 160;
 export class BattlefieldEntities {
   private facing = new Map<number, FacingState>();
   private towerRecoil = new Map<number, number>();
+  /** Sommet RÉEL du sprite affiché cette frame (unités monde), par uid. Les
+   *  overlays (barre de PV, couronne) l'utilisent pour se caler au-dessus de
+   *  la tête — cf. `enemyTopY`. */
+  private enemyTop = new Map<number, number>();
 
   /** Recul de la tour au départ du coup : l'animation de tir part de l'arme,
    *  pas seulement du projectile. */
@@ -43,8 +47,11 @@ export class BattlefieldEntities {
     // 1 → 0 sur la durée du recul ; squash vertical + léger enfoncement.
     const k: number = age < RECOIL_MS ? 1 - age / RECOIL_MS : 0;
     const squash: number = 1 - 0.12 * k;
+    // Proportions natives conservées (`fitSquare`, ADR-046) : les tours en SVG
+    // maison sont carrées, mais un socle importé (IA/CraftPix) peut ne pas l'être.
+    const { w: fitW, h: fitH } = fitSquare(s.frame.width, s.frame.height, size);
     s.setOrigin(0.5, 0.86)
-      .setDisplaySize(size * (1 + 0.06 * k), size * squash)
+      .setDisplaySize(fitW * (1 + 0.06 * k), fitH * squash)
       .setPosition(slot.x, slot.y + dy + 4 * k)
       .setDepth(100 + slot.y + (dy < 0 ? 1 : 0));
   }
@@ -166,6 +173,11 @@ export class BattlefieldEntities {
     s.setDepth(100 + e.pos.y); // tri en profondeur par position verticale
     // Boss : reteinté or chaud (le registre n'a pas de sprite dédié).
     if (this.isBoss(e)) s.setTint(0xffd98a);
+    // Sommet RÉEL du sprite CETTE frame — origin.y=0.62 rapporté à la hauteur
+    // affichée, pas à `size` (ADR-047) : les sprites importés sont rognés à
+    // leur silhouette, sans marge constante comme l'ancien SVG maison, donc
+    // leur tête ne tombe plus au même ratio pour tous.
+    this.enemyTop.set(e.uid, s.y - 0.62 * fitH * pose.scaleY);
   }
 
   /** Overlay d'ennemi (gfx) : barre de PV, anneaux de statut, couronne de boss. */
@@ -173,6 +185,12 @@ export class BattlefieldEntities {
     const boss: boolean = this.isBoss(e);
     const r: number = this.enemySize(e) * 0.5;  // rayon visuel du sprite (cale anneaux/barre)
     const x: number = e.pos.x, y: number = e.pos.y - r * 0.4;
+    // Sommet RÉEL du sprite affiché cette frame (`placeEnemy`, ADR-047) — pas
+    // une estimation via `r` : les sprites importés n'ont plus une tête au
+    // même ratio de hauteur pour tous, une barre calée sur `r` tombait
+    // parfois EN PLEINE TÊTE au lieu d'au-dessus. Repli sur `y - r` si l'overlay
+    // se dessine avant le premier placement (ne devrait pas arriver en jeu).
+    const top: number = this.enemyTop.get(e.uid) ?? (y - r);
 
     // Gelé : cristaux de givre qui orbitent lentement + halo froid. Un anneau bleu
     // seul ne se distinguait pas d'un anneau de brûlure (ADR-016).
@@ -202,7 +220,7 @@ export class BattlefieldEntities {
 
     // Couronne de mini-boss
     if (boss) {
-      const cy: number = y - r - 7;
+      const cy: number = top - 7;
       g.fillStyle(0xe8c252);
       g.fillTriangle(x - 8, cy + 4, x - 8, cy - 4, x - 3, cy + 1);
       g.fillTriangle(x - 3, cy + 4, x, cy - 6, x + 3, cy + 4);
@@ -214,7 +232,7 @@ export class BattlefieldEntities {
     const pct: number = e.hp / e.maxHp;
     // Barre proportionnelle au sprite : les unités ayant grandi, une largeur fixe
     // aurait paru minuscule au-dessus d'une brute.
-    const barW: number = r * 1.5, barH: number = boss ? 6 : 5, barY: number = y - r - (boss ? 16 : 11);
+    const barW: number = r * 1.5, barH: number = boss ? 6 : 5, barY: number = top - (boss ? 16 : 11);
     const barColor: number = pct > 0.55 ? STATUS.hpGood : pct > 0.25 ? STATUS.hpWarn : STATUS.hpBad;
     g.fillStyle(C.hpBack, 0.85); g.fillRoundedRect(x - barW / 2, barY, barW, barH, 2);
     if (pct > 0.05) { g.fillStyle(barColor); g.fillRoundedRect(x - barW / 2, barY, barW * pct, barH, 2); }
