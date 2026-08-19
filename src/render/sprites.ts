@@ -46,16 +46,20 @@ export interface TowerView {
 // La taille croît avec la menace : le joueur doit hiérarchiser une vague d'un coup
 // d'œil, avant d'avoir lu la moindre barre de vie.
 const ENEMIES: Record<string, SpriteRef> = {
-  rat:      { key: "spr_rat", size: 38 },
-  goblin:   { key: "spr_goblin", size: 46 },
-  wraith:   { key: "spr_wraith", size: 50 },
-  bat:      { key: "spr_bat", size: 52 },
-  orc:      { key: "spr_orc", size: 54 },
-  gargoyle: { key: "spr_gargoyle", size: 60 },
-  brute:    { key: "spr_brute", size: 62 },
-  golem:    { key: "spr_golem", size: 70 },
-  warlord:  { key: "spr_warlord", size: 72 },
-  wyvern:   { key: "spr_wyvern", size: 78 },
+  rat:         { key: "spr_rat", size: 38 },
+  scorpion:    { key: "spr_scorpion", size: 36 },
+  goblin:      { key: "spr_goblin", size: 46 },
+  wraith:      { key: "spr_ghost", size: 50 }, // sprite CraftPix (ADR-043), remplace foe-wraith.svg
+  bat:         { key: "spr_bat", size: 52 },
+  orc:         { key: "spr_orc", size: 54 },
+  troll:       { key: "spr_troll", size: 56 },
+  dark_knight: { key: "spr_dark_knight", size: 58 },
+  gargoyle:    { key: "spr_gargoyle", size: 60 },
+  brute:       { key: "spr_brute", size: 62 },
+  ogre:        { key: "spr_ogre", size: 66 },
+  golem:       { key: "spr_golem", size: 70 },
+  warlord:     { key: "spr_warlord", size: 72 },
+  wyvern:      { key: "spr_wyvern", size: 78 },
 };
 
 /** Taille par défaut si un skin oublie de la préciser. */
