@@ -29,7 +29,7 @@ export function buildHome(ctx: MenuCtx): void {
     // Sous-titres COURTS : une tuile n'est pas une rangée de liste, la phrase y
     // passe à la ligne et écrase l'icône. On y met l'état, pas la description —
     // le détail appartient à l'écran qu'elle ouvre (ADR-025).
-    { icon: EMBLEM.bastion, raw: true, title: "Histoire", sub: wonCount > 0 ? `${wonCount} / ${total} chapitres conquis` : "Chapitre 1 · La Route du Bastion", view: "story" },
+    { icon: EMBLEM.bastion, raw: true, title: "Histoire", sub: wonCount > 0 ? `${wonCount} / ${total} chapitres conquis` : "Chapitre 1 · La Route du Bastion", view: "story", sfx: "bestiaryOpen" },
     {
       icon: storyDone ? ICON.rift : ICON.locked, title: "Failles infinies",
       sub: storyDone ? "Bientôt" : "Achevez l'Histoire",
@@ -53,7 +53,7 @@ export function buildHome(ctx: MenuCtx): void {
     icon: primary!.icon, rawIcon: primary!.raw, title: primary!.title, sub: primary!.sub,
     primary: true,
     progress: total > 0 ? wonCount / total : 0,
-    onSelect: () => ctx.navigate(primary!.view),
+    onSelect: () => { if (primary!.sfx) playSfx(ctx.scene, primary!.sfx); ctx.navigate(primary!.view); },
   }));
 
   rest.forEach((e, i) => {

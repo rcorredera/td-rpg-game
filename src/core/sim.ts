@@ -496,7 +496,7 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
     for (const target of targets) {
       events.push({ type: "shot", from: { ...slot }, to: { ...target.pos }, towerDefId: def.id, specId: spec?.id ?? null });
       if (splashRadius > 0) {
-        events.push({ type: "explosion", pos: { ...target.pos }, radius: splashRadius });
+        events.push({ type: "explosion", pos: { ...target.pos }, radius: splashRadius, towerDefId: def.id, specId: spec?.id ?? null });
         const center: Vec2 = { ...target.pos };
         for (const e of s.enemies) {
           if (e.alive && !(def.groundOnly && c.enemies[e.defId]!.flying) && dist(e.pos, center) <= splashRadius) {

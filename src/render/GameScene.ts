@@ -21,7 +21,7 @@ import type { ProfileService } from "../meta/profile";
 import { onSceneResize, preloadUi, setupCamera } from "./ui";
 import { preloadIcons } from "./icons";
 import { preloadSprites } from "./assets";
-import { applyAudioSettings, playSfx, preloadAudio, shotSfx } from "./audio";
+import { applyAudioSettings, impactSfx, playSfx, preloadAudio, shotSfx } from "./audio";
 import { enemyView, heroView, towerView } from "./sprites";
 import { projectileFor, type ProjectileStyle } from "./projectiles";
 import { GraphicsLayer, SpriteLayer } from "./EntityLayer";
@@ -134,6 +134,7 @@ export class GameScene extends Phaser.Scene {
           // Onde de portée au lancement : montre la zone d'effet du cri de ralliement
           const sk: RallyLevel = CONTENT.hero.skills.rally.levels[this.run.skillLevels.rally - 1]!;
           this.fxPool.addEffect({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 650, life: 650, kind: "rally" });
+          playSfx(this, "heroRally");
         }
       },
       onWhirlwind: () => {
@@ -141,6 +142,7 @@ export class GameScene extends Phaser.Scene {
         if (castWhirlwind(this.run, CONTENT, evs)) {
           const sk: WhirlwindLevel = CONTENT.hero.skills.whirlwind.levels[this.run.skillLevels.whirlwind - 1]!;
           this.fxPool.addEffect({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 520, life: 520, kind: "whirl" });
+          playSfx(this, "heroWhirlwind");
         }
         this.consumeEvents(evs);
       },
@@ -267,10 +269,18 @@ export class GameScene extends Phaser.Scene {
     for (const e of evs) {
       if (e.type === "explosion") {
         this.fxPool.spawnFlame(e.pos.x, e.pos.y, 0.4 + e.radius / 90);
-        playSfx(this, "impact");
-        // Grosse zone = sort de compte : on ajoute la volée de flèches qui tombe,
-        // au lieu d'une simple déflagration indifférenciée.
-        if (e.radius >= CONTENT.accountSpell.radius * 0.9) {
+        // Trois origines pour une « explosion », trois SFX (ADR-054) :
+        // - une tour à zone (`towerDefId` posé par `sim.ts`) → son impact dédié
+        //   (`impactSfx`, distingue le givre) ;
+        // - le sort de compte (grosse zone, sans tour) → `accountSpell`, ajoute
+        //   aussi la volée de flèches qui tombe au lieu d'une déflagration nue ;
+        // - le tourbillon du héros (radius plus petit, sans tour) → RIEN ici : son
+        //   propre SFX (`heroWhirlwind`) joue déjà au cast, un second son ferait
+        //   doublon (et sonnait, à tort, comme l'impact générique du givre).
+        if (e.towerDefId) {
+          playSfx(this, impactSfx(e.towerDefId));
+        } else if (e.radius >= CONTENT.accountSpell.radius * 0.9) {
+          playSfx(this, "accountSpell");
           this.fxPool.addEffect({ pos: { ...e.pos }, radius: e.radius, until: this.time.now + 620, life: 620, kind: "arrows" });
         }
       }
@@ -304,6 +314,7 @@ export class GameScene extends Phaser.Scene {
 
   private endRun() {
     this.ended = true;
+    playSfx(this, this.run.phase === "victory" ? "victory" : "defeat");
     const result: RunResult = computeResult(this.run, CONTENT);
     this.profileSvc.applyRunResult(result, this.chapterIdx);
     buildEndRunOverlay(this, result, this.ch.waves.length,
