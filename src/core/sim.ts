@@ -395,6 +395,16 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
         if (dist(e.pos, slot) <= spec.aura.radius) {
           e.slowUntil = s.time + 0.15;
           e.slowFactor = spec.aura.slowFactor;
+          // L'armure s'applique au TAUX par seconde, pas par tick (1/60 s) : lui
+          // faire traverser `damageEnemy` telle quelle appliquerait le plancher
+          // d'armure à un dégât minuscule à CHAQUE tick, écrasant l'aura à 25 %
+          // de sa valeur nominale dès la moindre armure. On réduit donc le taux
+          // ICI puis on passe `ignoreArmor` pour ne pas la compter deux fois.
+          if (spec.aura.dps) {
+            const armor: number = eDef.armor ?? 0;
+            const netDps: number = armor > 0 ? Math.max(spec.aura.dps * ARMOR_FLOOR, spec.aura.dps - armor) : spec.aura.dps;
+            damageEnemy(s, c, e, netDps * dt, events, false, true);
+          }
         }
       }
       continue;

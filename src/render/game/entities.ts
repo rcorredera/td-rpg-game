@@ -97,8 +97,29 @@ export class BattlefieldEntities {
       g.fillStyle(0xe8c252);
       g.fillTriangle(x - 5, sy + 2, x + 5, sy + 2, x, sy - 6);
       g.fillTriangle(x - 5, sy - 2, x + 5, sy - 2, x, sy + 6);
-      // Aura de blizzard visible en continu
-      if (spec.aura) { g.lineStyle(1, C.frost, 0.35); g.strokeCircle(x, y, spec.aura.radius); }
+      // Aura de blizzard : un simple cercle fixe se lisait à peine et ne
+      // rendait rien de la tempête continue promise par le nom — deux anneaux
+      // qui respirent + des flocons qui orbitent au bord, même langage que le
+      // statut "gelé" d'un ennemi (plus haut, `drawEnemyOverlay`).
+      if (spec.aura) {
+        const rad: number = spec.aura.radius;
+        const breathe: number = Math.sin(now / 900);
+        g.fillStyle(C.frost, 0.05 + 0.02 * breathe);
+        g.fillCircle(x, y, rad);
+        g.lineStyle(1.5, C.frost, 0.32 + 0.08 * breathe);
+        g.strokeCircle(x, y, rad);
+        g.lineStyle(1, C.frost, 0.18);
+        g.strokeCircle(x, y, rad * (0.9 + 0.03 * breathe));
+        const flakes: number = 8;
+        for (let i: number = 0; i < flakes; i++) {
+          const a: number = now / 2600 + (i / flakes) * Math.PI * 2 + t.slotIndex * 0.7;
+          const fx: number = x + Math.cos(a) * rad;
+          const fy: number = y + Math.sin(a) * rad * 0.55; // aplati, cohérent avec la vue du plateau
+          const tw: number = 2.6 + Math.sin(now / 240 + i * 1.7) * 0.9;
+          g.fillStyle(0xffffff, 0.85);
+          g.fillTriangle(fx, fy - tw, fx - tw * 0.85, fy + tw * 0.65, fx + tw * 0.85, fy + tw * 0.65);
+        }
+      }
     }
 
     // Sélection : portée actuelle (blanc) + portée du niveau suivant (pointillés dorés)

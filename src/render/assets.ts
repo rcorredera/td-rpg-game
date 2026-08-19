@@ -65,6 +65,11 @@ const CRAFTPIX: Record<string, string> = {
   // Tour de givre, les deux paliers. Catapulte reste en SVG maison.
   spr_tower_frost: "tower-frost-ai.png",
   spr_tower_frost_3: "tower-frost-3-ai.png",
+  // Spécialisation "Givre ardent" : silhouette dédiée (tornade glace + feu),
+  // pas une simple teinte du palier 3.
+  spr_tower_frost_frostfire: "tower-frost-frostfire-ai.png",
+  // Spécialisation "Blizzard" : tourbillon de glace.
+  spr_tower_frost_blizzard: "tower-frost-blizzard-ai.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */

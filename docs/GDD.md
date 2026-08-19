@@ -185,7 +185,7 @@ Le joueur place des tours sur des emplacements fixes. Les ennemis suivent un che
 |---|---|---|
 | Archerie | **Volée** — tire sur 3 cibles à la fois | **Œil du faucon** — portée immense, flèches lourdes |
 | Catapulte | **Trébuchet** — plus loin, plus fort, plus large | **Feu grégeois** — la zone brûle 2% PV max/s (3s) |
-| Givre | **Cœur de blizzard** — aura de givre continue, ne tire plus | **Givrefeu** — gèle ET brûle 1.5% PV max/s (4s) |
+| Givre | **Blizzard** — aura de givre continue (rayon 200, ralentit + 3 dégâts plats/s), ne tire plus | **Givre ardent** — gèle ET brûle 2.5% PV max/s (4s) |
 
 La brûlure (% des **PV max**) est le contre aux sacs à PV ; le blizzard est un débuff de zone permanent (synergie avec les tours à dégâts) ; la spécialisation compte dans le remboursement à la revente. Une tour spécialisée porte une étoile dorée. Intention : décisions de build différenciées en fin de run — et les ennemis renforcés des chapitres avancés rendent ces puissances nécessaires.
 

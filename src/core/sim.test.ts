@@ -359,6 +359,35 @@ describe("sim core", () => {
     expect(e.dist).toBeLessThan(4 * 60 * 0.7); // distance nettement réduite
   });
 
+  it("Blizzard avec dps : inflige des dégâts PLATS continus (armure normale), pas en % PV max", () => {
+    const towers: Record<string, TowerDef> = {
+      frost: {
+        id: "frost", name: "G", lore: "", costs: [10],
+        levels: [SNIPER], groundOnly: false, splashRadius: 0, requiresUnlock: null,
+        specs: [{
+          id: "aura", name: "A", desc: "", cost: 10, stats: { range: 0, damage: 0, fireRate: 0 },
+          aura: { radius: 700, slowFactor: 0.5, dps: 10 },
+        }],
+      },
+    };
+    // Armure 5 : un dps plat de 10 doit passer par le plancher d'armure comme
+    // n'importe quel dégât normal (contrairement à la brûlure, qui l'ignore).
+    const c: ContentPack = mkContent({
+      towers, enemies: { walker: { ...WALKER, hp: 1000, armor: 5 } },
+      waves: [{ enemyId: "walker", count: 1 }], slots: [{ x: 300, y: 40 }],
+    });
+    const s: RunState = createRun(c, FULL_PROFILE);
+    s.gold = 1000;
+    parkHero(s);
+    buildTower(s, c, 0, "frost", []);
+    specializeTower(s, c, 0, "aura");
+    startNextWave(s, c);
+    tick(s, c, 1);
+    const e: EnemyState = s.enemies[0]!;
+    // dps plat 10, armure 5 → 5 dégât net/s, floor 25% de 10 = 2.5 → net = 5.
+    expect(e.hp).toBeCloseTo(1000 - 5 * 1, 0);
+  });
+
   it("étoiles : 3 = sans-faute, 2 = imparfait, 1 = héros mort + château très entamé, 0 = défaite", () => {
     const rate = (phase: "victory" | "defeat", castleHp: number, heroDeaths: number) => {
       const s: RunState = createRun(CONTENT, FRESH_PROFILE);

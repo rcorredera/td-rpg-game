@@ -43,8 +43,13 @@ export interface TowerSpecDef {
   multishot?: number;
   /** Brûlure infligée aux cibles touchées : % des PV max par seconde, pendant durationS. */
   burn?: { pctMaxHpPerS: number; durationS: number };
-  /** Aura de givre continue dans le rayon — la tour ne tire plus. */
-  aura?: { radius: number; slowFactor: number };
+  /**
+   * Aura de givre continue dans le rayon — la tour ne tire plus.
+   * `dps` (optionnel) : dégâts PLATS par seconde, armure normale appliquée —
+   * délibérément faible et pas en % des PV max, pour ne pas dupliquer le rôle
+   * de la brûlure (`burn`, qui ignore l'armure) déjà porté par Givre ardent.
+   */
+  aura?: { radius: number; slowFactor: number; dps?: number };
   /** Override de l'AoE de base (undefined = hérite). */
   splashRadius?: number;
   /** Override du slow de base (undefined = hérite, null = retiré). */

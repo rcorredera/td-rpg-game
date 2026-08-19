@@ -369,9 +369,17 @@ export const CONTENT: ContentPack = {
       // Niveau 4 : aura de zone OU givre qui brûle
       specs: [
         {
-          id: "spec_blizzard", name: "Blizzard", desc: "Aura de givre continue, ne tire plus",
+          id: "spec_blizzard", name: "Blizzard", desc: "Aura de givre continue (ralentit + dégâts), ne tire plus",
           cost: 220, stats: { range: 0, damage: 0, fireRate: 0 },
-          aura: { radius: 170, slowFactor: 0.35 }, slow: null,
+          // Rayon relevé (170→200) : à 170 l'aura ne couvrait guère plus que la
+          // portée d'une Archerie de base (130-160) alors que la tour renonce à
+          // TOUT dégât de tir pour ce rôle — le sacrifice n'était pas assez payé.
+          // `dps` plat (armure normale) et non en % PV max : un chip damage
+          // léger, pas une brûlure — ce rôle-là reste à Givre ardent (`burn`).
+          // Les deux bornés par le garde-fou d'ADR-024 : le chapitre 10 doit
+          // rester infranchissable sans la Forge, quelle que soit la stratégie
+          // (vérifié par `autoplay.test.ts`).
+          aura: { radius: 200, slowFactor: 0.35, dps: 3 }, slow: null,
         },
         {
           id: "spec_frostfire", name: "Givre ardent", desc: "Gèle ET brûle 2.5% PV max/s (4s)",

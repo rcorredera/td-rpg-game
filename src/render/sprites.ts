@@ -94,7 +94,10 @@ const TOWERS: Record<string, TowerSkin> = {
   },
   tower_frost: {
     tiers: [{ key: "spr_tower_frost" }, { key: "spr_tower_frost_3" }],
-    specTint: { spec_frostfire: 0xffc9a8 },
+    specSprite: {
+      spec_frostfire: { key: "spr_tower_frost_frostfire" },
+      spec_blizzard: { key: "spr_tower_frost_blizzard" },
+    },
   },
 };
 
