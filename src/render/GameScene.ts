@@ -42,6 +42,7 @@ export class GameScene extends Phaser.Scene {
   private chapterIdx = 0;
   private ch!: PlayableChapter;
   private gfx!: Phaser.GameObjects.Graphics;
+  private groundGfx!: Phaser.GameObjects.Graphics;
   private hud!: Hud;
   private entities!: BattlefieldEntities;
   private fxPool!: FxLayer;
@@ -108,6 +109,10 @@ export class GameScene extends Phaser.Scene {
     this.heroSprite = this.add.sprite(0, 0, heroView().key).setOrigin(0.5, 0.62);
     // Overlay monde (barres de PV, portées, FX, sélection) : au-dessus des entités, sous le HUD.
     this.gfx = this.add.graphics().setDepth(900);
+    // Effets de SOL (lueur des chemins de Faille) : sous les entités (depth ~100+),
+    // sinon le halo du portail passe par-dessus les monstres qui marchent dessus —
+    // un effet de sol doit rester sous ce qui marche dessus, pas flotter au-dessus.
+    this.groundGfx = this.add.graphics().setDepth(90);
     this.entities = new BattlefieldEntities();
     this.fxPool = new FxLayer(this);
     this.hud = new Hud(this);
@@ -304,10 +309,12 @@ export class GameScene extends Phaser.Scene {
   private draw() {
     const g: Phaser.GameObjects.Graphics = this.gfx;
     g.clear();
+    this.groundGfx.clear();
 
     // Le sol + les chemins non-portail sont en tuiles statiques (buildTerrain).
     // Ici, seuls les chemins de Faille (portails) — dynamiques (GDD §Portails).
-    const portalWarn: boolean = drawPortals(g, this.ch, this.run, this.time.now);
+    // Sur `groundGfx` (sous les entités) : c'est un effet de sol, pas un overlay.
+    const portalWarn: boolean = drawPortals(this.groundGfx, this.ch, this.run, this.time.now);
     this.hud.showPortalWarn(portalWarn);
 
     // Château : muraille en tuiles (buildCastle). Ici, seul le flash rouge d'impact + la barre PV.
