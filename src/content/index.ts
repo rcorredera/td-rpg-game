@@ -409,9 +409,11 @@ export const CONTENT: ContentPack = {
     // Une créature qui ne neutralise aucune tour n'ajoute que de la difficulté.
 
     // Question : la saturation. Réponse : les dégâts de zone.
+    // Reskin CraftPix (ADR-044) : diablotin plutôt que rongeur — le nom suit
+    // l'image, pas l'inverse.
     rat: {
-      id: "rat", name: "Rat de faille",
-      lore: "Ils sortent du sol par vagues, gris et innombrables.\nUn seul ne vaut pas une flèche. C'est bien le problème.",
+      id: "rat", name: "Diablotin de faille",
+      lore: "Ils sortent du sol par vagues, violets et innombrables.\nUn seul ne vaut pas une flèche. C'est bien le problème.",
       hp: 14, speed: 100, flying: false, goldReward: 4, damageToCastle: 1, meleeDps: 4,
     },
     // Question : le ciel, mais lourd. Réponse : de l'anti-aérien VRAIMENT investi.
@@ -421,8 +423,10 @@ export const CONTENT: ContentPack = {
       hp: 115, speed: 42, flying: true, goldReward: 26, damageToCastle: 3, meleeDps: 0,
     },
     // Question : l'armure. Réponse : les gros coups, ou le feu qui ronge les PV max.
+    // Reskin CraftPix (ADR-044) : automate d'acier plutôt que pierre — le
+    // trait qui compte (armure 11) ne change pas.
     golem: {
-      id: "golem", name: "Golem de pierre",
+      id: "golem", name: "Golem de fer",
       lore: "Les flèches s'y ébrèchent sans laisser de marque.\nIl faut le briser, ou le laisser brûler de l'intérieur.",
       hp: 330, speed: 24, flying: false, goldReward: 42, damageToCastle: 5, meleeDps: 26,
       armor: 11,

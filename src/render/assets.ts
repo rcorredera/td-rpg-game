@@ -26,17 +26,14 @@ export function frame(col: number, row: number): number {
  *  projet. Rasterisées grand (les unités sont bien plus grosses qu'avant) puis
  *  réduites à l'affichage — jamais l'inverse, qui donnerait du flou. */
 const MEDIEVAL: Record<string, [file: string, px: number]> = {
-  spr_goblin: ["foe-goblin.svg", 128],
-  spr_orc: ["foe-orc.svg", 128],
-  spr_brute: ["foe-brute.svg", 128],
+  // Ennemis volants uniquement : aucune des 20 variantes CraftPix des deux
+  // packs de monstres n'est une unité volante (ADR-043/044) — le reste du
+  // bestiaire terrestre est passé au skin CraftPix, ceux-ci gardent le SVG
+  // maison faute d'alternative cohérente.
   spr_bat: ["foe-bat.svg", 128],
-  spr_rat: ["foe-rat.svg", 128],
   spr_gargoyle: ["foe-gargoyle.svg", 128],
-  spr_golem: ["foe-golem.svg", 128],
-  spr_wraith: ["foe-wraith.svg", 128],
   // Boss rasterisés plus grand : ils s'affichent bien plus gros que la piétaille,
   // et agrandir une texture réduite donnerait du flou (ADR-022).
-  spr_warlord: ["foe-warlord.svg", 192],
   spr_wyvern: ["foe-wyvern.svg", 192],
   spr_hero: ["hero-knight.svg", 128],
   spr_tower_archer: ["tower-archer.svg", 128],
@@ -57,6 +54,12 @@ const CRAFTPIX: Record<string, string> = {
   spr_ghost: "ghost.png",
   spr_ogre: "ogre.png",
   spr_dark_knight: "dark-knight.png",
+  spr_rat: "imp.png",
+  spr_goblin: "goblin-knight.png",
+  spr_orc: "orc-fang.png",
+  spr_brute: "brute-zombie.png",
+  spr_golem: "steel-golem.png",
+  spr_warlord: "warlord.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */
