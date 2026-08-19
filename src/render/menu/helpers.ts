@@ -13,6 +13,7 @@ import {
   decorativeEdgeVisible, uiButton, uiListRow, uiPanel, uiPanelPad, uiScrollList, uiSectionHeader,
   type LayoutCursor, type RowState, type UiButton, type UiListRow, type UiScrollList, type UiSectionHeader,
 } from "../components";
+import { fitSquare } from "../sprites";
 import { CX, TXT } from "./theme";
 import type { MenuCtx } from "./types";
 
@@ -119,7 +120,10 @@ export function lorePage(
 
   if (portrait) {
     const size: number = Math.min(62, h - 14);
-    const img: Phaser.GameObjects.Image = ctx.scene.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key).setDisplaySize(size, size);
+    const img: Phaser.GameObjects.Image = ctx.scene.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key);
+    // Proportions natives conservées (`fitSquare`, ADR-046) — cf. entities.ts.
+    const { w: fitW, h: fitH } = fitSquare(img.width, img.height, size);
+    img.setDisplaySize(fitW, fitH);
     // Créature non découverte : silhouette noire, comme un Pokédex — on voit la
     // forme sans révéler l'unité.
     if (!portrait.known) img.setTint(0x120d09);
