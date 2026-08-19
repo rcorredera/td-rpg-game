@@ -1,0 +1,7 @@
+<!-- Passer en plein écran — quatre équerres pointant vers l'extérieur. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path fill="#fff" d="M6 6h22v7H13v15H6Z"/>
+  <path fill="#fff" d="M58 6H36v7h15v15h7Z"/>
+  <path fill="#fff" d="M6 58h22v-7H13V36H6Z"/>
+  <path fill="#fff" d="M58 58H36v-7h15V36h7Z"/>
+</svg>
