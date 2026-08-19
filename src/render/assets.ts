@@ -70,6 +70,18 @@ const CRAFTPIX: Record<string, string> = {
   spr_tower_frost_frostfire: "tower-frost-frostfire-ai.png",
   // Spécialisation "Blizzard" : tourbillon de glace.
   spr_tower_frost_blizzard: "tower-frost-blizzard-ai.png",
+  // Deuxième acte (ch.11-20, ADR-049) : stock CraftPix non utilisé lors du premier
+  // tri (ADR-043/044) — déjà de vrais PNG avec alpha (pas de détourage nécessaire,
+  // juste un rognage des marges transparentes), contrairement aux sprites IA.
+  spr_bog_sprite: "bog_sprite.png",
+  spr_shade_warder: "shade_warder.png",
+  spr_four_eyed_warden: "four_eyed_warden.png",
+  spr_corrupted_hermit: "corrupted_hermit.png",
+  spr_scarlet_prickler: "scarlet_prickler.png",
+  spr_howling_bones: "howling_bones.png",
+  spr_frontier_raider: "frontier_raider.png",
+  spr_rift_marauder: "rift_marauder.png",
+  spr_veiled_assassin: "veiled_assassin.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */

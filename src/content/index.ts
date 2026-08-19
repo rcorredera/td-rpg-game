@@ -486,6 +486,82 @@ export const CONTENT: ContentPack = {
       lore: "La dernière chose que virent les Portes du Nord.\nAucun mur n'a jamais arrêté ce qui passe au-dessus.",
       hp: 700, speed: 38, flying: true, goldReward: 150, damageToCastle: 10, meleeDps: 0,
     },
+
+    // ---- Deuxième acte (ch.11-20, ADR-049) : stock CraftPix non utilisé lors du
+    // tri initial (ADR-043/044) — 20 variantes examinées au total sur les deux
+    // packs, 11 déjà consommées par le bestiaire actuel (round 1 ET round 2, à
+    // revérifier systématiquement contre LES DEUX ADR, pas seulement le premier —
+    // 3 sprites triés ici l'ont d'abord été SUR des doublons non détectés avant
+    // vérification croisée). 9 variantes réellement disponibles, une par chapitre
+    // 11-19 ; le boss dédié du ch.20 n'a plus de source CraftPix libre et attend
+    // une image générée par le joueur (cf. pipeline hero/tours, ADR-045/047).
+    // Question : la saturation rapide, en fin de campagne. Réponse : dégâts de zone soutenus, encore.
+    bog_sprite: {
+      id: "bog_sprite", name: "Lutin des Tourbières",
+      lore: "Il jaillit de la vase par dizaines, trop menu pour qu'une flèche s'en soucie seule.\nLa tourbière ne se vide jamais vraiment.",
+      hp: 45, speed: 100, flying: false, goldReward: 10, damageToCastle: 1, meleeDps: 6,
+    },
+    // Question : l'encaissement passif (bouclier), sans armure chiffrée. Réponse : la constance des tours à cadence.
+    shade_warder: {
+      id: "shade_warder", name: "Gardien des Ombres",
+      lore: "Son bouclier n'a jamais rendu un coup ; il n'a jamais eu besoin de le faire.\nCe qui frappe dessus s'épuise avant lui.",
+      hp: 170, speed: 45, flying: false, goldReward: 24, damageToCastle: 2, meleeDps: 16,
+      armor: 3,
+    },
+    // Question : l'armure ET la portée de mêlée (frappe avant d'être atteint). Réponse : les gros coups, en avance.
+    four_eyed_warden: {
+      id: "four_eyed_warden", name: "Gardien à Quatre Yeux",
+      lore: "Quatre yeux ne dorment jamais tous à la fois.\nSa lance tient le rang à distance que nulle épée n'atteint.",
+      hp: 260, speed: 40, flying: false, goldReward: 38, damageToCastle: 3, meleeDps: 26,
+      armor: 8,
+    },
+    // Question : l'encaissement pur, au sommet du deuxième acte. Réponse : les tours à zone, encore et toujours.
+    corrupted_hermit: {
+      id: "corrupted_hermit", name: "Ermite Corrompu",
+      lore: "Il a prié dans cette vallée jusqu'à ce que la vallée réponde.\nCe qui reste de lui ne prie plus, mais encaisse toujours.",
+      hp: 340, speed: 22, flying: false, goldReward: 44, damageToCastle: 4, meleeDps: 16,
+      armor: 5,
+    },
+    // Question : la saturation, en plus rapide et plus nombreux que le Lutin. Réponse : dégâts de zone, à jour.
+    scarlet_prickler: {
+      id: "scarlet_prickler", name: "Piqueur Écarlate",
+      lore: "Un seul dard écarlate ne vaut rien. La nuée entière, en une saison.\nOn ne les compte plus, on compte ce qu'ils coûtent.",
+      hp: 55, speed: 105, flying: false, goldReward: 12, damageToCastle: 1, meleeDps: 8,
+    },
+    // Question : l'encaissement lourd ET l'immunité au ralentissement. Réponse : la puissance brute, le givre ne suffit plus.
+    howling_bones: {
+      id: "howling_bones", name: "Ossements Hurlants",
+      lore: "Ce qui reste d'une armée que personne n'a enterrée.\nLe froid n'a plus rien à mordre — il n'y a plus de chair.",
+      hp: 380, speed: 35, flying: false, goldReward: 48, damageToCastle: 4, meleeDps: 24,
+      slowImmune: true,
+    },
+    // Question : le volume mono-cible, en plus rapide qu'un Maraudeur. Réponse : rien de neuf, la cadence suffit.
+    frontier_raider: {
+      id: "frontier_raider", name: "Pillard des Frontières",
+      lore: "Le premier à porter un visage d'homme depuis le Roi-Charogne.\nIl ne sert ni les failles ni les tombes — seulement lui-même.",
+      hp: 220, speed: 60, flying: false, goldReward: 36, damageToCastle: 3, meleeDps: 28,
+    },
+    // Question : le mono-cible à distance de sécurité (l'arme a une portée visuelle
+    // longue), mais mécaniquement une mêlée standard — pas de nouvelle mécanique de
+    // tir à distance ennemi dans cette itération. Réponse : rien de neuf.
+    // Sprite reconverti en armes "fuites des Failles" plutôt qu'arme moderne, pour
+    // rester cohérent avec le lore (ADR-049) sans réintroduire un motif sci-fi
+    // écarté par le tri d'origine (ADR-043/044).
+    rift_marauder: {
+      id: "rift_marauder", name: "Maraudeur des Failles",
+      lore: "L'arme qu'il porte n'a pas été forgée dans ce monde.\nElle est tombée d'une Faille, et lui avec.",
+      hp: 160, speed: 58, flying: false, goldReward: 26, damageToCastle: 2, meleeDps: 24,
+    },
+    // Question : l'élite rapide à haut DPS, faible en PV. Réponse : la focalisation avant qu'il n'atteigne le Bastion.
+    veiled_assassin: {
+      id: "veiled_assassin", name: "Assassin Voilé",
+      lore: "Il ne charge jamais deux fois la même route.\nCe qui le touche une fois le tue ; ce qui le rate une fois ne le revoit pas.",
+      hp: 180, speed: 90, flying: false, goldReward: 50, damageToCastle: 3, meleeDps: 42,
+    },
+
+    // Boss dédié du ch.20 : PAS ENCORE de sprite (les 20 variantes CraftPix sont
+    // toutes consommées, cf. commentaire plus haut) — `the_gravedigger` sera ajouté
+    // dans une PR ultérieure une fois une image dédiée générée par le joueur.
   },
 
   // Mode Histoire (ADR-004) : 10 chapitres déclarés, seul le 1er a du contenu.

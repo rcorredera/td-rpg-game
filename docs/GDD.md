@@ -123,11 +123,12 @@ La **meilleure** note est conservée par chapitre (jamais dégradée), affichée
 - **Portails de Faille** : un chemin marqué `portal` n'apparaît que lorsqu'il sert. Règle : **annoncé pendant la phase building précédente** (« ⚠ Une Faille s'ouvrira à la prochaine vague ! »), actif le temps de la vague, puis disparaît. Supporté sim + rendu ; premier usage prévu dans les chapitres à venir.
 - **Tailles de cartes** : tranché — canevas 960×540 (16:9, ADR-027), sans scroll/zoom ; chaque chapitre a sa propre géométrie de carte (1 à 3 voies).
 
-## Bestiaire (ADR-022, étendu ADR-043/044/045)
+## Bestiaire (ADR-022, étendu ADR-043/044/045/049)
 
-Quatorze créatures. Chacune est conçue pour **neutraliser une tour et en valoriser une
-autre** — une créature qui n'invalide rien n'ajoute que de la difficulté, jamais de
-décision.
+Vingt-trois créatures (premier acte : quatorze, ch.1-10 ; deuxième acte : neuf,
+ch.11-19, plus un boss dédié au ch.20 en attente de sprite — voir ADR-049). Chacune est
+conçue pour **neutraliser une tour et en valoriser une autre** — une créature qui
+n'invalide rien n'ajoute que de la difficulté, jamais de décision.
 
 | Créature | Question posée | Neutralise | Valorise |
 |---|---|---|---|
@@ -141,8 +142,17 @@ décision.
 | **Ogre** | cuirassé intermédiaire (armure 6) | tirs légers | gros coups |
 | **Golem de fer** | cuirassé (armure 11) | tirs rapides et faibles | gros coups, brûlure |
 | **Chevalier noir** | élite rapide et cuirassée (armure 4) | le volume dispersé | dégâts mono-cible investis |
-| **Chef de guerre** | boss terrestre (vagues 5 et 10) | les tours à zone | dégâts mono-cible |
-| **Vouivre** | boss **volant** (chapitre 10) | toute défense au sol | anti-aérien |
+| **Chef de guerre** | boss terrestre intermédiaire (vagues 5 et 10) | les tours à zone | dégâts mono-cible |
+| **Vouivre** | boss **volant** intermédiaire (chapitre 10) | toute défense au sol | anti-aérien |
+| **Lutin des Tourbières** | saturation, fin de campagne (ch.11) | le mono-cible | catapulte |
+| **Gardien des Ombres** | encaissement passif, sans armure chiffrée (ch.12) | tirs isolés | cadence soutenue |
+| **Gardien à Quatre Yeux** | cuirassé et à portée de mêlée (armure 8, ch.13) | tirs légers | gros coups, en avance |
+| **Ermite Corrompu** | encaissement lourd (armure 5, ch.14) | tirs rapides et faibles | tours à zone |
+| **Piqueur Écarlate** | saturation, plus dense que le Lutin (ch.15) | le mono-cible | catapulte |
+| **Ossements Hurlants** | encaissement lourd, insensible au froid (ch.16) | tour de givre | puissance brute |
+| **Pillard des Frontières** | volume mono-cible standard, plus rapide (ch.17) | — | dégâts constants |
+| **Maraudeur des Failles** | mono-cible standard (ch.18) | — | dégâts constants |
+| **Assassin Voilé** | élite rapide à haut DPS, faible en PV (ch.19) | le manque de focus | dégâts mono-cible investis |
 
 **Deux mécaniques** portent ces rôles, toutes deux dans le content :
 - `armor` — réduction plate par coup, avec un plancher à 25 % des dégâts bruts. La
@@ -157,6 +167,12 @@ s'enseigne avant de se combiner, et jamais quand elle est encore imparable — p
 2e vague, le joueur n'avait que deux tours et perdait la moitié de son château. Le
 chevalier noir peut aussi se substituer au Chef de guerre comme mini-boss de vague 5 à
 partir du chapitre 9 (variété d'élite plutôt que systématiquement le même boss).
+
+**Deuxième acte (ADR-049, en cours)** : les neuf créatures de ch.11-19 existent dans le
+bestiaire (`CONTENT.enemies`, sprites détourés) mais n'apparaissent encore dans AUCUNE
+vague — les chapitres 11-20 eux-mêmes (cartes, vagues, équilibrage) ne sont pas encore
+construits. Cette entrée sera mise à jour chapitre par chapitre à mesure qu'ils sont
+livrés ; en attendant, le Bestiaire les liste comme non-découverts (`X/23`).
 
 Le Bestiaire **affiche les traits** (`cuirassé 11`, `insensible au froid`) à côté de
 « volant » : sa promesse est « connaître l'ennemi, c'est déjà le vaincre », et taire

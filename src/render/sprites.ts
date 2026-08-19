@@ -60,6 +60,16 @@ const ENEMIES: Record<string, SpriteRef> = {
   golem:       { key: "spr_golem", size: 70 },
   warlord:     { key: "spr_warlord", size: 72 },
   wyvern:      { key: "spr_wyvern", size: 78 },
+  // Deuxième acte (ch.11-20, ADR-049).
+  bog_sprite:       { key: "spr_bog_sprite", size: 36 },
+  scarlet_prickler: { key: "spr_scarlet_prickler", size: 36 },
+  frontier_raider:  { key: "spr_frontier_raider", size: 50 },
+  rift_marauder:    { key: "spr_rift_marauder", size: 50 },
+  shade_warder:     { key: "spr_shade_warder", size: 52 },
+  veiled_assassin:  { key: "spr_veiled_assassin", size: 54 },
+  four_eyed_warden: { key: "spr_four_eyed_warden", size: 58 },
+  corrupted_hermit: { key: "spr_corrupted_hermit", size: 64 },
+  howling_bones:    { key: "spr_howling_bones", size: 68 },
 };
 
 /** Taille par défaut si un skin oublie de la préciser. */
