@@ -493,12 +493,14 @@ export const CONTENT: ContentPack = {
     // revérifier systématiquement contre LES DEUX ADR, pas seulement le premier —
     // 3 sprites triés ici l'ont d'abord été SUR des doublons non détectés avant
     // vérification croisée). 9 variantes réellement disponibles, une par chapitre
-    // 11-19 ; le boss dédié du ch.20 n'a plus de source CraftPix libre et attend
-    // une image générée par le joueur (cf. pipeline hero/tours, ADR-045/047).
+    // 11-19. Le boss dédié du ch.20 (ci-dessous, tout en bas) et le remplaçant du
+    // ch.11 sont deux images IA générées par le joueur (ADR-050, pipeline
+    // hero/tours ADR-045/047) — même détourage (flood-fill, `-noHoles` : palette à
+    // hautes-lumières pâles, la passe des poches enfermées mangeait les reflets).
     // Question : la saturation rapide, en fin de campagne. Réponse : dégâts de zone soutenus, encore.
     bog_sprite: {
-      id: "bog_sprite", name: "Lutin des Tourbières",
-      lore: "Il jaillit de la vase par dizaines, trop menu pour qu'une flèche s'en soucie seule.\nLa tourbière ne se vide jamais vraiment.",
+      id: "bog_sprite", name: "Gelée Enragée",
+      lore: "Elle n'a plus de forme fixe depuis qu'elle a traversé la Faille.\nCe qui la touche s'y enfonce ; ce qui s'y enfonce n'en ressort pas propre.",
       hp: 45, speed: 100, flying: false, goldReward: 10, damageToCastle: 1, meleeDps: 6,
     },
     // Question : l'encaissement passif (bouclier), sans armure chiffrée. Réponse : la constance des tours à cadence.
@@ -559,9 +561,17 @@ export const CONTENT: ContentPack = {
       hp: 180, speed: 90, flying: false, goldReward: 50, damageToCastle: 3, meleeDps: 42,
     },
 
-    // Boss dédié du ch.20 : PAS ENCORE de sprite (les 20 variantes CraftPix sont
-    // toutes consommées, cf. commentaire plus haut) — `the_gravedigger` sera ajouté
-    // dans une PR ultérieure une fois une image dédiée générée par le joueur.
+    // ---- Boss dédié du ch.20 (ADR-050) — jamais en vague normale, comme Chef de
+    // guerre/Vouivre pour le premier acte. Image générée par le joueur : une
+    // ooze couronnée de cristaux, pas un mort-vivant — nom et lore suivent
+    // l'image plutôt que le nom réservé par erreur ("Le Fossoyeur", pensé pour
+    // un sprite qui n'a finalement jamais existé).
+    the_gravedigger: {
+      id: "the_gravedigger", name: "Le Roi Fangeux",
+      lore: "Ce qui reste du dernier trésor du Bastion a fondu en lui, cristal après cristal.\nIl ne porte pas sa couronne : elle a poussé à travers sa peau.",
+      hp: 950, speed: 28, flying: false, goldReward: 230, damageToCastle: 12, meleeDps: 50,
+      armor: 6,
+    },
   },
 
   // Mode Histoire (ADR-004) : 10 chapitres déclarés, seul le 1er a du contenu.
