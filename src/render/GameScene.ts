@@ -172,8 +172,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Tap sur un slot ?
-    const slotIdx: number = this.ch.map.slots.findIndex(s => Phaser.Math.Distance.Between(x, y, s.x, s.y) < 32);
+    // Tap sur un slot ? Rayon élargi à 38 (cible tactile ~76px de diamètre, à la
+    // limite basse de l'écart mini entre deux dalles sur la carte la plus serrée
+    // — ch.5, ~78px — pour ne jamais faire chevaucher deux zones de détection) :
+    // 32 obligeait à viser trop précisément une tour déjà posée pour l'améliorer,
+    // ce qui faisait déplacer le héros par erreur au lieu d'ouvrir le menu.
+    const slotIdx: number = this.ch.map.slots.findIndex(s => Phaser.Math.Distance.Between(x, y, s.x, s.y) < 38);
     if (slotIdx >= 0) { this.openSlotMenu(slotIdx); return; }
     this.closeMenu();
 

@@ -316,9 +316,13 @@ export class BattlefieldEntities {
       }
     }
 
-    // Barre PV
+    // Barre PV — calée sur le HAUT RÉEL du sprite (origin 0.62, hauteur `fitSquare`
+    // variable selon le ratio natif du héros IA), pas un décalage fixe qui suppose
+    // une hauteur de 58 : sinon la barre plonge dans la tête pour un portrait plus
+    // large que haut (ADR-046/047, même correctif que pour les ennemis).
     const pct: number = h.hp / h.maxHp;
-    const by: number = y - 24;
+    const heroTop: number = y - 0.62 * heroFit.h;
+    const by: number = heroTop - 8;
     g.fillStyle(C.hpBack, 0.85); g.fillRoundedRect(x - 16, by, 32, 5, 2);
     if (pct > 0.04) { g.fillStyle(STATUS.hpGood); g.fillRoundedRect(x - 16, by, 32 * pct, 5, 2); }
   }
