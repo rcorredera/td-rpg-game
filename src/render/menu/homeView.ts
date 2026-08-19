@@ -36,7 +36,7 @@ export function buildHome(ctx: MenuCtx): void {
       view: "rifts", rift: true,
     },
     { icon: EMBLEM.armory, raw: true, title: "Armurerie", sub: "Arsenal · Forge · Héros", view: "shop" },
-    { icon: ICON.bestiary, title: "Bestiaire", sub: `${ctx.profileSvc.get().bestiary.length} / ${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary", sfx: "bestiaryOpen" },
+    { icon: EMBLEM.bestiary, raw: true, title: "Bestiaire", sub: `${ctx.profileSvc.get().bestiary.length} / ${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary", sfx: "bestiaryOpen" },
     { icon: EMBLEM.chronicles, raw: true, title: "Chroniques", sub: "Vos hauts faits", view: "chronicles", sfx: "chroniclesOpen" },
   ];
   // Deux rangs de tuiles, disposés d'après la largeur RÉELLE de l'écran (ADR-025).
