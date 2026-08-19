@@ -82,6 +82,7 @@ const CRAFTPIX: Record<string, string> = {
   spr_frontier_raider: "frontier_raider.png",
   spr_rift_marauder: "rift_marauder.png",
   spr_veiled_assassin: "veiled_assassin.png",
+  spr_the_gravedigger: "the_gravedigger.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */

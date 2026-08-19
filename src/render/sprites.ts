@@ -70,6 +70,7 @@ const ENEMIES: Record<string, SpriteRef> = {
   four_eyed_warden: { key: "spr_four_eyed_warden", size: 58 },
   corrupted_hermit: { key: "spr_corrupted_hermit", size: 64 },
   howling_bones:    { key: "spr_howling_bones", size: 68 },
+  the_gravedigger:  { key: "spr_the_gravedigger", size: 82 },
 };
 
 /** Taille par défaut si un skin oublie de la préciser. */
