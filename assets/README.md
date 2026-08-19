@@ -16,7 +16,7 @@ les tests — c'est voulu.
 | `tiny-swords/` | UI 9-slice, bâtiments, FX, décors — voir plus bas | **Pixel Frog** — pixelfrog-assets.itch.io | **CC0** |
 | `kenney-td/` | `sheet.png` seule (planche 64×64, 23 colonnes) — ne sert plus qu'aux FX | Kenney (kenney.nl) | **CC0** |
 | `kenney-ui/` | 4 images : `btn-grey`, `btn-yellow`, `panel-grey`, `divider` | Kenney (kenney.nl) | **CC0** |
-| `audio/` (SFX) | 8 SFX (tirs, impact, morts, dégât château, clic UI) — voir détail plus bas | Kenney (kenney.nl) + RPG Sound Pack | **CC0** |
+| `audio/` (SFX) | 15 SFX (tirs + variantes spécialisées, impact, morts, dégât château, coup d'épée héros, clic UI, navigation, achat) — voir détail plus bas | Kenney + RPG Sound Pack + 400 Sounds Pack + Free Fantasy SFX Pack (TomMusic) | **CC0/gratuit** |
 | `audio/music-menu.ogg` | Musique de menu, boucle fabriquée par montage (ADR-039) — voir détail plus bas | Nastelbom (déclaré) | non confirmée, non bloquant (ADR-041) |
 | `../fonts/` | Cinzel (titres) + Alegreya (textes) | Natanael Gama / Juan Pablo del Peral | **OFL 1.1** |
 
@@ -50,23 +50,31 @@ exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir b
 - **Terrain/Tileset** — tuiles d'île avec falaise sur eau. Ne correspond pas aux 10 biomes.
 - Variantes de couleur inutilisées, avatars, table en bois, curseurs, sources `.aseprite`.
 
-## `audio/` — détail (ADR-037/038/040/041)
+## `audio/` — détail (ADR-037/038/040/041/042)
 
-8 SFX, deux sources. Kenney pour l'UI/tir d'archerie/tir de catapulte ; **RPG Sound Pack**
-(artisticdude, opengameart.org/content/rpg-sound-pack, **CC0**, 405 favoris) pour les sons de
-magie/mort — Kenney n'a pas de pack combat fantasy dédié, et les sons génériques d'impact
-(ADR-037) se ressemblaient trop entre eux au playtest (ADR-040).
+15 SFX, quatre sources.
 
 | Fichier | Pack source | Fichier d'origine |
 |---|---|---|
-| `sfx-shot-archer.ogg` | Kenney — Interface Sounds | `pluck_001.ogg` |
+| `sfx-shot-archer.ogg` | Free Fantasy SFX Pack (TomMusic, itch.io) | `Bow Attack 1.wav` |
+| `sfx-shot-archer-spec.ogg` | Free Fantasy SFX Pack (TomMusic) | `Bow Attack 2.wav` (Archerie spécialisée, ADR-042) |
 | `sfx-shot-catapult.ogg` | Kenney — Impact Sounds | `impactWood_heavy_000.ogg` (ADR-041 : un swing d'épée ne convenait pas à un engin de siège) |
-| `sfx-shot-frost.ogg` | RPG Sound Pack | `battle/magic1.wav` |
+| `sfx-shot-frost.ogg` | Free Fantasy SFX Pack (TomMusic) | `Ice Throw 1.wav` |
+| `sfx-shot-frost-fire.ogg` | Free Fantasy SFX Pack (TomMusic) | `Fireball 1.wav` (spécialisation « Givre ardent », ADR-042) |
 | `sfx-impact.ogg` | RPG Sound Pack | `battle/spell.wav` |
 | `sfx-enemy-died.ogg` | RPG Sound Pack | `NPC/gutteral beast/mnstr3.wav` |
 | `sfx-castle-hit.ogg` | Kenney — Impact Sounds | `impactBell_heavy_000.ogg` |
 | `sfx-hero-died.ogg` | RPG Sound Pack | `inventory/armor-light.wav` |
-| `sfx-ui-click.ogg` | Kenney — Interface Sounds | `select_001.ogg` |
+| `sfx-hero-attack.ogg` | Free Fantasy SFX Pack (TomMusic) | `Sword Attack 1.wav` (ADR-042) |
+| `sfx-ui-click.ogg` | 400 Sounds Pack (itch.io) | `item_equip.wav` (ADR-042) |
+| `sfx-purchase.ogg` | 400 Sounds Pack (itch.io) | `coins_gather_quick.wav` (ADR-042) |
+| `sfx-bestiary-open.ogg` | 400 Sounds Pack (itch.io) | `map_open.wav` (ADR-042) |
+| `sfx-chronicles-open.ogg` | 400 Sounds Pack (itch.io) | `sword_slice.wav` (ADR-042) |
+
+Kenney (kenney.nl) et RPG Sound Pack (artisticdude, opengameart.org/content/rpg-sound-pack) :
+**CC0**. 400 Sounds Pack et Free Fantasy SFX Pack by TomMusic (tommusic.itch.io) : packs
+gratuits itch.io, licence déclarée par le PO (ADR-041/042) — aucun crédit demandé par leurs
+auteurs.
 
 Les packs sources (chacun bien plus fourni que ce qui est retenu) ne sont pas versionnés en
 entier, même règle que pour `tiny-swords/`.
