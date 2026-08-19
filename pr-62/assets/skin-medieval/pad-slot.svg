@@ -1,0 +1,11 @@
+<!-- Emplacement de tour libre — dalle de pierre pavée. Discrète mais nette :
+     le joueur doit repérer où bâtir sans que ça concurrence les unités. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <g stroke="#241a12" stroke-width="2.4" stroke-linejoin="round">
+    <ellipse cx="32" cy="34" rx="26" ry="20" fill="#8a8577"/>
+    <ellipse cx="32" cy="31" rx="21" ry="15" fill="#a8a294"/>
+  </g>
+  <g stroke="#7d786c" stroke-width="1.8" fill="none" opacity="0.9">
+    <path d="M18 28h28M22 22v18M32 20v22M42 22v18M16 34h32"/>
+  </g>
+</svg>
