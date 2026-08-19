@@ -239,7 +239,10 @@ export class BattlefieldEntities {
     const lunge: number = foe ? wind : 0;
     const tilt: number = foe ? (k < 0.55 ? -0.12 * (k / 0.55) : 0.22 * (1 - (k - 0.55) / 0.45)) : 0;
 
-    heroSprite.setFlipX(face < 0).setDisplaySize(58, 58)
+    // Proportions natives conservées (`fitSquare`, ADR-046) : le héros généré
+    // par IA (ADR-045) n'est pas exactement carré.
+    const heroFit = fitSquare(heroSprite.frame.width, heroSprite.frame.height, 58);
+    heroSprite.setFlipX(face < 0).setDisplaySize(heroFit.w, heroFit.h)
       .setRotation(tilt * face)
       .setPosition(Math.round(x + face * lunge), Math.round(y))
       .setDepth(100 + h.pos.y);

@@ -26,7 +26,6 @@ export function frame(col: number, row: number): number {
  *  projet. Rasterisées grand (les unités sont bien plus grosses qu'avant) puis
  *  réduites à l'affichage — jamais l'inverse, qui donnerait du flou. */
 const MEDIEVAL: Record<string, [file: string, px: number]> = {
-  spr_hero: ["hero-knight.svg", 128],
   spr_tower_archer: ["tower-archer.svg", 128],
   spr_tower_catapult: ["tower-catapult.svg", 128],
   spr_tower_frost: ["tower-frost.svg", 128],
@@ -57,6 +56,8 @@ const CRAFTPIX: Record<string, string> = {
   spr_bat: "bat-ai.png",
   spr_gargoyle: "gargoyle-ai.png",
   spr_wyvern: "wyvern-ai.png",
+  // Héros généré par IA (ADR-045) : remplace le SVG maison précédent.
+  spr_hero: "hero-ai.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */
