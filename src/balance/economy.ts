@@ -15,20 +15,43 @@ import type { UnlockDef } from "../core/types";
 import { playableChapter } from "./datasheet";
 
 /** Gains d'un run, calculés comme `computeResult` — même barème, sans jouer. */
-export function shardsForRun(
-  c: ContentPack,
-  chapterIndex: number,
-  opts: { victory?: boolean; castleHpPct?: number; wavesCleared?: number } = {},
-): number {
+export interface ShardsRunOpts {
+  victory?: boolean;
+  castleHpPct?: number;
+  wavesCleared?: number;
+  /** Étoiles obtenues — elles PAIENT depuis ADR-052. Défaut : déduites de `castleHpPct`. */
+  stars?: number;
+  /** Le héros est-il mort ? Entre dans le calcul des étoiles quand `stars` est absent. */
+  heroDied?: boolean;
+}
+
+/**
+ * Étoiles d'un run, à l'identique de `computeResult` (ADR-052). Dupliqué ici et non
+ * importé de `core/sim` : ce module est un MIROIR du barème, et c'est `economy.test`
+ * qui vérifie que les deux ne divergent pas. Un miroir qui appelle l'original ne peut
+ * plus rien attester.
+ */
+function starsForRun(c: ContentPack, victory: boolean, castleHpPct: number, heroDied: boolean): number {
+  if (!victory) return 0;
+  if (castleHpPct >= c.rating.perfectHpPct && !heroDied) return 3;
+  if (heroDied && 1 - castleHpPct >= c.rating.heavyDamagePct) return 1;
+  return 2;
+}
+
+/** Gains d'un run, calculés comme `computeResult` — même barème, sans jouer. */
+export function shardsForRun(c: ContentPack, chapterIndex: number, opts: ShardsRunOpts = {}): number {
   const ch: PlayableChapter = playableChapter(c, chapterIndex);
   const victory: boolean = opts.victory ?? true;
   const waves: number = opts.wavesCleared ?? ch.waves.length;
+  const hpPct: number = opts.castleHpPct ?? 1;
   const r: RewardRules = c.rewards;
   const base: number = waves * r.shardsPerWave;
-  const hpBonus: number = victory ? Math.round((opts.castleHpPct ?? 1) * r.shardsCastleBonus) : 0;
+  const hpBonus: number = victory ? Math.round(hpPct * r.shardsCastleBonus) : 0;
   const victoryBonus: number = victory ? r.shardsVictoryBonus : 0;
+  const stars: number = opts.stars ?? starsForRun(c, victory, hpPct, opts.heroDied ?? false);
+  const starBonus: number = stars * r.shardsPerStar;
   const mult: number = r.shardsChapterMult?.[chapterIndex] ?? 1;
-  return Math.max(waves > 0 ? r.shardsFloor : 0, Math.round((base + hpBonus + victoryBonus) * mult));
+  return Math.max(waves > 0 ? r.shardsFloor : 0, Math.round((base + hpBonus + victoryBonus + starBonus) * mult));
 }
 
 export function sceauxForRun(c: ContentPack, heroBlockSeconds: number, victory = true, heroDeaths = 0): number {

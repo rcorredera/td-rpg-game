@@ -108,11 +108,15 @@ Chaque victoire de chapitre est notée 1-3 ★ (défaite = 0, chapitre non conqu
 
 | Note | Condition |
 |---|---|
-| ★★★ | Château intact **et** héros jamais mort (sans-faute) |
-| ★★ | Victoire imparfaite (château touché **ou** héros mort) |
-| ★ | Héros mort **et** château très entamé (> 50% des PV perdus — seuil `rating.heavyDamagePct` dans le content) |
+| ★★★ | Au moins **90 %** des PV de château conservés **et** héros jamais mort (seuil `rating.perfectHpPct`) |
+| ★★ | Victoire imparfaite (château entamé au-delà du seuil **ou** héros mort) |
+| ★ | Héros mort **et** château très entamé (> 50% des PV perdus — seuil `rating.heavyDamagePct`) |
 
-La **meilleure** note est conservée par chapitre (jamais dégradée), affichée dans la liste Histoire et sur l'écran de victoire. Intention : la rejouabilité douce — finir la campagne d'abord, la « 3-étoiler » ensuite. Futur robinet possible : bonus d'Éclats au premier 3★ d'un chapitre (à décider).
+Le seuil des 3★ était l'**absence totale de dégât** jusqu'à l'ADR-052. Mesuré au banc : un unique PV perdu sur dix vagues faisait retomber à 2★, ce qui rendait les 3★ *impossibles* aux ch.3, 13 et 19 quel que soit le niveau de forge, et *triviales* aux ch.14 à 18 dès forge 0. Ce n'était pas une difficulté, c'était un tout-ou-rien. À 90 %, les 3★ redeviennent un objectif que la méta rapproche progressivement.
+
+Les étoiles **paient** (ADR-052) : `rewards.shardsPerStar` = 12 Éclats par étoile, multiplicateur de chapitre compris — 3★ au ch.20 valent 187 Éclats, soit deux rangs de forge. C'est le pont explicite entre « maîtriser un chapitre » et « avoir des tours plus fortes », là où l'or de la partie s'en chargeait seul auparavant.
+
+La **meilleure** note est conservée par chapitre (jamais dégradée), affichée dans la liste Histoire et sur l'écran de victoire. Intention : la rejouabilité douce — finir la campagne d'abord, la « 3-étoiler » ensuite.
 
 ## Campagne — plan (ADR-004, étendue ADR-049/050)
 
@@ -230,9 +234,11 @@ Gobelin (rapide/fragile), Orc (standard), Brute (lent/tanky), Chauve-souris (vol
 
 - PV ennemi vague *n* (0-based) : `base × 1.12^n` (était 1.15 — abaissé à la passe d'équilibrage nº1 : l'or est linéaire, l'exponentielle l'écrasait dès la vague 7). Le mode Faille passera sur un exposant plus agressif + modificateurs.
 - **Dégâts au château** : un ennemi qui atteint la base **explose** (fx + flash) et inflige `damageToCastle × (PV_max/PV_base)^0.5` — plus le monstre est renforcé (scaling de vague, mini-boss), plus ça fait mal : un mini-boss ×4 PV tape ×2. Exposant dans le content (`scaling.castleDamageExponent`). La base a une **barre de PV toujours visible** sur la carte (vert → jaune → rouge) + compteur `PV/PVmax` au HUD.
-- Or par kill : valeur fixe par archétype (voir `src/content/index.ts`) — +30% à la passe nº1.
-- Or de départ : 160 (dans le content désormais, plus en dur dans la sim).
-- **Éclats fin de run** : `max(plancher, (vagues×5 + bonusPV + bonusVictoire) × multChapitre)` où bonusPV = `(PV restants / PV max) × 20` si victoire, bonusVictoire = 25, plancher = 3 dès qu'une vague est entamée. Principe : **une défaite paie toujours**, ne jamais punir l'essai. Barème dans le content (`rewards`) depuis ADR-018 — il vivait en dur dans `computeResult`, hors de portée d'ADR-003, ce qui explique qu'il n'ait jamais suivi le reste. `shardsChapterMult` porte la courbe par chapitre : **×1 au ch.1 → ×3,32 au ch.10** (ADR-021). Sans elle, le ch.10 ne rapportait que ×1,11 le ch.1 et farmer la carte la plus facile était strictement optimal.
+- **Or in-run : BUDGÉTÉ, pas émergent** (ADR-052). Chaque chapitre a un budget d'or écrit dans le content (`economy.chapterBudget`), et non plus une somme qui *tombe* du nombre de créatures tuées. Répartition : `economy.killGoldShare` = **25 %** versés à la mort des créatures (le retour « j'ai tué, j'ai été payé » est conservé sur chaque kill), **75 %** versés à la fin de chaque vague nettoyée, au prorata du poids de la vague — les dernières vagues restent les plus lucratives, sans que leur effectif puisse gonfler le total. Les `goldReward` du bestiaire ne sont donc plus des montants mais une **clé de répartition**.
+- **Calibrage des budgets** : `emplacements × 537 × ratio`, où 537 = coût d'une tour rang 3 + spécialisation, et le ratio monte de **0,50 (ch.1) à 0,84 (ch.19)**. Sous 1, l'or seul ne finance **jamais** une défense complète : l'écart se comble à la forge. Les chapitres à boss dédié (10 et 20) reçoivent 1,05 — 12 vagues sur *moins* d'emplacements, le ratio par slot les affamait (mesuré : ch.10 invincible même forge 6).
+- Pourquoi : au per-kill pur, le ch.20 versait **9 001 pièces pour 6 emplacements**, soit 2,8× le plafond de dépense. Passé le ch.12, l'or cessait d'être une contrainte, tout était maxé dès la vague 6 et la forge ne décidait plus rien — les ch.14 à 18 étaient 3★ à forge 0. C'est aussi la condition des **Failles infinies** : avec de l'or par kill, un mode à vagues infiniment croissantes diverge par construction.
+- Or de départ : 160 (dans le content, plus en dur dans la sim).
+- **Éclats fin de run** : `max(plancher, (vagues×5 + bonusPV + bonusVictoire) × multChapitre)` où bonusPV = `(PV restants / PV max) × 20` si victoire, bonusVictoire = 25, plancher = 3 dès qu'une vague est entamée. Principe : **une défaite paie toujours**, ne jamais punir l'essai. Barème dans le content (`rewards`) depuis ADR-018 — il vivait en dur dans `computeResult`, hors de portée d'ADR-003, ce qui explique qu'il n'ait jamais suivi le reste. `shardsChapterMult` porte la courbe par chapitre : **×1 au ch.1 → ×3,32 au ch.10 → ×5,60 au ch.20** (ADR-021, étendue ADR-049/051). Sans elle, le ch.10 ne rapportait que ×1,11 le ch.1 et farmer la carte la plus facile était strictement optimal. Depuis l'ADR-052 la formule inclut `étoiles × shardsPerStar` (voir §Étoiles).
 - **Sceaux ⚜ fin de run** (monnaie du héros) : `floor(secondes de blocage / 9) + 2 si victoire − 1 par mort du héros`, jamais négatif. Le compteur tourne tant que le héros **retient** un ennemi au corps à corps. Indexés sur ses **kills** jusqu'à l'ADR-021, ils payaient le mauvais placement : mesuré au banc, un héros posté à l'entrée tue beaucoup et laisse le château tomber, un héros en dernier rempart tue moins et fait *gagner*. La pénalité de mort évite l'inverse — se jeter dans la horde pour mourir aussitôt. Gain réel mesuré : **2 à 4 Sceaux par run**. Deux monnaies séparées pour équilibrer les robinets indépendamment.
 
 ## Équilibrage — méthode et constats (ADR-018)
@@ -343,7 +349,15 @@ fin : chaque palier franchi durcit le suivant.
 
 **Point de vigilance** : la méta de l'Histoire vient d'être remise sous tension
 (ADR-021). Une troisième monnaie qui améliore les tours doit être réglée *après* la
-campagne, sans quoi elle rendra les chapitres 1-10 triviaux au rejeu.
+campagne, sans quoi elle rendra les chapitres 1-20 triviaux au rejeu.
+
+**L'or in-run est prêt pour ce mode** (ADR-052) : il est désormais *budgété* par
+chapitre et non plus produit par les kills. Un mode à vagues infiniment croissantes
+aurait fait diverger un or par kill par construction — plus de créatures = plus d'or =
+la difficulté ne mord jamais, exactement ce qui était mesuré au ch.20. Il ne restera
+qu'à remplacer la table `economy.chapterBudget` par une **formule de budget par
+vague** ; la répartition 25 % kills / 75 % fin de vague, elle, se transpose telle
+quelle.
 
 ## Hors scope v0 (mémo pour v1+)
 

@@ -300,6 +300,24 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 pondéré par chapitre/étoiles, raretés, doublons recyclés en Sceaux. ⚠ Le random vit côté méta
 (ProfileService), JAMAIS dans la sim (déterminisme ADR-001).
 
+## Économie in-run — refondue (ADR-052)
+L'or d'un chapitre est **budgété** (`economy.chapterBudget`, une entrée par chapitre) et non plus
+produit par les kills : 25 % du budget tombe à la mort des créatures, 75 % à la fin de chaque vague
+nettoyée. Les `goldReward` du bestiaire sont désormais une **clé de répartition**, plus des montants.
+Motif : au per-kill, le ch.20 versait 2,8× ce que ses 6 emplacements pouvaient dépenser, la forge ne
+décidait plus rien passé le ch.12, et un mode à vagues infinies (Failles) aurait divergé par
+construction. Les 3★ passent d'un tout-ou-rien (château intact) à un **seuil** de 90 % des PV
+conservés, et **paient** 12 Éclats par étoile (`rewards.shardsPerStar`). ⚠ Toute nouvelle carte ou
+tout nouveau chapitre doit recevoir son entrée dans `chapterBudget` (calibrage :
+`emplacements × 537 × ratio`, ratio 0,50 → 0,84, et 1,05 pour un chapitre à boss dédié) — sans quoi
+il retombe silencieusement sur `defaultChapterBudget`.
+
+**Reste ouvert après cet audit** (relevé, non traité) : les 9 créatures de l'acte 2 sont toutes
+TERRESTRES, boss final compris — la part de PV volants tombe de 9-21 % (acte 1) à 6-7 %, donc
+l'anti-aérien et l'arbitrage Archerie/Catapulte cessent d'être une décision après le ch.10. Et la
+difficulté de l'acte 2 est en dents de scie (chapitres « nuée » 14/15 nettement plus faciles que les
+chapitres « cuirassé » 13/16, parce que le newcomer du chapitre décide de tout).
+
 ## En attente côté product owner
 - Fichier de contexte **lore** (format : `docs/LORE.md`) → remplacera noms/textes placeholders.
 - Session **bestiaire** (nouveaux monstres + compétences spéciales → extension sim à prévoir).

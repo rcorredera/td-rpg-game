@@ -303,6 +303,31 @@ export class Hud {
     put(this.texts["wave"]);
   }
 
+  /**
+   * « +N » qui s'élève depuis le compteur d'or, à la fin d'une vague nettoyée.
+   *
+   * Depuis l'ADR-052, les trois quarts de l'or d'un chapitre arrivent EN UN BLOC à la
+   * fin de la vague, et non plus au fil des kills. Sans ce retour, le joueur voit son
+   * or bondir sans savoir pourquoi : le gain per-kill se lisait sur les monstres qui
+   * tombaient, celui-ci n'a aucun support visuel propre.
+   *
+   * Texte flottant séparé et non modification du libellé d'or : `updateResources`
+   * réécrit ce libellé à chaque frame, tout texte posé dessus serait effacé aussitôt.
+   */
+  flashIncome(amount: number): void {
+    const anchor: Phaser.GameObjects.Text | undefined = this.texts["gold"];
+    if (!anchor || amount <= 0) return;
+    const t: Phaser.GameObjects.Text = this.scene.add.text(
+      anchor.x + anchor.width / 2, anchor.y, `+${amount}`,
+      { fontSize: `${Math.max(15, scaleFont(14))}px`, color: "#e8c252", fontFamily: FONT_DISPLAY },
+    ).setOrigin(0.5, 1);
+    this.container.add(t);
+    this.scene.tweens.add({
+      targets: t, y: anchor.y - 26, alpha: 0, duration: 1100, ease: "Cubic.easeOut",
+      onComplete: () => t.destroy(),
+    });
+  }
+
   updateResources(r: HudResourceState): void {
     this.texts["gold"]?.setText(`◆ ${r.gold}`).setColor("#e8c252");
     const castlePct: number = r.castleHp / r.castleHpMax;

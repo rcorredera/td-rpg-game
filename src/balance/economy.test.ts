@@ -16,10 +16,15 @@ describe("economy — miroir fidèle du barème de fin de run", () => {
       if (!CONTENT.chapters[i]!.playable) continue;
       const run: AutoplayReport = autoplayChapter(CONTENT, i, { policy: "focus" });
       const ch: PlayableChapter = playableChapter(CONTENT, i);
+      const hpPct: number = run.result.castleHpLeft / ch.map.castleHp;
+      // `heroDied` et non `stars` : la projection doit RETROUVER les étoiles, pas se
+      // les faire souffler. C'est la seule façon que ce miroir couvre aussi le seuil
+      // des 3 étoiles (ADR-052) et pas seulement l'addition finale.
       const projected: number = shardsForRun(CONTENT, i, {
         victory: run.result.victory,
         wavesCleared: run.result.wavesCleared,
-        castleHpPct: run.result.castleHpLeft / ch.map.castleHp,
+        castleHpPct: hpPct,
+        heroDied: run.result.heroDeaths > 0,
       });
       expect(projected, `chapitre ${i + 1}`).toBe(run.result.shards);
     }
