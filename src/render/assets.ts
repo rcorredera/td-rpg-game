@@ -26,15 +26,6 @@ export function frame(col: number, row: number): number {
  *  projet. Rasterisées grand (les unités sont bien plus grosses qu'avant) puis
  *  réduites à l'affichage — jamais l'inverse, qui donnerait du flou. */
 const MEDIEVAL: Record<string, [file: string, px: number]> = {
-  // Ennemis volants uniquement : aucune des 20 variantes CraftPix des deux
-  // packs de monstres n'est une unité volante (ADR-043/044) — le reste du
-  // bestiaire terrestre est passé au skin CraftPix, ceux-ci gardent le SVG
-  // maison faute d'alternative cohérente.
-  spr_bat: ["foe-bat.svg", 128],
-  spr_gargoyle: ["foe-gargoyle.svg", 128],
-  // Boss rasterisés plus grand : ils s'affichent bien plus gros que la piétaille,
-  // et agrandir une texture réduite donnerait du flou (ADR-022).
-  spr_wyvern: ["foe-wyvern.svg", 192],
   spr_hero: ["hero-knight.svg", 128],
   spr_tower_archer: ["tower-archer.svg", 128],
   spr_tower_catapult: ["tower-catapult.svg", 128],
@@ -46,8 +37,8 @@ const MEDIEVAL: Record<string, [file: string, px: number]> = {
   spr_pad: ["pad-slot.svg", 128],
 };
 
-/** Sprites CraftPix (raster, licence CraftPix — cf. ADR-043) : coexistent avec le skin
- *  SVG maison le temps de la transition, même point de swap unique (ADR-005). */
+/** Sprites CraftPix (raster, licence CraftPix — cf. ADR-043/044) : coexistent avec le
+ *  skin SVG maison le temps de la transition, même point de swap unique (ADR-005). */
 const CRAFTPIX: Record<string, string> = {
   spr_scorpion: "scorpion.png",
   spr_troll: "troll.png",
@@ -60,6 +51,12 @@ const CRAFTPIX: Record<string, string> = {
   spr_brute: "brute-zombie.png",
   spr_golem: "steel-golem.png",
   spr_warlord: "warlord.png",
+  // Créatures volantes générées par IA (ADR-045) : aucune des 20 variantes
+  // CraftPix des deux packs de monstres n'en propose — dernier reliquat du
+  // skin SVG maison, remplacé pour coller au reste du bestiaire.
+  spr_bat: "bat-ai.png",
+  spr_gargoyle: "gargoyle-ai.png",
+  spr_wyvern: "wyvern-ai.png",
 };
 
 /** À appeler dans le preload() des scènes qui affichent des entités. */

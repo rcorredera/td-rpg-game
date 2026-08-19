@@ -123,7 +123,7 @@ La **meilleure** note est conservée par chapitre (jamais dégradée), affichée
 - **Portails de Faille** : un chemin marqué `portal` n'apparaît que lorsqu'il sert. Règle : **annoncé pendant la phase building précédente** (« ⚠ Une Faille s'ouvrira à la prochaine vague ! »), actif le temps de la vague, puis disparaît. Supporté sim + rendu ; premier usage prévu dans les chapitres à venir.
 - **Tailles de cartes** : tranché — canevas 960×540 (16:9, ADR-027), sans scroll/zoom ; chaque chapitre a sa propre géométrie de carte (1 à 3 voies).
 
-## Bestiaire (ADR-022, étendu ADR-043/044)
+## Bestiaire (ADR-022, étendu ADR-043/044/045)
 
 Quatorze créatures. Chacune est conçue pour **neutraliser une tour et en valoriser une
 autre** — une créature qui n'invalide rien n'ajoute que de la difficulté, jamais de
