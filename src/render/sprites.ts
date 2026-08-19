@@ -49,7 +49,7 @@ const ENEMIES: Record<string, SpriteRef> = {
   rat:         { key: "spr_rat", size: 38 },
   scorpion:    { key: "spr_scorpion", size: 36 },
   goblin:      { key: "spr_goblin", size: 46 },
-  wraith:      { key: "spr_ghost", size: 50 }, // sprite CraftPix (ADR-043), remplace foe-wraith.svg
+  wraith:      { key: "spr_ghost", size: 50 }, // sprite CraftPix (ADR-043)
   bat:         { key: "spr_bat", size: 52 },
   orc:         { key: "spr_orc", size: 54 },
   troll:       { key: "spr_troll", size: 56 },
