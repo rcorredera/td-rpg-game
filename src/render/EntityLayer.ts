@@ -73,3 +73,50 @@ export class SpriteLayer<T> {
     this.sprites.clear();
   }
 }
+
+/**
+ * Couche d'overlays Graphics, un par entité — pendant de `SpriteLayer` pour du
+ * dessin immediate-mode (barres de PV, halos de statut) qui doit malgré tout
+ * respecter le TRI EN PROFONDEUR individuel de chaque entité.
+ *
+ * Un seul Graphics partagé pour tous les ennemis (l'ancienne approche) impose
+ * une profondeur UNIQUE à tout ce qui y est dessiné : un halo de ralentissement
+ * restait visible par-dessus un monstre placé devant, car rien ne le triait
+ * par rapport aux AUTRES sprites d'ennemis. Ici chaque entité a son propre
+ * Graphics, avec une profondeur qui suit sa position — un halo se fait donc
+ * bien recouvrir par le sprite d'un monstre devant lui.
+ */
+export class GraphicsLayer<T> {
+  private layers = new Map<number, Phaser.GameObjects.Graphics>();
+
+  constructor(private readonly scene: Phaser.Scene) {}
+
+  sync(
+    items: readonly T[],
+    keyOf: (t: T) => number,
+    depthOf: (t: T) => number,
+    draw: (g: Phaser.GameObjects.Graphics, t: T) => void,
+  ): void {
+    const seen: Set<number> = new Set<number>();
+    for (const it of items) {
+      const k: number = keyOf(it);
+      seen.add(k);
+      let g: Phaser.GameObjects.Graphics | undefined = this.layers.get(k);
+      if (!g) { g = this.scene.add.graphics(); this.layers.set(k, g); }
+      g.clear();
+      g.setDepth(depthOf(it));
+      draw(g, it);
+    }
+    for (const [k, g] of this.layers) {
+      if (seen.has(k)) continue;
+      g.destroy();
+      this.layers.delete(k);
+    }
+  }
+
+  /** Détruit tous les Graphics (changement de scène / reset de run). */
+  clear(): void {
+    for (const g of this.layers.values()) g.destroy();
+    this.layers.clear();
+  }
+}

@@ -24,7 +24,7 @@ import { preloadSprites } from "./assets";
 import { applyAudioSettings, playSfx, preloadAudio, shotSfx } from "./audio";
 import { enemyView, heroView, towerView } from "./sprites";
 import { projectileFor, type ProjectileStyle } from "./projectiles";
-import { SpriteLayer } from "./EntityLayer";
+import { GraphicsLayer, SpriteLayer } from "./EntityLayer";
 import { AUTO_WAVE_DELAY_MS } from "./game/constants";
 import { BattlefieldEntities } from "./game/entities";
 import { FxLayer } from "./game/fx";
@@ -42,6 +42,7 @@ export class GameScene extends Phaser.Scene {
   private chapterIdx = 0;
   private ch!: PlayableChapter;
   private gfx!: Phaser.GameObjects.Graphics;
+  private groundGfx!: Phaser.GameObjects.Graphics;
   private hud!: Hud;
   private entities!: BattlefieldEntities;
   private fxPool!: FxLayer;
@@ -63,6 +64,10 @@ export class GameScene extends Phaser.Scene {
   private static readonly HERO_ATTACK_INTERVAL_MS = 450;
   /** Couches de sprites retained-mode (ennemis par uid, tours par slotIndex). */
   private enemyLayer!: SpriteLayer<EnemyState>;
+  /** Overlay PV/statut PAR ENNEMI (pas un seul Graphics partagé) : un halo de
+   *  ralentissement doit se faire recouvrir par le sprite d'un monstre devant
+   *  lui, ce qu'un calque unique à profondeur fixe ne permettait pas. */
+  private enemyOverlayLayer!: GraphicsLayer<EnemyState>;
   private towerBaseLayer!: SpriteLayer<TowerState>;
   private towerEmblemLayer!: SpriteLayer<TowerState>;
   private heroSprite!: Phaser.GameObjects.Sprite;
@@ -103,11 +108,16 @@ export class GameScene extends Phaser.Scene {
     // on se contente de réancrer ce qui dépend des bords (décor étendu, HUD).
     onSceneResize(this, () => this.relayout());
     this.enemyLayer = new SpriteLayer<EnemyState>(this, 100);
+    this.enemyOverlayLayer = new GraphicsLayer<EnemyState>(this);
     this.towerBaseLayer = new SpriteLayer<TowerState>(this, 100);
     this.towerEmblemLayer = new SpriteLayer<TowerState>(this, 100);
     this.heroSprite = this.add.sprite(0, 0, heroView().key).setOrigin(0.5, 0.62);
     // Overlay monde (barres de PV, portées, FX, sélection) : au-dessus des entités, sous le HUD.
     this.gfx = this.add.graphics().setDepth(900);
+    // Effets de SOL (lueur des chemins de Faille) : sous les entités (depth ~100+),
+    // sinon le halo du portail passe par-dessus les monstres qui marchent dessus —
+    // un effet de sol doit rester sous ce qui marche dessus, pas flotter au-dessus.
+    this.groundGfx = this.add.graphics().setDepth(90);
     this.entities = new BattlefieldEntities();
     this.fxPool = new FxLayer(this);
     this.hud = new Hud(this);
@@ -304,10 +314,12 @@ export class GameScene extends Phaser.Scene {
   private draw() {
     const g: Phaser.GameObjects.Graphics = this.gfx;
     g.clear();
+    this.groundGfx.clear();
 
     // Le sol + les chemins non-portail sont en tuiles statiques (buildTerrain).
     // Ici, seuls les chemins de Faille (portails) — dynamiques (GDD §Portails).
-    const portalWarn: boolean = drawPortals(g, this.ch, this.run, this.time.now);
+    // Sur `groundGfx` (sous les entités) : c'est un effet de sol, pas un overlay.
+    const portalWarn: boolean = drawPortals(this.groundGfx, this.ch, this.run, this.time.now);
     this.hud.showPortalWarn(portalWarn);
 
     // Château : muraille en tuiles (buildCastle). Ici, seul le flash rouge d'impact + la barre PV.
@@ -343,7 +355,11 @@ export class GameScene extends Phaser.Scene {
       (s, e) => this.entities.placeEnemy(s, e, this.time.now),
       s => this.fxPool.spawnFlame(s.x, s.y, 0.55),
     );
-    for (const e of aliveEnemies) this.entities.drawEnemyOverlay(g, e, this.run.time, this.time.now);
+    // Profondeur = celle du sprite (100+y) moins un chouïa : l'overlay d'un ennemi
+    // reste juste SOUS son propre corps, et donc aussi sous le sprite de tout
+    // monstre placé devant lui (y plus grand) — un halo ne traverse plus rien.
+    this.enemyOverlayLayer.sync(aliveEnemies, e => e.uid, e => 99.5 + e.pos.y,
+      (og, e) => this.entities.drawEnemyOverlay(og, e, this.run.time, this.time.now));
 
     // Héros
     const foe: EnemyState | undefined = this.run.enemies.find(e => e.alive && e.blocked);
