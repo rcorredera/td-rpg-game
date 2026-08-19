@@ -1,8 +1,0 @@
-<!-- Failles infinies — vortex. Les anneaux sont DÉCALÉS (pas concentriques) :
-     concentriques, ils se lisaient comme une cible ; décalés, ils donnent la
-     perspective d'un tunnel qui s'enfonce. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path fill="#fff" fill-rule="evenodd" d="M32 4a28 28 0 1 0 0 56 28 28 0 0 0 0-56zm0 7a21 21 0 1 1 0 42 21 21 0 0 1 0-42z"/>
-  <path fill="#fff" fill-rule="evenodd" d="M35 16a15.5 15.5 0 1 0 0 31 15.5 15.5 0 0 0 0-31zm0 6.5a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"/>
-  <path fill="#fff" fill-rule="evenodd" d="M38 26a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/>
-</svg>
