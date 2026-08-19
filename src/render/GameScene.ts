@@ -56,6 +56,11 @@ export class GameScene extends Phaser.Scene {
   private confirmQuit: Phaser.GameObjects.Container | null = null;
   /** Dernier impact sur le château (flash rouge). */
   private castleHitAt = -9999;
+  /** Dernier SFX de coup d'épée du héros — le blocage mêlée est un DPS continu
+   *  côté sim (pas un événement par coup, ADR-042), donc le rendu impose lui-même
+   *  une cadence de swing plausible plutôt que de jouer le son à chaque frame. */
+  private heroAttackAt = -9999;
+  private static readonly HERO_ATTACK_INTERVAL_MS = 450;
   /** Couches de sprites retained-mode (ennemis par uid, tours par slotIndex). */
   private enemyLayer!: SpriteLayer<EnemyState>;
   private towerBaseLayer!: SpriteLayer<TowerState>;
@@ -202,6 +207,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.ended && !this.confirmQuit) {
       const evs: SimEvent[] = tick(this.run, CONTENT, dtMs / 1000);
       this.consumeEvents(evs);
+      this.updateHeroAttackSfx();
       if (this.run.phase === "victory" || this.run.phase === "defeat") this.endRun();
       this.updateAutoWave();
       // L'or a changé pendant que le menu de slot est ouvert (kills de la vague) :
@@ -233,6 +239,16 @@ export class GameScene extends Phaser.Scene {
     else if (this.time.now >= this.autoWaveAt) { startNextWave(this.run, CONTENT); this.autoWaveAt = null; }
   }
 
+  /** Le héros bloque un ennemi terrestre : rejoue le son de coup d'épée à
+   *  cadence fixe tant que le combat dure (ADR-042). */
+  private updateHeroAttackSfx() {
+    if (!this.run.hero.alive || !this.run.enemies.some(e => e.alive && e.blocked)) return;
+    const now: number = this.time.now;
+    if (now - this.heroAttackAt < GameScene.HERO_ATTACK_INTERVAL_MS) return;
+    this.heroAttackAt = now;
+    playSfx(this, "heroAttack");
+  }
+
   private consumeEvents(evs: SimEvent[]) {
     for (const e of evs) {
       if (e.type === "explosion") {
@@ -250,7 +266,7 @@ export class GameScene extends Phaser.Scene {
         const style: ProjectileStyle = projectileFor(e.towerDefId);
         const now: number = this.time.now;
         this.fxPool.addShot({ from: e.from, to: e.to, start: now, until: now + style.flightMs, style });
-        playSfx(this, shotSfx(e.towerDefId));
+        playSfx(this, shotSfx(e.towerDefId, e.specId));
         // Recul de la tour au départ du coup : l'animation de tir part de l'arme,
         // pas seulement du projectile.
         const shooter: TowerState | undefined = this.run.towers.find(t => {

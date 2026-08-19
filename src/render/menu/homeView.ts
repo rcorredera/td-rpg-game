@@ -6,6 +6,7 @@
 
 import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
+import { playSfx, type SfxKey } from "../audio";
 import { EMBLEM, ICON } from "../icons";
 import { ACCENT, TEXT } from "../theme";
 import { viewport } from "../viewport";
@@ -22,6 +23,8 @@ export function buildHome(ctx: MenuCtx): void {
     /** Emblème raster du pack — affiché tel quel, sans teinte. */
     raw?: boolean;
     rift?: boolean;
+    /** SFX d'ouverture propre à cette tuile — les autres restent silencieuses (ADR-042). */
+    sfx?: SfxKey;
   }[] = [
     // Sous-titres COURTS : une tuile n'est pas une rangée de liste, la phrase y
     // passe à la ligne et écrase l'icône. On y met l'état, pas la description —
@@ -33,8 +36,8 @@ export function buildHome(ctx: MenuCtx): void {
       view: "rifts", rift: true,
     },
     { icon: EMBLEM.armory, raw: true, title: "Armurerie", sub: "Arsenal · Forge · Héros", view: "shop" },
-    { icon: ICON.bestiary, title: "Bestiaire", sub: `${ctx.profileSvc.get().bestiary.length} / ${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary" },
-    { icon: EMBLEM.chronicles, raw: true, title: "Chroniques", sub: "Vos hauts faits", view: "chronicles" },
+    { icon: ICON.bestiary, title: "Bestiaire", sub: `${ctx.profileSvc.get().bestiary.length} / ${Object.keys(CONTENT.enemies).length} découverts`, view: "bestiary", sfx: "bestiaryOpen" },
+    { icon: EMBLEM.chronicles, raw: true, title: "Chroniques", sub: "Vos hauts faits", view: "chronicles", sfx: "chroniclesOpen" },
   ];
   // Deux rangs de tuiles, disposés d'après la largeur RÉELLE de l'écran (ADR-025).
   // Avant : cinq cartes identiques dans une colonne de 540 unités, quand le paysage
@@ -63,7 +66,7 @@ export function buildHome(ctx: MenuCtx): void {
       iconColor: e.rift ? (storyDone ? 0xb07cc6 : ACCENT.locked) : ACCENT.goldSoft,
       accent: e.rift ? ACCENT.dimBorder : ACCENT.gold,
       locked: e.rift && !storyDone,
-      onSelect: () => ctx.navigate(e.view),
+      onSelect: () => { if (e.sfx) playSfx(ctx.scene, e.sfx); ctx.navigate(e.view); },
     }));
   });
 }

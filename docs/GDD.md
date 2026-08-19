@@ -60,7 +60,7 @@ Règle d'intégration : un seul pack principal (Kenney TD + Kenney UI) plutôt q
 
 **État de l'intégration** : chrome d'UI sur **Kenney UI** (`render/ui.ts`). **Monde sur le pack Kenney Tower Defense top-down** (CC0, vectoriel) via la couche swappable (ADR-005) : terrain en tuiles, ennemis (tanks/avion)/héros/tours/base en sprites retained-mode. **Polish fait** : décor dispersé (buissons/plantes, hors routes via distance-au-segment), pads de tour propres (plateforme à cible) **+ anneau doré pulsé et croix « + » sur les slots vides** (lisibilité « construire ici »), ennemis agrandis, **flammes/explosions sprites** (#296, tweenées) sur tir/mort/impact base, **chemins lissés** (spline Catmull-Rom *visuelle* à travers les waypoints — la sim suit toujours les segments linéaires, ADR-001), **menu de slot au-dessus des entités** (depth 2000). **Reste** : herbe encore un peu plate (texture/teinte de fond), rotation du canon de tourelle vers la cible, fond de menu décoré.
 
-## Audio (ADR-037, réglages ADR-038, musique ADR-039, retouches ADR-040/041)
+## Audio (ADR-037, réglages ADR-038, musique ADR-039, retouches ADR-040/041/042)
 
 **SFX — fait.** 8 sons CC0 Kenney (packs *Interface Sounds* + *Impact Sounds*, sourcing sans
 budget comme prévu ci-dessous) : tirs (un par tour), impact/explosion, mort d'ennemi, dégât
@@ -87,7 +87,17 @@ pack combat fantasy, remplacés par le **RPG Sound Pack** (CC0, OpenGameArt) : w
 (givre), déflagration (impact/sorts du héros), grognement de créature (mort d'ennemi), cliquetis
 d'armure (mort du héros). ADR-041 : tir de catapulte recorrigé — le swing d'arme blanche
 d'ADR-040 ne convenait pas à un engin de siège mécanique, remplacé par un thud bois lourd
-(Kenney). Tir d'archerie et dégât château inchangés depuis ADR-037 (déjà distincts).
+(Kenney). Dégât château inchangé depuis ADR-037 (déjà distinct).
+
+**Navigation + combat spécialisé — fait (ADR-042).** SFX fournis directement par le PO (400
+Sounds Pack + Free Fantasy SFX Pack by TomMusic, itch.io). Clic UI réattribué (`item_equip`) ;
+3 nouveaux sons contextuels : confirmation d'achat en Armurerie, ouverture du Bestiaire,
+ouverture des Chroniques. Côté combat, le tir d'Archerie et de la Tour de givre sonnent
+DIFFÉREMMENT une fois spécialisés (niv.4) — `SimEvent["shot"]` porte désormais `specId`, et
+`shotSfx` choisit la variante (Bow Attack 2 pour Salve/Arc long ; Fireball pour « Givre
+ardent », seule spécialisation givre qui brûle). Le héros a un son de coup d'épée, calé par le
+rendu sur une cadence de swing plausible — le blocage mêlée est un DPS continu côté sim (pas un
+coup par coup), donc aucun événement dédié n'existe ni n'a été ajouté pour ça.
 
 Autoplay policy mobile (l'audio web ne démarre qu'après un premier geste) : non traitée à part,
 le premier tap du joueur (menu, avant tout son) suffit à Phaser pour débloquer l'`AudioContext`.

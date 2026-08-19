@@ -433,7 +433,7 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
     };
 
     for (const target of targets) {
-      events.push({ type: "shot", from: { ...slot }, to: { ...target.pos }, towerDefId: def.id });
+      events.push({ type: "shot", from: { ...slot }, to: { ...target.pos }, towerDefId: def.id, specId: spec?.id ?? null });
       if (splashRadius > 0) {
         events.push({ type: "explosion", pos: { ...target.pos }, radius: splashRadius });
         const center: Vec2 = { ...target.pos };
