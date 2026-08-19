@@ -71,14 +71,22 @@ export const ENEMY_SIZE_FALLBACK: number = 46;
 // niveau 3 et spécialisations. Ajouter un palier = ajouter une entrée ici.
 interface TowerSkin {
   tiers: SpriteRef[];
-  /** Teinte appliquée par spécialisation, pour distinguer deux branches d'un même palier. */
+  /** Teinte appliquée par spécialisation, pour distinguer deux branches d'un même palier
+   *  QUAND elles partagent le même sprite (pas de texture dédiée dessinée pour l'une). */
   specTint?: Record<string, number>;
+  /** Sprite ENTIÈREMENT différent pour une spécialisation donnée — prioritaire sur
+   *  `specTint`. Une branche assez distincte (ex. arbalète à carreau unique vs
+   *  tir groupé) mérite sa propre silhouette plutôt qu'une simple teinte. */
+  specSprite?: Record<string, SpriteRef>;
 }
 
 const TOWERS: Record<string, TowerSkin> = {
   tower_archer: {
     tiers: [{ key: "spr_tower_archer" }, { key: "spr_tower_archer_3" }],
-    specTint: { spec_longbow: 0xd8c9a0 },
+    specSprite: {
+      spec_longbow: { key: "spr_tower_archer_longbow" },
+      spec_volley: { key: "spr_tower_archer_volley" },
+    },
   },
   tower_catapult: {
     tiers: [{ key: "spr_tower_catapult" }, { key: "spr_tower_catapult_3" }],
@@ -116,6 +124,8 @@ export function enemyView(defId: string): SpriteRef {
 export function towerView(defId: string, level = 1, specId?: string | null): TowerView {
   const skin: TowerSkin | undefined = TOWERS[defId];
   if (!skin) throw new Error(`sprites: tour non mappée « ${defId} »`);
+  const specSprite: SpriteRef | undefined = specId ? skin.specSprite?.[specId] : undefined;
+  if (specSprite) return { base: specSprite };
   const tier: number = Math.min(towerTier(level, specId), skin.tiers.length - 1);
   const base: SpriteRef = skin.tiers[tier]!;
   const tint: number | undefined = specId ? skin.specTint?.[specId] : undefined;
