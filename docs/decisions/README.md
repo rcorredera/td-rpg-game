@@ -65,3 +65,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 055 | `render/` découpé en sous-dossiers par couche | [`ADR-055-decoupage-render-en-sous-dossiers.md`](ADR-055-decoupage-render-en-sous-dossiers.md) |
 | 056 | `npm run lint` remis au vert et câblé en CI | [`ADR-056-lint-en-ci.md`](ADR-056-lint-en-ci.md) |
 | 057 | `content/` découpé par nature de donnée | [`ADR-057-decoupage-du-content.md`](ADR-057-decoupage-du-content.md) |
+| 058 | `stepOnce` découpé en phases nommées | [`ADR-058-stepOnce-en-phases-nommees.md`](ADR-058-stepOnce-en-phases-nommees.md) |
