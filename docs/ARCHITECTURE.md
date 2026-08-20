@@ -191,7 +191,8 @@ selon l'événement — pas de branche de config supplémentaire dans `vite.conf
 (`@typescript-eslint/typedef`), au-delà de ce que `tsc --noEmit` vérifie déjà — l'inférence reste
 correcte sans lint, mais le type n'est alors lisible que via l'IDE. Exceptions documentées par un
 commentaire `eslint-disable-next-line` : valeur de fonction, `as const`/`satisfies` (dont
-l'annotation réélargirait le type précis qu'ils gardent). Pas encore câblé en CI.
+l'annotation réélargirait le type précis qu'ils gardent). **Câblé en CI depuis ADR-056**
+(job `build`, avant les tests) : la règle est exécutoire, pas seulement documentée.
 
 ## Commandes
 
@@ -199,7 +200,7 @@ l'annotation réélargirait le type précis qu'ils gardent). Pas encore câblé 
 npm install     # première fois
 npm run dev     # serveur de dev Vite
 npm test        # tests (Vitest) : core, meta, balance, et les cœurs purs de render
-npm run lint    # ESLint (typage explicite, ADR-033) — PAS encore câblé en CI
+npm run lint    # ESLint (typage explicite, ADR-033), câblé en CI (ADR-056)
 npm run build   # typecheck + build prod
 npm run balance # banc d'essai d'équilibrage headless (ADR-018)
 ```

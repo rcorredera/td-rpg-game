@@ -63,3 +63,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 053 | Révisions audio (PO) + centrage du texte sur le grand ruban | [`ADR-053-revisions-audio-et-centrage-ruban.md`](ADR-053-revisions-audio-et-centrage-ruban.md) |
 | 054 | Impact dédié à la tour de givre (`explosion` porte sa tour) | [`ADR-054-impact-dedie-tour-de-givre.md`](ADR-054-impact-dedie-tour-de-givre.md) |
 | 055 | `render/` découpé en sous-dossiers par couche | [`ADR-055-decoupage-render-en-sous-dossiers.md`](ADR-055-decoupage-render-en-sous-dossiers.md) |
+| 056 | `npm run lint` remis au vert et câblé en CI | [`ADR-056-lint-en-ci.md`](ADR-056-lint-en-ci.md) |

@@ -11,6 +11,7 @@ import type { EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerS
 import { flyPose, idlePose, walkPose } from "../assets/animation";
 import type { UnitPose } from "../assets/animation";
 import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare } from "../assets/sprites";
+import type { SpriteFit } from "../assets/sprites";
 import { HERO_C, SIGNAL } from "../theme/palette";
 import { STATUS } from "../theme/theme";
 import { C } from "./constants";
@@ -280,7 +281,7 @@ export class BattlefieldEntities {
 
     // Proportions natives conservées (`fitSquare`, ADR-046) : le héros généré
     // par IA (ADR-045) n'est pas exactement carré.
-    const heroFit = fitSquare(heroSprite.frame.width, heroSprite.frame.height, 58);
+    const heroFit: SpriteFit = fitSquare(heroSprite.frame.width, heroSprite.frame.height, 58);
     heroSprite.setFlipX(face < 0).setDisplaySize(heroFit.w, heroFit.h)
       .setRotation(tilt * face)
       .setPosition(Math.round(x + face * lunge), Math.round(y))

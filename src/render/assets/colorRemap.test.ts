@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { cropBuffer, opaqueBBox, opaqueLumaRange, remapBufferByLuma, remapByLuma } from "./colorRemap";
-import type { PixelBox } from "./colorRemap";
+import type { PixelBox, Rgb } from "./colorRemap";
 import type { PixelBuffer, Rgba } from "../skin/nineSliceFlatten";
 
-const DARK = [40, 30, 10] as const;
-const LIGHT = [250, 240, 200] as const;
+const DARK: Rgb = [40, 30, 10];
+const LIGHT: Rgb = [250, 240, 200];
 
 function px(r: number, g: number, b: number, a: number = 255): Rgba {
   return { r, g, b, a };
@@ -30,7 +30,7 @@ function buffer2d(rows: readonly (readonly Rgba[])[]): PixelBuffer {
   return { w, h, data };
 }
 
-const T = px(0, 0, 0, 0);
+const T: Rgba = px(0, 0, 0, 0);
 
 describe("colorRemap", () => {
   it("ignore les pixels transparents pour les bornes de luminance", () => {
@@ -46,7 +46,7 @@ describe("colorRemap", () => {
   });
 
   it("projette la borne basse sur `dark` et la borne haute sur `light`", () => {
-    const range = [50, 150] as const;
+    const range: readonly [number, number] = [50, 150];
     expect(remapByLuma(px(50, 50, 50), range, DARK, LIGHT)).toEqual(px(...DARK));
     expect(remapByLuma(px(150, 150, 150), range, DARK, LIGHT)).toEqual(px(...LIGHT));
   });
