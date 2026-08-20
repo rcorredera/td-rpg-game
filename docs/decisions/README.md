@@ -70,3 +70,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 060 | Plafond du pool de mélange des vagues (`default`) | [`ADR-060-plafond-du-melange-de-vague.md`](ADR-060-plafond-du-melange-de-vague.md) |
 | 061 | Refonte graphique : nommage par `defId` et chaîne de nettoyage des sprites | [`ADR-061-refonte-graphique-et-nommage-par-defid.md`](ADR-061-refonte-graphique-et-nommage-par-defid.md) |
 | 062 | Décor semé sur le champ de bataille, reteint par biome | [`ADR-062-decor-seme-par-biome.md`](ADR-062-decor-seme-par-biome.md) |
+| 063 | Détourage automatique, et la frange se juge par contraste | [`ADR-063-detourage-automatique-et-regle-de-frange.md`](ADR-063-detourage-automatique-et-regle-de-frange.md) |

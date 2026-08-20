@@ -51,6 +51,21 @@ function readU32(buf: Uint8Array, at: number): number {
 }
 
 export function decode(buf: Uint8Array): Rgba {
+  // Le JPEG est le cas d'erreur ATTENDU : c'est ce que livre Gemini, et décoder
+  // du JPEG demanderait une bibliothèque entière pour un outil qui tourne à la
+  // main. Le message dit donc quoi faire, plutôt que de constater l'échec.
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    // Les chemins d'exemple sont écrits SANS extension : `assets.integrity.test.ts`
+    // balaie tout `src/**/*.ts` à la recherche de noms d'assets et prendrait un
+    // nom d'exemple pour une texture manquante (déjà vu deux fois).
+    throw new Error(
+      "artprep: fichier JPEG. Convertis-le d'abord en PNG — sans détourer, le fond blanc "
+      + "est retiré par l'outil. Sous PowerShell :\n"
+      + "  Add-Type -AssemblyName System.Drawing\n"
+      + "  ([System.Drawing.Image]::FromFile($src)).Save($dst, "
+      + "[System.Drawing.Imaging.ImageFormat]::Png)",
+    );
+  }
   for (let i: number = 0; i < SIGNATURE.length; i++) {
     if (buf[i] !== SIGNATURE[i]) throw new Error("artprep: ce fichier n'est pas un PNG");
   }

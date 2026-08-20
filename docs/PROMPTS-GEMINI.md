@@ -41,7 +41,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : gobelin à la peau vert-de-gris, air hargneux, silhouette trapue. Armure de bric-à-brac faite de plaques dépareillées, casque de fer cabossé trop grand pour lui enfoncé jusqu'aux oreilles. Courte épée rouillée tenue basse le long du corps, petit bouclier rond de planches clouées à l'autre bras.
 ```
 
-## `orc.png` — Orc (taille 54)
+## `orc.png` — Orc (taille 54) ✅ FAIT, livré et intégré
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -55,7 +55,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : orc guerrier massif à la peau vert olive, mâchoire lourde aux défenses inférieures proéminentes, petits yeux enfoncés. Épaules très larges, cou épais. Plastron de cuir clouté sur torse nu, brassards de fer. Hache de guerre large à une main tenue basse.
 ```
 
-## `brute.png` — Brute (taille 62)
+## `brute.png` — Brute (taille 62) ✅ FAIT, livré et intégré
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -69,7 +69,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : mort-vivant colossal et boursouflé, chair grisâtre verdâtre marquée de grosses sutures, mâchoire pendante, yeux laiteux. Un bras nettement hypertrophié et pendant, l'autre atrophié. Chaînes brisées aux poignets, lambeaux de tissu sale à la taille. Démarche lourde et déséquilibrée.
 ```
 
-## `troll.png` — Troll (taille 56)
+## `troll.png` — Troll (taille 56) ✅ FAIT, livré et intégré
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -83,7 +83,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : troll gris-bleu voûté, peau rugueuse et verruqueuse, long nez crochu, oreilles tombantes, quelques touffes de cheveux filasse. Bras démesurés descendant presque au sol. Gourdin de bois brut traîné d'une main. Dos courbé, épaules remontées.
 ```
 
-## `ogre.png` — Ogre (taille 66)
+## `ogre.png` — Ogre (taille 66) ✅ FAIT, livré et intégré
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -97,7 +97,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : ogre énorme et bedonnant à la peau brun-rose, ventre proéminent, une seule grosse dent supérieure dépassant de la lèvre, petits yeux stupides. Corps très large, tête petite par rapport au tronc — exception à la règle de grosse tête. Pagne de peaux de bêtes, massue cloutée posée sur l'épaule.
 ```
 
-## `dark_knight.png` — Chevalier noir (taille 58)
+## `dark_knight.png` — Chevalier noir (taille 58) ✅ FAIT, livré et intégré
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -111,7 +111,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : chevalier en armure de plates noire mate, heaume clos dont la visière étroite laisse filtrer une lueur rouge, aucune peau visible. Cape sombre déchirée en bas. Épée longue tenue pointe vers le bas le long de la jambe. Élégant, martial et menaçant — surtout pas monstrueux ni difforme.
 ```
 
-## `golem.png` — Golem de fer (taille 70)
+## `golem.png` — Golem de fer (taille 70) ✅ FAIT, livré et intégré
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -125,7 +125,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : golem construit de lourdes plaques de fer rivetées, articulations mécaniques apparentes aux épaules et aux genoux, rouille sur les arêtes. Tête cubique sans visage, traversée d'une unique fente lumineuse bleu froid. Poings surdimensionnés. Démarche pesante et rigide.
 ```
 
-## `warlord.png` — Chef de guerre (taille 72)
+## `warlord.png` — Chef de guerre (taille 72) ✅ FAIT, livré et intégré
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.

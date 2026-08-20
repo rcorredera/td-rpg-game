@@ -358,12 +358,24 @@ Le PO régénère tous les sprites du monde avec Gemini, **un par un**. Deux doc
 `docs/PROMPTS-GEMINI.md` (un prompt complet et autonome par entité, à copier-coller) et
 `docs/REFONTE-GRAPHIQUE-GEMINI.md` (règles, table de renommage, ce qu'il ne faut PAS régénérer).
 
-Boucle par sprite : le PO génère, détoure sous Photoshop, dépose le PNG ; on passe
-`npm run sprite -- <source> <destination>` (`src/artprep/`, ADR-061) qui décape la frange de
-détourage, rogne, adoucit le bord et réduit à 256 px ; on renomme en `<defId>.png` et on recâble
-`assets.ts`. Le nom de fichier se dérive désormais de l'entité, plus du pack d'origine.
+Boucle par sprite : le PO génère et **dépose les JPEG bruts, sans rien détourer** ; on
+convertit en PNG et on passe `npm run sprite -- <source> <destination>` (`src/artprep/`), qui
+**retire le fond lui-même** (ADR-063), décape la frange, rogne, adoucit le bord et réduit à
+256 px ; on renomme en `<defId>.png` et on recâble `assets.ts`. Photoshop est sorti du circuit :
+sa sélection dure supprimait l'anticrénelage et rendait la frange OPAQUE, pire que le brut.
 
-**Faits : `diablotin` (ex-`imp.png`, defId `rat` renommé + migration de sauvegarde) et `scorpion`.** Restent 22 ennemis, le héros et 8 sprites de tours.
+Le nom de fichier se dérive de l'entité, plus du pack d'origine.
+
+**Faits (9/24) : `diablotin` (ex-`imp`, defId `rat` renommé + migration de sauvegarde),
+`scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord`.**
+Restent 15 ennemis (`goblin`, `wraith`, les 3 volants, les 10 de l'acte II), le héros et
+8 sprites de tours.
+
+⚠ Deux pièges du nettoyage, tous deux payés une fois (ADR-063) : le détourage se fait par
+REMPLISSAGE DEPUIS LES BORDS (sinon il mange les reflets et les yeux enfermés dans le dessin,
+déjà constaté en ADR-050), et la frange se juge par CONTRASTE avec ce qu'il y a derrière, pas
+par clarté absolue (sinon les créatures pâles — troll, chef de guerre — se font ronger la
+silhouette couche après couche, sans que l'érosion s'épuise jamais).
 
 Deux points volontairement remis à la FIN de la série :
 - **Les `size` de `sprites.ts` ne sont pas retouchés.** Le cadrage portrait et la pose de marche

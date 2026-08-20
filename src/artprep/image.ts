@@ -26,8 +26,15 @@ export interface Rgba {
  */
 export const FRINGE_LUMA: number = 110;
 
-/** Garde-fou : au-delà, on préfère signaler que continuer à ronger le sprite. */
-export const MAX_FRINGE_PASSES: number = 8;
+/**
+ * Garde-fou : au-delà, on préfère signaler que continuer.
+ *
+ * Ce n'est plus le compteur qui borne l'érosion mais `isFringe`, qui s'arrête au
+ * dessin. Mesuré sur les sprites livrés, le décapage converge en 7 à 14 passes,
+ * la première en retirant 95 % et les suivantes tombant à 1-2 px. Un plafond bas
+ * ne protégeait de rien — il tronquait juste la fin de la frange.
+ */
+export const MAX_FRINGE_PASSES: number = 24;
 
 /** En dessous, une composante détachée est une miette de sélection, pas un membre. */
 export const MIN_FRAGMENT_PX: number = 64;
@@ -47,6 +54,116 @@ export function isBorder(img: Rgba, x: number, y: number): boolean {
     || (x === w - 1 || data[(p + 1) * 4 + 3] === 0)
     || (y === 0 || data[(p - w) * 4 + 3] === 0)
     || (y === h - 1 || data[(p + w) * 4 + 3] === 0);
+}
+
+/** Écart de luminance minimal avec le dessin situé DERRIÈRE, pour qu'un pixel de
+ *  bord soit tenu pour de la frange et non pour un trait clair du dessin. */
+export const FRINGE_CONTRAST: number = 6;
+
+/** Décalages des quatre voisins, et le pas vers l'intérieur qui leur fait face. */
+const NEIGHBOURS: readonly (readonly [number, number])[] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+/**
+ * Ce pixel de bord est-il de la FRANGE, ou du dessin ?
+ *
+ * Être clair ne suffit pas. Une créature à la peau pâle ou à la lame claire a
+ * des pixels clairs sur sa propre silhouette ; les décaper parce qu'ils sont
+ * clairs ronge le dessin, couche après couche, sans jamais s'épuiser — mesuré
+ * sur le troll et le chef de guerre, qui perdaient 400 à 650 px À CHAQUE PASSE
+ * quand les autres sprites tombaient à zéro dès la deuxième.
+ *
+ * La frange est un DÉGRADÉ VERS LE FOND : elle est donc toujours plus claire que
+ * ce qu'elle borde. On compare le pixel à ce qui se trouve juste DERRIÈRE lui,
+ * du côté opposé au vide. Plus clair que tout ce qui est derrière → frange.
+ * Aussi sombre ou plus → c'est le dessin, et l'érosion s'arrête là.
+ */
+export function isFringe(img: Rgba, x: number, y: number): boolean {
+  const { width: w, height: h, data } = img;
+  const p: number = y * w + x;
+  const i: number = p * 4;
+  const here: number = luma(data, i);
+  if (here <= FRINGE_LUMA) return false;
+
+  // Un pixel à la couleur du FOND est un résidu, quoi qu'il y ait derrière. Sans
+  // ce cas, un halo blanc UNIFORME resterait : chacune de ses couches ressemble
+  // à la suivante, donc aucune n'est « plus claire que ce qu'elle borde ». C'est
+  // ce que produit une sélection dure sous Photoshop. `floodBackground` l'ôte
+  // déjà en amont, mais `stripFringe` doit rester correcte seule.
+  if (data[i]! >= BACKGROUND_MIN && data[i + 1]! >= BACKGROUND_MIN && data[i + 2]! >= BACKGROUND_MIN) {
+    return true;
+  }
+
+  let behind: number = -1;
+  for (const [dx, dy] of NEIGHBOURS) {
+    const nx: number = x + dx;
+    const ny: number = y + dy;
+    const outside: boolean = nx < 0 || ny < 0 || nx >= w || ny >= h;
+    if (!outside && data[(ny * w + nx) * 4 + 3] !== 0) continue; // ce voisin n'est pas le vide
+    const bx: number = x - dx;
+    const by: number = y - dy;
+    if (bx < 0 || by < 0 || bx >= w || by >= h) continue;
+    const q: number = by * w + bx;
+    if (data[q * 4 + 3] === 0) continue;
+    const l: number = luma(data, q * 4);
+    if (l > behind) behind = l;
+  }
+  // Aucun pixel derrière : éclat isolé d'un ou deux pixels, jamais du dessin.
+  if (behind < 0) return true;
+  return here > behind + FRINGE_CONTRAST;
+}
+
+/**
+ * Au-dessus, un pixel est tenu pour du FOND (le blanc sur lequel Gemini livre).
+ * Volontairement haut : la compression JPEG dégrade le blanc au contact du
+ * contour noir, et descendre le seuil ferait mordre le remplissage dans le
+ * dessin. Ce qui reste de ce dégradé est ôté ensuite par `stripFringe`, dont
+ * c'est exactement le rôle — les deux étapes se complètent.
+ */
+export const BACKGROUND_MIN: number = 236;
+
+/**
+ * Retire le fond par REMPLISSAGE depuis les bords de l'image. MUTE `img`.
+ *
+ * Depuis les bords, et non « tout pixel clair » : les zones claires ENFERMÉES
+ * dans le dessin — un reflet sur une armure, un œil, une dent — ne sont pas
+ * atteintes et survivent. C'est le piège classique du détourage par couleur, et
+ * il avait déjà coûté une passe au projet (ADR-050, « la passe des poches
+ * enfermées mangeait les reflets »).
+ *
+ * Sur une image DÉJÀ détourée, l'opération ne trouve aucun fond clair et ne
+ * fait rien : inutile de la conditionner à un drapeau.
+ */
+export function floodBackground(img: Rgba, threshold: number = BACKGROUND_MIN): number {
+  const { width: w, height: h, data } = img;
+  const seen: Uint8Array = new Uint8Array(w * h);
+  const stack: number[] = [];
+
+  const isBackground = (p: number): boolean => {
+    const i: number = p * 4;
+    if (data[i + 3] === 0) return true;
+    return data[i]! >= threshold && data[i + 1]! >= threshold && data[i + 2]! >= threshold;
+  };
+  const push = (p: number): void => {
+    if (seen[p] === 1 || !isBackground(p)) return;
+    seen[p] = 1;
+    stack.push(p);
+  };
+
+  for (let x: number = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+  for (let y: number = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+
+  let removed: number = 0;
+  while (stack.length > 0) {
+    const p: number = stack.pop()!;
+    if (data[p * 4 + 3] !== 0) { data[p * 4 + 3] = 0; removed++; }
+    const px: number = p % w;
+    const py: number = (p - px) / w;
+    if (px > 0) push(p - 1);
+    if (px < w - 1) push(p + 1);
+    if (py > 0) push(p - w);
+    if (py < h - 1) push(p + w);
+  }
+  return removed;
 }
 
 /** Résultat d'un décapage de frange. `saturated` = le plafond de passes a été
@@ -70,7 +187,7 @@ export function stripFringe(img: Rgba, maxPasses: number = MAX_FRINGE_PASSES): F
       for (let x: number = 0; x < w; x++) {
         const i: number = (y * w + x) * 4;
         if (data[i + 3] === 0) continue;
-        if (isBorder(img, x, y) && luma(data, i) > FRINGE_LUMA) kill.push(i);
+        if (isBorder(img, x, y) && isFringe(img, x, y)) kill.push(i);
       }
     }
     if (kill.length === 0) return { removed, passes: pass - 1, saturated: false };
