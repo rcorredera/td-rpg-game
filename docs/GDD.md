@@ -260,6 +260,7 @@ jamais commité — d'où des mesures invérifiables et une méthode réinventé
 | L'or cesse de contraindre | 1 800-3 800 pièces inutilisées au ch.10 | 6 emplacements partout : plus de décision |
 | Sceaux mal indexés | Héros posté au fond : moins de kills, plus de victoires | La monnaie paie le mauvais placement |
 | ~~Pas de triangle de rôles~~ | **corrigé** — ADR-020 | voir ci-dessous |
+| ~~Deuxième acte en dents de scie~~ | **corrigé** — ADR-060 | vague "mélange" plafonnée à 4 types simultanés |
 
 ### Triangle de rôles (ADR-020) — corrigé
 

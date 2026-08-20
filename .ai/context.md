@@ -344,6 +344,23 @@ l'anti-aérien et l'arbitrage Archerie/Catapulte cessent d'être une décision a
 difficulté de l'acte 2 est en dents de scie (chapitres « nuée » 14/15 nettement plus faciles que les
 chapitres « cuirassé » 13/16, parce que le newcomer du chapitre décide de tout).
 
+## Difficulté de l'acte 2 — cause trouvée et corrigée (ADR-060)
+La vague "mélange complet" (`content/waves.ts`, case `default`) empilait UN spawn par créature
+débloquée depuis le ch.11 sans plafond — au ch.19, 9 types distincts en une seule vague contre 4
+maximum sur tout l'acte 1. `MIX_POOL`/`MAX_MIX_ENTRIES` (=4) plafonne désormais ce mélange aux
+créatures les plus RÉCEMMENT débloquées ; l'acte 1 est inchangé. Ch.13 et 19 restent hors de
+portée du 3★ à toute forge, mais ce n'est plus un souci de contenu : le château y termine à 100%
+des PV, seules les morts du héros bloquent — artefact du pilotage naïf de l'étalon (ADR-018), pas
+un déséquilibre. **Point clos.**
+
+## Backlog conception — non scopé, en attente
+- **Deuxième héros** (Archer, Sorcier — capacités distinctes du Chevalier actuel) et **tour
+  "troupe"** qui invoque des unités pour aggro les monstres au sol. Intention exprimée par le PO
+  (2026-08-20), aucune conception détaillée. Impact structurel à évaluer avant tout code : un
+  second héros touche `hero`/`HeroDef` (aujourd'hui singulier dans `ContentPack`), une tour qui
+  fait apparaître des unités introduit une entité tierce entre tour et ennemi que `core/sim.ts` ne
+  modélise pas encore (aggro, PV propres, durée de vie). À cadrer en session dédiée.
+
 ## En attente côté product owner
 - Fichier de contexte **lore** (format : `docs/LORE.md`) → remplacera noms/textes placeholders.
 - Session **bestiaire** (nouveaux monstres + compétences spéciales → extension sim à prévoir).
