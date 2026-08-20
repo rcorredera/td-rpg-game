@@ -11,9 +11,12 @@ import type { Viewport } from "../platform/viewport";
 import { viewport } from "../platform/viewport";
 import { ensureBackdropTextures, TEX_VIGNETTE } from "../assets/backdrop";
 import { drawDirtPath, ensureTerrainTextures, grassTextureKey } from "../assets/terrain";
+import { biomeFor, type BiomeDef } from "../assets/biomes";
+import { DECOR_VARIANTS, decorKey, ensureDecorTextures } from "../assets/decorTextures";
+import { type DecorProp, planDecor, seedFrom } from "../world/decor";
 import { PATH_WIDTH, roundedPath } from "../world/path";
 import { GROUND } from "../theme/palette";
-import { tileFor } from "../assets/sprites";
+import { fitSquare, tileFor } from "../assets/sprites";
 import { castleAnchor, castleBarBox, CASTLE_HALF } from "../world/castle";
 import type { CastleBarBox, Point } from "../world/castle";
 import { keepView } from "../assets/sprites";
@@ -60,6 +63,65 @@ function buildBattlefieldFrame(scene: Phaser.Scene, cont: Phaser.GameObjects.Con
   cont.add(g);
 }
 
+/** Dégagement d'un prop autour d'une route, mesuré du CENTRE du prop : demi-route,
+ *  plus la moitié du plus gros prop, plus un peu d'air. Un rocher qui frôle le bord
+ *  de la route se lit comme un obstacle sur le passage. */
+const DECOR_ROAD_CLEARANCE: number = PATH_WIDTH / 2 + 32;
+
+/** Idem autour d'un emplacement de tour (dalle de 64) et du Bastion. */
+const DECOR_SLOT_CLEARANCE: number = 32 + 30;
+
+/**
+ * Sème rochers et buissons sur le sol (ADR-062).
+ *
+ * Ajouté au container de terrain APRÈS les routes et AVANT le cadre : au-dessus
+ * du sol et des routes, mais sous la vignette, qui doit assombrir le décor comme
+ * le reste — un prop qui resterait lumineux dans un coin sombre attirerait l'œil
+ * exactement là où il ne se passe rien.
+ */
+function buildDecor(scene: Phaser.Scene, cont: Phaser.GameObjects.Container, ch: PlayableChapter): void {
+  const def: BiomeDef = biomeFor(ch.biome);
+  if (def.decor.count <= 0) return;
+  ensureDecorTextures(scene, ch.biome);
+
+  const castle: Vec2 = ((): Vec2 => {
+    const main: readonly Vec2[] = ch.map.paths[0]!.waypoints;
+    const anchor: Point = castleAnchor(main[main.length - 1]!);
+    return { x: anchor.x, y: anchor.y };
+  })();
+
+  const props: DecorProp[] = planDecor({
+    width: GAME_W,
+    height: GAME_H,
+    keepout: {
+      // Le tracé VISUEL, pas les waypoints : c'est lui que le joueur voit, et
+      // l'arrondi des virages s'écarte des segments logiques.
+      polylines: ch.map.paths.map(p => drawPath(p.waypoints)),
+      points: [...ch.map.slots.map(s => ({ x: s.x, y: s.y })), castle],
+      polylineClearance: DECOR_ROAD_CLEARANCE,
+      pointClearance: DECOR_SLOT_CLEARANCE,
+    },
+    count: def.decor.count,
+    bushShare: def.decor.bushShare,
+    variants: DECOR_VARIANTS,
+    // La graine vient du chapitre : deux chapitres du même biome n'ont pas le
+    // même semis, alors qu'un même chapitre rejoué garde le sien.
+    seed: seedFrom(ch.id),
+  });
+
+  for (const p of props) {
+    const key: string = decorKey(ch.biome, p.kind, p.variant);
+    if (!scene.textures.exists(key)) continue;
+    const img: Phaser.GameObjects.Image = scene.add.image(p.x, p.y, key);
+    // Proportions natives conservées (`fitSquare`, ADR-046) : les props sont
+    // recadrés sur leur silhouette, donc rarement carrés.
+    const { w: fitW, h: fitH } = fitSquare(img.width, img.height, p.size);
+    img.setDisplaySize(fitW, fitH);
+    if (p.flip) img.setFlipX(true);
+    cont.add(img);
+  }
+}
+
 export interface TerrainBuild {
   container: Phaser.GameObjects.Container;
   slotMarkers: Phaser.GameObjects.Image[];
@@ -91,6 +153,8 @@ export function buildTerrain(scene: Phaser.Scene, ch: PlayableChapter): TerrainB
     drawDirtPath(roads, drawPath(p.waypoints), biome);
   }
   cont.add(roads);
+
+  buildDecor(scene, cont, ch);
 
   buildBattlefieldFrame(scene, cont);
 

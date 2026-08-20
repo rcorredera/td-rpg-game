@@ -378,6 +378,26 @@ Hors périmètre tant que rien n'est tranché : les icônes monochromes et `skin
 par `load.svg`, il faudrait basculer sur `load.image`), et le chrome d'UI 9-slice dont `uiSkin.ts`
 découpe la géométrie — une image générée librement la casserait.
 
+## Sols, chemins et décor — tranché (ADR-062)
+Question du PO : fallait-il reprendre aussi les sols, les chemins et les dalles de tour ?
+Réponse : **trois situations différentes**, et une seule se traite comme les créatures.
+
+- **Dalles, Bastion, catapulte** : de vrais fichiers, remplaçables — mais en SVG. Le PO a
+  tranché pour la bascule `load.svg` → `load.image` (option A d'ADR-061), à faire FICHIER PAR
+  FICHIER quand les PNG existent : basculer le loader avant casserait le chargement.
+- **Sols** : PAS des fichiers, générés sur canvas par biome. Les remplacer imposerait 10
+  textures RACCORDABLES, ce qu'une IA ne produit pas de façon fiable — une tuile non seamless
+  donne une grille visible, pire que la répétition actuelle. **Écarté d'un commun accord.**
+- **Chemins** : pas des images du tout — trois traits le long d'une polyligne calculée depuis
+  les waypoints, multi-chemins et portails compris. Hors de portée d'un remplacement d'asset.
+
+Retenu à la place : **semer des props** (ADR-062). `render/world/decor.ts`, pur et testé,
+place rochers et buissons sur une grille jitterée en évitant routes, dalles et Bastion ;
+`assets/decorTextures.ts` les reteint par LUMINANCE sur une gamme dérivée du sol du biome
+(`setTint` ne saurait pas — il multiplie). Deux nombres par biome (`count`, `bushShare`) :
+la cendre et le givre sont à 0 buisson, la forêt à 0,75. Sort `rock-*`/`bush-*` de la réserve
+d'assets ; les nuages y restent.
+
 ## Backlog conception — non scopé, en attente
 - **Deuxième héros** (Archer, Sorcier — capacités distinctes du Chevalier actuel) et **tour
   "troupe"** qui invoque des unités pour aggro les monstres au sol. Intention exprimée par le PO
