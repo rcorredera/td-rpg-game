@@ -6,18 +6,18 @@
 
 import type Phaser from "phaser";
 import type { PlayableChapter, RunState, Vec2, WaveDef } from "../../core/types";
-import type { Insets } from "../nineSlicePlan";
-import type { Viewport } from "../viewport";
-import { viewport } from "../viewport";
-import { ensureBackdropTextures, TEX_VIGNETTE } from "../backdrop";
-import { drawDirtPath, ensureTerrainTextures, grassTextureKey } from "../terrain";
-import { PATH_WIDTH, roundedPath } from "../path";
-import { GROUND } from "../palette";
-import { tileFor } from "../sprites";
-import { castleAnchor, castleBarBox, CASTLE_HALF } from "../castle";
-import type { CastleBarBox, Point } from "../castle";
-import { keepView } from "../sprites";
-import { ensureUiSkinTextures, uiSkinInsets, UI_SKIN_BAR } from "../uiSkin";
+import type { Insets } from "../skin/nineSlicePlan";
+import type { Viewport } from "../platform/viewport";
+import { viewport } from "../platform/viewport";
+import { ensureBackdropTextures, TEX_VIGNETTE } from "../assets/backdrop";
+import { drawDirtPath, ensureTerrainTextures, grassTextureKey } from "../assets/terrain";
+import { PATH_WIDTH, roundedPath } from "../world/path";
+import { GROUND } from "../theme/palette";
+import { tileFor } from "../assets/sprites";
+import { castleAnchor, castleBarBox, CASTLE_HALF } from "../world/castle";
+import type { CastleBarBox, Point } from "../world/castle";
+import { keepView } from "../assets/sprites";
+import { ensureUiSkinTextures, uiSkinInsets, UI_SKIN_BAR } from "../skin/uiSkin";
 import { C, GAME_H, GAME_W } from "./constants";
 
 /** Tracé VISUEL d'un chemin. La sim suit les segments droits (ADR-001) : l'arrondi
@@ -115,7 +115,7 @@ export function buildCastle(scene: Phaser.Scene, ch: PlayableChapter): CastleBui
   const end: Vec2 = main[main.length - 1]!;
   const cont: Phaser.GameObjects.Container = scene.add.container(0, 0).setDepth(100 + end.y);
   // Ancrage RAMENÉ dans le champ (les chemins finissent au bord droit) et
-  // calculé une seule fois, dans `render/castle.ts` : la jauge de PV et le test
+  // calculé une seule fois, dans `render/world/castle.ts` : la jauge de PV et le test
   // d'emplacements en dépendent aussi, et deux des trois copies avaient divergé.
   const a: Point = castleAnchor(end);
   cont.add(scene.add.ellipse(a.x, a.y + 36, 110, 30, 0x1e2a17, 0.3));

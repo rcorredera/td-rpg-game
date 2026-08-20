@@ -4,9 +4,9 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { TEXT } from "../theme";
-import { FONT_DISPLAY } from "../ui";
-import { touchSize, WORLD_W } from "../viewport";
+import { TEXT } from "../theme/theme";
+import { FONT_DISPLAY } from "../theme/ui";
+import { touchSize, WORLD_W } from "../platform/viewport";
 import { uiButton } from "./button";
 
 export interface UiSectionHeaderOpts {

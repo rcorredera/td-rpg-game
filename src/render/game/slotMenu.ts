@@ -5,18 +5,18 @@
 
 import Phaser from "phaser";
 import { CONTENT } from "../../content/index";
-import { playSfx } from "../audio";
+import { playSfx } from "../platform/audio";
 import {
   buildTower, sellRefundFor, sellTower, specializeTower, specOf, upgradeTower,
 } from "../../core/sim";
 import type {
   PlayableChapter, RunState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2,
 } from "../../core/types";
-import { CURSOR_POINT, FONT_BODY, UI_TINT } from "../ui";
-import { viewport } from "../viewport";
-import type { Viewport } from "../viewport";
+import { CURSOR_POINT, FONT_BODY, UI_TINT } from "../theme/ui";
+import { viewport } from "../platform/viewport";
+import type { Viewport } from "../platform/viewport";
 import { decorativeEdgeVisible, uiPanel } from "../components";
-import { uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
+import { uiSkinInset, UI_SKIN_PANEL } from "../skin/uiSkin";
 import { C } from "./constants";
 import type { SlotMenuEntry } from "./types";
 

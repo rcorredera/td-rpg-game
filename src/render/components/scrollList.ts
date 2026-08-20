@@ -7,8 +7,8 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { ACCENT } from "../theme";
-import { ICON } from "../icons";
+import { ACCENT } from "../theme/theme";
+import { ICON } from "../theme/icons";
 
 /** Pure — décalage borné : 0 = haut, négatif = on descend dans le contenu.
  *  Exportée pour test unitaire (aucun DOM, aucun Phaser). */

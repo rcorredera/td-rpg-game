@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { computeViewport, WORLD_W } from "../viewport";
+import { computeViewport, WORLD_W } from "../platform/viewport";
 import { hubLayout, levelGridZone, menuZone, SIDE_BY_SIDE_MIN_WIDTH, type TileBox } from "./hubLayout";
 import type { HubLayout, LevelGridZone, MenuZone } from "./hubLayout";
-import type { Viewport } from "../viewport";
+import type { Viewport } from "../platform/viewport";
 
 /** Deux boîtes se chevauchent-elles ? (marge de 0,5 pour les arrondis) */
 function overlaps(a: TileBox, b: TileBox): boolean {

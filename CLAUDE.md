@@ -11,7 +11,7 @@ Jeu tower defense + méta-progression RPG. TypeScript strict + Phaser 3 + Vite, 
 - `src/core/` ne doit JAMAIS importer Phaser ni toucher au DOM (ADR-001).
 - Aucune valeur d'équilibrage en dur hors de `src/content/` (ADR-003).
 - Le rendu ne mute jamais `RunState` directement : commandes de `core/sim.ts` uniquement.
-- Tout sprite/tuile/emblème passe par `render/sprites.ts` (registre de skin, point de swap unique — ADR-005). Pas de frame en dur dans `GameScene`/`MenuScene`.
+- Tout sprite/tuile/emblème passe par `render/assets/sprites.ts` (registre de skin, point de swap unique — ADR-005). Pas de frame en dur dans `GameScene`/`MenuScene`.
 - **Definition of Done : code + TESTS + doc à jour dans le MÊME livrable.** Concrètement, à chaque modification :
   - comportement de `core/` ou `meta/` → ses tests (`npm test` vert) ;
   - gameplay/équilibrage → `docs/GDD.md` ;

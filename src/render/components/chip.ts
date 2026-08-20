@@ -4,8 +4,8 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { TEXT } from "../theme";
-import { FONT_BODY } from "../ui";
+import { TEXT } from "../theme/theme";
+import { FONT_BODY } from "../theme/ui";
 
 export interface UiChipOpts {
   icon?: string;

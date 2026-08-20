@@ -3,10 +3,10 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { ACCENT, skinPanelTint, UI_TINT } from "../theme";
-import { fitInsets } from "../nineSlicePlan";
-import { ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets, UI_SKIN_PANEL } from "../uiSkin";
-import type { Insets } from "../nineSlicePlan";
+import { ACCENT, skinPanelTint, UI_TINT } from "../theme/theme";
+import { fitInsets } from "../skin/nineSlicePlan";
+import { ensureUiSkinTextures, uiSkinActive, uiSkinInset, uiSkinInsets, UI_SKIN_PANEL } from "../skin/uiSkin";
+import type { Insets } from "../skin/nineSlicePlan";
 
 /** Panneau nine-slice teinté (remplace les rectangles plats). */
 export function uiPanel(

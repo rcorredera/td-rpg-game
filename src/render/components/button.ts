@@ -3,16 +3,16 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { playSfx } from "../audio";
-import { UI_TINT } from "../theme";
-import { CURSOR_POINT, FONT_DISPLAY } from "../ui";
-import { touchSize } from "../viewport";
-import type { Insets } from "../nineSlicePlan";
+import { playSfx } from "../platform/audio";
+import { UI_TINT } from "../theme/theme";
+import { CURSOR_POINT, FONT_DISPLAY } from "../theme/ui";
+import { touchSize } from "../platform/viewport";
+import type { Insets } from "../skin/nineSlicePlan";
 import type { Vec2 } from "../../core/types";
 import {
   ensureUiSkinTextures, uiSkinActive, uiSkinFit, uiSkinInsets, uiSkinSetTexture,
   UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
-} from "../uiSkin";
+} from "../skin/uiSkin";
 
 /** Hauteur minimale d'un bouton habillé par le pack : deux marges de nine-slice
  *  doivent y tenir. La pièce du pack fait 47 de haut et la texture est réduite de

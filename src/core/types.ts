@@ -115,7 +115,7 @@ export interface HeroDef {
 }
 
 /** Champ de bataille en coordonnées logiques : l'espace où vivent cartes, tours,
- *  ennemis et héros. Source unique — `render/viewport.ts` et `GameScene` s'y réfèrent
+ *  ennemis et héros. Source unique — `render/platform/viewport.ts` et `GameScene` s'y réfèrent
  *  au lieu de redéclarer 960×540 chacun de leur côté. Ce n'est pas de l'équilibrage
  *  (ADR-003) mais la définition du repère : les waypoints et slots du content y sont
  *  exprimés. Toute entité pilotée par le joueur y est confinée.
@@ -149,7 +149,7 @@ export interface ChapterBase {
   lore: string;
   /**
    * Identité visuelle du lieu (ADR-023). Le content nomme un biome, il ne choisit
-   * aucune couleur : c'est `render/biomes.ts` qui décide à quoi il ressemble, donc
+   * aucune couleur : c'est `render/assets/biomes.ts` qui décide à quoi il ressemble, donc
    * un futur skin peut tout redéfinir sans toucher au contenu.
    * Absent = prairie.
    */
@@ -327,7 +327,7 @@ export interface AudioSettings {
   music: boolean;
   notifications: boolean;
   damage: boolean;
-  /** Volume global 0..1, appliqué par-dessus le mix de chaque son (`render/audio.ts`). */
+  /** Volume global 0..1, appliqué par-dessus le mix de chaque son (`render/platform/audio.ts`). */
   volume: number;
 }
 

@@ -14,7 +14,7 @@
 // PUR : aucune dépendance Phaser ni DOM, donc testable.
 // ============================================================
 
-import { WORLD_H, WORLD_W } from "../viewport";
+import { WORLD_H, WORLD_W } from "../platform/viewport";
 
 export interface TileBox {
   /** Centre de la tuile. */

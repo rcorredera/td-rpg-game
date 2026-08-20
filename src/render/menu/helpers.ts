@@ -6,14 +6,14 @@
 // ============================================================
 
 import type Phaser from "phaser";
-import { touchSize, viewport } from "../viewport";
-import type { Viewport } from "../viewport";
-import { UI_TINT } from "../ui";
+import { touchSize, viewport } from "../platform/viewport";
+import type { Viewport } from "../platform/viewport";
+import { UI_TINT } from "../theme/ui";
 import {
   decorativeEdgeVisible, uiButton, uiListRow, uiPanel, uiPanelPad, uiScrollList, uiSectionHeader,
   type LayoutCursor, type RowState, type UiButton, type UiListRow, type UiScrollList, type UiSectionHeader,
 } from "../components";
-import { fitSquare } from "../sprites";
+import { fitSquare } from "../assets/sprites";
 import { CX, TXT } from "./theme";
 import type { MenuCtx } from "./types";
 

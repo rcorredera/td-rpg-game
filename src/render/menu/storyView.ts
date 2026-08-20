@@ -5,10 +5,10 @@
 
 import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
-import { playSfx } from "../audio";
-import { TEXT } from "../theme";
-import { viewport } from "../viewport";
-import { ensureTerrainTextures, grassTextureKey } from "../terrain";
+import { playSfx } from "../platform/audio";
+import { TEXT } from "../theme/theme";
+import { viewport } from "../platform/viewport";
+import { ensureTerrainTextures, grassTextureKey } from "../assets/terrain";
 import { levelGridZone, uiLevelGrid, type LevelGridZone, type LevelTile, type RowState, type UiLevelGrid, type UiScrollList } from "../components";
 import { header, scrollArea } from "./helpers";
 import { CX, TXT } from "./theme";

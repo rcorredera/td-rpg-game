@@ -3,8 +3,8 @@
 // écrans du Campement. Voir ADR-034.
 // ============================================================
 
-import { FONT_BODY, FONT_DISPLAY } from "../ui";
-import { WORLD_W } from "../viewport";
+import { FONT_BODY, FONT_DISPLAY } from "../theme/ui";
+import { WORLD_W } from "../platform/viewport";
 
 export const TXT: { fontFamily: string } = { fontFamily: FONT_BODY };
 export const TITLE: { fontFamily: string } = { fontFamily: FONT_DISPLAY };

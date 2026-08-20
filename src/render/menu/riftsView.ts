@@ -5,8 +5,8 @@
 
 import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
-import { ICON } from "../icons";
-import { ACCENT, TEXT } from "../theme";
+import { ICON } from "../theme/icons";
+import { ACCENT, TEXT } from "../theme/theme";
 import { uiChip, type UiChip } from "../components";
 import { header } from "./helpers";
 import { CX, TXT } from "./theme";

@@ -6,10 +6,10 @@
 
 import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
-import { playSfx, type SfxKey } from "../audio";
-import { EMBLEM, ICON } from "../icons";
-import { ACCENT, TEXT } from "../theme";
-import { viewport } from "../viewport";
+import { playSfx, type SfxKey } from "../platform/audio";
+import { EMBLEM, ICON } from "../theme/icons";
+import { ACCENT, TEXT } from "../theme/theme";
+import { viewport } from "../platform/viewport";
 import { hubLayout, menuZone, uiTile, type HubLayout, type MenuZone, type TileBox } from "../components";
 import type { MenuCtx, View } from "./types";
 

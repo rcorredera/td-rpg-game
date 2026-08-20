@@ -10,15 +10,15 @@
 
 import Phaser from "phaser";
 import type { ProfileService } from "../meta/profile";
-import { FONT_BODY, onSceneResize, preloadUi, setupCamera } from "./ui";
-import { touchSize, viewport } from "./viewport";
-import { EMBLEM, ICON, preloadIcons } from "./icons";
-import { addBackdrop } from "./backdrop";
-import { preloadSprites } from "./assets";
-import { applyAudioSettings, playMenuMusic, preloadAudio, preloadMusic, stopMenuMusic } from "./audio";
-import { buildLabel } from "./buildInfo";
-import { ACCENT, TEXT } from "./theme";
-import type { Viewport } from "./viewport";
+import { FONT_BODY, onSceneResize, preloadUi, setupCamera } from "./theme/ui";
+import { touchSize, viewport } from "./platform/viewport";
+import { EMBLEM, ICON, preloadIcons } from "./theme/icons";
+import { addBackdrop } from "./assets/backdrop";
+import { preloadSprites } from "./assets/assets";
+import { applyAudioSettings, playMenuMusic, preloadAudio, preloadMusic, stopMenuMusic } from "./platform/audio";
+import { buildLabel } from "./platform/buildInfo";
+import { ACCENT, TEXT } from "./theme/theme";
+import type { Viewport } from "./platform/viewport";
 import { layoutCursor, uiButton, uiChip, uiModal, type LayoutCursor, type UiChip, type UiModal } from "./components";
 import type { AudioFlag } from "../meta/profile";
 import { buildBestiary } from "./menu/bestiaryView";
@@ -69,7 +69,7 @@ export class MenuScene extends Phaser.Scene {
     // à neuf plutôt que de repositionner chaque élément un par un.
     onSceneResize(this, () => this.scene.restart({ profileSvc: this.profileSvc }));
     this.buildMasthead(v);
-    // Étiquette de build (`render/buildInfo.ts`) : discrète, en coin, mais
+    // Étiquette de build (`render/platform/buildInfo.ts`) : discrète, en coin, mais
     // toujours là — c'est le point de repère pour ne plus se demander si le
     // navigateur affiche une version en cache après une modif.
     this.add.text(v.safeLeft + 6, v.safeBottom - 6, buildLabel(), {
@@ -161,7 +161,7 @@ export class MenuScene extends Phaser.Scene {
     const w: number = 560, h: number = 460;
     // Toute mutation (interrupteur ou volume) doit repasser par applyAudioSettings :
     // ProfileService ne fait que persister, c'est ce point qui pousse l'état vers le
-    // SoundManager Phaser ET le cache de catégorie de render/audio.ts (ADR-038).
+    // SoundManager Phaser ET le cache de catégorie de render/platform/audio.ts (ADR-038).
     // applyAudioSettings COUPE la musique si les réglages l'interdisent désormais, mais ne la
     // démarre jamais lui-même (il ne sait pas si le contexte actuel en veut) — playMenuMusic()
     // s'en charge ici, et ne fait rien si les réglages ne l'autorisent pas ou si elle joue déjà.
