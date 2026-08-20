@@ -3,10 +3,10 @@ import { CONTENT } from "../content/index";
 import { createRun, startNextWave, tick } from "../core/sim";
 import { DEFAULT_AUDIO_SETTINGS } from "../core/types";
 import type { ContentPack, EnemyState, PlayableChapter, Profile, RunState, TowerDef, TowerSpecDef, Vec2, WaveDef } from "../core/types";
-import { PLAY_SAFE_BOTTOM } from "../render/viewport";
-import { castleAnchor, CASTLE_HALF } from "../render/castle";
+import { PLAY_SAFE_BOTTOM } from "../render/platform/viewport";
+import { castleAnchor, CASTLE_HALF } from "../render/world/castle";
 import type { ChapterStats } from "./datasheet";
-import type { Point } from "../render/castle";
+import type { Point } from "../render/world/castle";
 import {
   allChapterStats, chapterStats, castleDamageOf, distanceToPath, enemyHpAtWave, pathLength,
   playableChapter, slotCoverage, towerBurstDps, towerDps, towerInvestment,
@@ -179,12 +179,12 @@ describe("cartes — toute voie doit être défendable", () => {
 describe("cartes — lisibilité et zone jouable (ADR-028)", () => {
   // Demi-largeur de la dalle d'emplacement (`GameScene.buildTerrain`, 64×64).
   const SLOT_HALF: number = 32;
-  // Demi-largeur de route (`PATH_WIDTH`, render/path.ts) + demi-largeur de dalle :
+  // Demi-largeur de route (`PATH_WIDTH`, render/world/path.ts) + demi-largeur de dalle :
   // en dessous, la dalle mord visuellement la route.
   const MIN_SLOT_TO_PATH: number = 55;
   // Deux dalles de 64 ont besoin d'au moins ça pour ne pas se chevaucher à l'écran.
   const MIN_SLOT_TO_SLOT: number = 75;
-  // Centre du sprite du château : IMPORTÉ de `render/castle.ts`, pas recopié.
+  // Centre du sprite du château : IMPORTÉ de `render/world/castle.ts`, pas recopié.
   // La formule vivait ici en double du code de rendu, et une TROISIÈME copie
   // servait à poser la jauge de PV — laquelle avait déjà divergé de 26 unités
   // (ADR-030). Un test qui recopie la règle qu'il vérifie ne vérifie rien.

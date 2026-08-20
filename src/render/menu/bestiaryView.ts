@@ -6,7 +6,7 @@
 import type Phaser from "phaser";
 import type { EnemyDef, TowerDef, TowerLevelStats } from "../../core/types";
 import { CONTENT } from "../../content/index";
-import { enemyView, towerView } from "../sprites";
+import { enemyView, towerView } from "../assets/sprites";
 import { layoutCursor, type LayoutCursor, type UiScrollList } from "../components";
 import { header, lorePage, scrollArea, tabs } from "./helpers";
 import { CX, DIM, GOLD, LIGHT, TXT } from "./theme";

@@ -8,7 +8,7 @@
 // ============================================================
 
 import Phaser from "phaser";
-import type { SpriteRef } from "./sprites";
+import type { SpriteRef } from "./assets/sprites";
 
 /** Applique une SpriteRef (texture+frame+teinte) à un sprite, seulement si elle a changé. */
 function applyRef(s: Phaser.GameObjects.Sprite, ref: SpriteRef): void {

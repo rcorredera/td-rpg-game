@@ -7,8 +7,8 @@ import { LocalStorageSaveAdapter } from "./meta/save";
 import { ProfileService } from "./meta/profile";
 import { GameScene } from "./render/GameScene";
 import { MenuScene } from "./render/MenuScene";
-import { attachViewport, initialViewport, scaleFont, viewport } from "./render/viewport";
-import type { Viewport } from "./render/viewport";
+import { attachViewport, initialViewport, scaleFont, viewport } from "./render/platform/viewport";
+import type { Viewport } from "./render/platform/viewport";
 
 const profileSvc: ProfileService = new ProfileService(new LocalStorageSaveAdapter());
 

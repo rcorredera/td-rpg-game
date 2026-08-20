@@ -4,9 +4,9 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { ACCENT, TEXT, UI_TINT } from "../theme";
-import { FONT_BODY } from "../ui";
-import { scaleFont, touchSize } from "../viewport";
+import { ACCENT, TEXT, UI_TINT } from "../theme/theme";
+import { FONT_BODY } from "../theme/ui";
+import { scaleFont, touchSize } from "../platform/viewport";
 import { uiFramedPanel } from "./panel";
 import { uiButton } from "./button";
 

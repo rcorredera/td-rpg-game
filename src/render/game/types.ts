@@ -3,7 +3,7 @@
 // modules de rendu (render/game/*.ts). Voir ADR-034.
 // ============================================================
 
-import type { ProjectileStyle } from "../projectiles";
+import type { ProjectileStyle } from "../world/projectiles";
 import type { Vec2 } from "../../core/types";
 
 /** Clés des éléments du HUD. Un type fermé plutôt que des chaînes libres : une

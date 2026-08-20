@@ -5,9 +5,9 @@
 
 import type Phaser from "phaser";
 import type { Vec2 } from "../../core/types";
-import { TEX } from "../assets";
-import { HERO_C } from "../palette";
-import { projectilePoint, type ProjectileStyle } from "../projectiles";
+import { TEX } from "../assets/assets";
+import { HERO_C } from "../theme/palette";
+import { projectilePoint, type ProjectileStyle } from "../world/projectiles";
 import type { FxEffect, ShotFx } from "./types";
 
 /** Pool des effets transitoires (sorts, impacts) et des projectiles en vol.

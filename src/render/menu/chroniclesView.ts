@@ -5,7 +5,7 @@
 
 import type Phaser from "phaser";
 import type { BestRun } from "../../core/types";
-import { touchSize } from "../viewport";
+import { touchSize } from "../platform/viewport";
 import { uiPanelPad, layoutCursor, type LayoutCursor, type UiScrollList } from "../components";
 import { box, header, scrollArea } from "./helpers";
 import { CX, DIM, GOLD, LIGHT, OK, TXT } from "./theme";

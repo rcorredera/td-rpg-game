@@ -3,9 +3,9 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { TEXT } from "../theme";
-import { FONT_BODY, FONT_DISPLAY } from "../ui";
-import { WORLD_W, WORLD_H } from "../viewport";
+import { TEXT } from "../theme/theme";
+import { FONT_BODY, FONT_DISPLAY } from "../theme/ui";
+import { WORLD_W, WORLD_H } from "../platform/viewport";
 import { uiPanel } from "./panel";
 import { uiButton } from "./button";
 

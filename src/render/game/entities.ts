@@ -8,11 +8,11 @@ import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
 import { specOf } from "../../core/sim";
 import type { EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2 } from "../../core/types";
-import { flyPose, idlePose, walkPose } from "../animation";
-import type { UnitPose } from "../animation";
-import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare } from "../sprites";
-import { HERO_C, SIGNAL } from "../palette";
-import { STATUS } from "../theme";
+import { flyPose, idlePose, walkPose } from "../assets/animation";
+import type { UnitPose } from "../assets/animation";
+import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare } from "../assets/sprites";
+import { HERO_C, SIGNAL } from "../theme/palette";
+import { STATUS } from "../theme/theme";
 import { C } from "./constants";
 import type { FacingState } from "./types";
 

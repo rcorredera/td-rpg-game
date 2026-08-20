@@ -18,12 +18,12 @@ import type {
   SimEvent, TowerState, Vec2, WhirlwindLevel,
 } from "../core/types";
 import type { ProfileService } from "../meta/profile";
-import { onSceneResize, preloadUi, setupCamera } from "./ui";
-import { preloadIcons } from "./icons";
-import { preloadSprites } from "./assets";
-import { applyAudioSettings, impactSfx, playSfx, preloadAudio, shotSfx } from "./audio";
-import { enemyView, heroView, towerView } from "./sprites";
-import { projectileFor, type ProjectileStyle } from "./projectiles";
+import { onSceneResize, preloadUi, setupCamera } from "./theme/ui";
+import { preloadIcons } from "./theme/icons";
+import { preloadSprites } from "./assets/assets";
+import { applyAudioSettings, impactSfx, playSfx, preloadAudio, shotSfx } from "./platform/audio";
+import { enemyView, heroView, towerView } from "./assets/sprites";
+import { projectileFor, type ProjectileStyle } from "./world/projectiles";
 import { GraphicsLayer, SpriteLayer } from "./EntityLayer";
 import { AUTO_WAVE_DELAY_MS } from "./game/constants";
 import { BattlefieldEntities } from "./game/entities";

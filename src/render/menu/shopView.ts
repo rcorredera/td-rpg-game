@@ -7,7 +7,7 @@ import type Phaser from "phaser";
 import { CONTENT, UNLOCKS } from "../../content/index";
 import type { Profile, RallyLevel, SkillTrack, WhirlwindLevel } from "../../core/types";
 import type { SkillId } from "../../meta/profile";
-import { playSfx } from "../audio";
+import { playSfx } from "../platform/audio";
 import { layoutCursor, type LayoutCursor, type UiScrollList } from "../components";
 import { header, row, scrollArea, tabs } from "./helpers";
 import { CX, DIM, GOLD, OK, SCEAU, TXT } from "./theme";

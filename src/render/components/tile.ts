@@ -10,16 +10,16 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { ACCENT, TEXT } from "../theme";
-import { ICON_RASTER_PX } from "../icons";
-import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
+import { ACCENT, TEXT } from "../theme/theme";
+import { ICON_RASTER_PX } from "../theme/icons";
+import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../theme/ui";
 import { uiFramedPanel, uiPanelPad } from "./panel";
 import { uiProgress, uiProgressHeight } from "./progress";
 import { uiRibbon, uiRibbonAvailable, uiRibbonHeight, uiRibbonKey, type RibbonTone } from "./ribbon";
 import { composeTile } from "./tileContent";
 import type { TileContentBox } from "./tileContent";
 import type { Vec2 } from "../../core/types";
-import { UI_SKIN_RIBBON_BIG } from "../uiSkin";
+import { UI_SKIN_RIBBON_BIG } from "../skin/uiSkin";
 
 export interface UiTileOpts {
   w: number;

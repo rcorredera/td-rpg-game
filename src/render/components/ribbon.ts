@@ -10,11 +10,11 @@
 // ============================================================
 
 import Phaser from "phaser";
-import type { Insets } from "../nineSlicePlan";
+import type { Insets } from "../skin/nineSlicePlan";
 import {
   ensureUiSkinTextures, uiSkinFlattenStrip, uiSkinInsets,
   UI_SKIN_RIBBON, UI_SKIN_RIBBON_BIG, UI_SKIN_RIBBON_OFF, UI_SKIN_RIBBON_RIFT,
-} from "../uiSkin";
+} from "../skin/uiSkin";
 
 /** Rôle du ruban — la couleur suit le sens, pas le goût. */
 export type RibbonTone = "normal" | "rift" | "off";

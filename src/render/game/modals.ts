@@ -5,7 +5,7 @@
 
 import type Phaser from "phaser";
 import type { RunResult } from "../../core/types";
-import { FONT_BODY, FONT_DISPLAY } from "../ui";
+import { FONT_BODY, FONT_DISPLAY } from "../theme/ui";
 import { decorativeEdgeVisible, uiButton, uiPanel } from "../components";
 import { C, GAME_H, GAME_W, VEIL } from "./constants";
 

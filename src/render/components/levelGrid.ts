@@ -7,13 +7,13 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { ACCENT, TEXT } from "../theme";
-import { ICON } from "../icons";
-import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../ui";
-import { touchSize } from "../viewport";
+import { ACCENT, TEXT } from "../theme/theme";
+import { ICON } from "../theme/icons";
+import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY } from "../theme/ui";
+import { touchSize } from "../platform/viewport";
 import { uiFramedPanel, uiPanelPad } from "./panel";
 import { rowColors, type RowColors, type RowState } from "./listRow";
-import { uiSkinInset, UI_SKIN_PANEL } from "../uiSkin";
+import { uiSkinInset, UI_SKIN_PANEL } from "../skin/uiSkin";
 
 export interface GridLayout {
   cols: number;

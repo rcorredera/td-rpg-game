@@ -10,13 +10,13 @@
 // ============================================================
 
 import Phaser from "phaser";
-import { ACCENT } from "../theme";
-import { fitInsets } from "../nineSlicePlan";
+import { ACCENT } from "../theme/theme";
+import { fitInsets } from "../skin/nineSlicePlan";
 import {
   ensureUiSkinTextures, uiSkinInsets, uiSkinSafeInsets, UI_SKIN_BAR_BIG, UI_SKIN_BAR_FILL_GOLD,
-} from "../uiSkin";
-import type { SafeInsets } from "../uiSkin";
-import type { Insets } from "../nineSlicePlan";
+} from "../skin/uiSkin";
+import type { SafeInsets } from "../skin/uiSkin";
+import type { Insets } from "../skin/nineSlicePlan";
 import { progressFillBox } from "./progressFill";
 import type { ProgressFillBox } from "./progressFill";
 

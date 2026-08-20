@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCENT, TEXT, UI_TINT } from "../theme";
+import { ACCENT, TEXT, UI_TINT } from "../theme/theme";
 import { rowColors } from "./listRow";
 
 describe("rowColors (listRow.ts)", () => {

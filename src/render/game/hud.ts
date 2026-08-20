@@ -5,16 +5,16 @@
 // ============================================================
 
 import type Phaser from "phaser";
-import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, UI_TINT } from "../ui";
-import { scaleFont, touchSize, viewport } from "../viewport";
-import type { Viewport } from "../viewport";
-import { ICON } from "../icons";
+import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, UI_TINT } from "../theme/ui";
+import { scaleFont, touchSize, viewport } from "../platform/viewport";
+import type { Viewport } from "../platform/viewport";
+import { ICON } from "../theme/icons";
 import { skinPressVisual, uiButton } from "../components";
 import {
   ensureUiSkinTextures, uiSkinActive, uiSkinInsets,
   UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
-} from "../uiSkin";
-import type { Insets } from "../nineSlicePlan";
+} from "../skin/uiSkin";
+import type { Insets } from "../skin/nineSlicePlan";
 import { C, GAME_W, HUD_LABEL } from "./constants";
 import type { HudBuildCtx, HudKey } from "./types";
 

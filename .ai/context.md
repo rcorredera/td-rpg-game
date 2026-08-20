@@ -4,8 +4,13 @@ Prototype v0 d'un TD médiéval (« Bastion », univers du Roi-Charogne) avec m�
 valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 
 ## État actuel (2026-06)
+- **`render/` rangé par couche (ADR-055)** : la racine ne garde que `GameScene`/`MenuScene`/
+  `EntityLayer` ; le reste vit dans `theme/`, `skin/`, `assets/`, `world/`, `platform/`, à côté des
+  `components/`, `game/`, `menu/` existants. Refactor pur (aucune logique touchée, 259 tests verts).
+  Lève l'homonymie `render/terrain.ts` vs `render/game/terrain.ts` — désormais `assets/terrain.ts`
+  (fabrique la texture) vs `game/terrain.ts` (monte le décor).
 - **Audio — SFX + réglages + musique de menu en place (ADR-037/038/039/040/041/042)** : registre
-  `render/audio.ts` (même principe que `sprites.ts`/`icons.ts`), SFX branchés sur les `SimEvent`
+  `render/platform/audio.ts` (même principe que `sprites.ts`/`icons.ts`), SFX branchés sur les `SimEvent`
   de tir/impact/dégât château + mort ennemi/héros (ces deux derniers n'avaient encore aucun
   consommateur côté rendu) et sur `uiButton` (clic UI, un seul hook pour tout le jeu). **Réglages
   (ADR-038)** : `Profile.audio` remplace le mute unique — 4 interrupteurs indépendants
@@ -41,7 +46,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **In-run** : 3 tours à 3 niveaux + **spécialisation niv.4** (choix binaire définitif : multishot,
   longue portée, brûlure % PV max, aura de givre) + vente (65%), héros bloqueur à 2 sorts,
   auto-vague, x2, multi-chemins et portails de Faille supportés par la sim. Étoiles 1-3 par chapitre.
-- **Rendu** : **skin médiéval dessiné pour le projet** (ADR-016) — 10 sprites SVG maison dans `public/assets/skin-medieval/` (gobelin, orc, brute, chauve-souris, chevalier, 3 tours, Bastion, dalle), style aplats + contour sombre, silhouettes porteuses de sens. Palette dédiée (`render/palette.ts`), sol et chemins générés sur canvas (`render/terrain.ts`), projectiles typés par tour (`render/projectiles.ts`), animation procédurale des unités et paliers visuels de tour (ADR-017, `render/animation.ts` — marche/vol/repos calculés sur la transform, rang 3 et specs ont leur propre sprite). Le tout via la couche swappable (ADR-005) : `sprites.ts` = registre, `EntityLayer.ts` = `SpriteLayer<T>`, `assets.ts` = préchargement. Historique : skin **pixel médiéval Tiny** (rejeté « pas giga beau »), puis **Kenney TD sci-fi** — des CHARS et DRONES dans un jeu de chevaliers, remplacé pour incohérence d'univers. ⚠ Tout changement de skin doit s'accompagner du renommage du contenu (noms + lore dans `content/index.ts`).
+- **Rendu** : **skin médiéval dessiné pour le projet** (ADR-016) — 10 sprites SVG maison dans `public/assets/skin-medieval/` (gobelin, orc, brute, chauve-souris, chevalier, 3 tours, Bastion, dalle), style aplats + contour sombre, silhouettes porteuses de sens. Palette dédiée (`render/theme/palette.ts`), sol et chemins générés sur canvas (`render/assets/terrain.ts`), projectiles typés par tour (`render/world/projectiles.ts`), animation procédurale des unités et paliers visuels de tour (ADR-017, `render/assets/animation.ts` — marche/vol/repos calculés sur la transform, rang 3 et specs ont leur propre sprite). Le tout via la couche swappable (ADR-005) : `sprites.ts` = registre, `EntityLayer.ts` = `SpriteLayer<T>`, `assets.ts` = préchargement. Historique : skin **pixel médiéval Tiny** (rejeté « pas giga beau »), puis **Kenney TD sci-fi** — des CHARS et DRONES dans un jeu de chevaliers, remplacé pour incohérence d'univers. ⚠ Tout changement de skin doit s'accompagner du renommage du contenu (noms + lore dans `content/index.ts`).
 - **Wording** : passe sci-fi faite sur les noms in-game (Éclaireur/Blindé/Char lourd/Drone ;
   Tourelle/Mortier/Canon cryo + specs). **Saga/chapitres/lore profond = en attente du fichier lore du PO.**
 - **Tests** : 60 (sim + profil + save + registre de sprites + thème + composants UI purs + viewport).
@@ -50,7 +55,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
-- **Thèmes d'interface (ADR-026) — FAIT** : l'habillage des menus est une DONNÉE (`render/uiTheme.ts`),
+- **Thèmes d'interface (ADR-026) — FAIT** : l'habillage des menus est une DONNÉE (`render/theme/uiTheme.ts`),
   plus des valeurs en dur. Trois directions : **Braise** (l'ancienne, parchemin/bois/or), **Nocturne**
   (ardoise bleu nuit + or, **défaut**), **Arcane** (pourpre + or rosé). `?theme=` bascule SANS rebuild —
   outil de décision, aucune UI ne l'expose. Tests sur ce qui rendrait un thème inacceptable (fond sombre,
@@ -69,7 +74,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **Forge (ADR-024)** : 4 → **6 rangs** par tour (20/45/80/130/200/300 ◆, 2 325 ◆ au total) et surtout elle est devenue la **CONDITION du dernier chapitre** — le boss final (Vouivre ×2,8) n'est pas abattable avec des tours jamais forgées, quelle que soit la stratégie. Mesuré avant correction : la Forge ne pesait que **5 PV de château cumulés sur 10 chapitres**, c'était un puits d'Éclats et non une progression. Un axe de méta qu'on peut ignorer sera ignoré : mesurer chaque axe avec et sans.
 - **Biomes de chapitre (ADR-023) — FAIT** : chaque chapitre a son identité visuelle (prairie, cendres,
   marécage, forêt, carrières, glace, tertres, ruines, toundra, terre gâtée). « Le Col du Gel » s'affichait
-  sur la même prairie verte que tous les autres. Le content NOMME un biome, `render/biomes.ts` décide de
+  sur la même prairie verte que tous les autres. Le content NOMME un biome, `render/assets/biomes.ts` décide de
   son apparence (ADR-005). Un biome porte la FORME de son motif (`grass`/`rock`/`flake`/`reed`) et sa
   ROUTE, pas seulement une teinte — teinter ne suffit pas, `setTint` assombrit sans désaturer. Tests :
   biome connu par chapitre, jamais deux décors identiques consécutifs, sol+route distincts, repli sûr,
@@ -89,7 +94,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   méta doit repasser `autoplay.test.ts`.
 - **Habillage Tiny Swords — EN COURS (étape 1/4)** : adoption décidée par le PO du pack
   complet (menus + bâtiments + décor + FX), teinté selon le thème actif. **Fait** : le
-  parchemin `ui/paper-regular.png` habille les panneaux nine-slice — `render/uiSkin.ts`
+  parchemin `ui/paper-regular.png` habille les panneaux nine-slice — `render/skin/uiSkin.ts`
   recompose les planches (grilles 3×3 de pièces séparées) en textures contiguës sur canvas,
   coins rognés à 16 px, filtre NEAREST par texture. **Restent** : boutons, rubans/bannières
   de titre, château, décor, FX. ⚠ Deux constats à trancher avant la suite : (1) les trois
@@ -116,7 +121,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   chemin sur trois et un emplacement sur deux invisibles ET non-tappables), et 27
   emplacements plantés dans la route ou le sprite du château (rien ne testait de
   PLANCHER de distance, seulement un plafond de couverture ≤130). `PLAY_SAFE_BOTTOM`
-  (`render/viewport.ts`) + 4 nouvelles garanties testées dans `datasheet.test.ts`
+  (`render/platform/viewport.ts`) + 4 nouvelles garanties testées dans `datasheet.test.ts`
   (zone jouable, clearance route ≥55, espacement dalles ≥75, clearance château ≥94).
   ⚠ Retoucher le ch.10 pour la lisibilité a de nouveau cassé son invariant de méta —
   toute retouche de `MapDef` sur un chapitre à garantie testée doit repasser
@@ -125,7 +130,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   purs. (1) Le grain du parchemin Tiny Swords partait en TRAÎNÉES — un nine-slice n'étire que
   cinq de ses neuf pièces, et la bande gauche du parchemin avait 8 profils de ligne pour
   8 lignes (contre 1 sur la planche des boutons, d'où l'impression que boutons et tuiles
-  venaient de deux jeux différents). `render/nineSliceFlatten.ts` rend toute pièce étirée
+  venaient de deux jeux différents). `render/skin/nineSliceFlatten.ts` rend toute pièce étirée
   constante le long de son axe, par couleur DOMINANTE ; mesuré après : 1 profil partout.
   (2) Le contenu des tuiles avait une taille FIXE dans une boîte dérivée de l'écran — 57 % de
   vide dans la tuile « Histoire », jauge 82 unités sous le texte, 40 % de l'écran Histoire vide
@@ -146,7 +151,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   cadre : menu de tour figé à 230 de large pour 275 de texte, et rangées de 30 sous le
   plancher tactile. Trois défauts de HUD relevés au playtest et corrigés dans la foulée :
   la jauge de PV du Bastion était décentrée de 26 unités (géométrie du château écrite TROIS
-  fois, deux copies divergentes → `render/castle.ts`, pur et importé par le test qui la
+  fois, deux copies divergentes → `render/world/castle.ts`, pur et importé par le test qui la
   recopiait) ; « Auto ✗ » recouvrait « x1 » (une plaque qui s'élargit grandit aussi vers la
   droite, le curseur seul ne compensait qu'à gauche) ; et « ⟵ Camp » partait dans la bande
   noire sur écran large (`safeLeft` = −114 à 2,2:1, borné à 0 désormais). La jauge du
@@ -182,7 +187,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   ⚠ **Trois icônes DESSINÉES faute d'équivalent dans les packs** — inventaire fait : les 12 icônes
   Tiny Swords sont des ressources, `kenney-ui` n'a que deux boutons et un panneau ; aucune flèche,
   aucun chevron, aucun symbole de plein écran. À remplacer en priorité quand des assets arrivent
-  (une ligne par icône dans `render/icons.ts`).
+  (une ligne par icône dans `render/theme/icons.ts`).
 - **Push unique des boutons habillés (ADR-035) — FAIT** : relevé par le PO au repos, `uiButton`
   (le composant de base) et la barre du HUD de run rendaient l'appui différemment — l'un cumulait
   planche enfoncée du pack ET scale-squish (0,96/1,04, hérité d'avant l'habillage), l'autre
@@ -195,7 +200,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   tuiles ont été remplacées par des rasters du pack (`EMBLEM.armory` = bouclier `icon-06.png`,
   `EMBLEM.chronicles` = épées croisées `icon-05.png`, sans teinte). La jauge de la tuile Histoire
   utilisait un simple rectangle plat ; `bar-big-fill.png` (remplissage natif du pack) est rouge et
-  `setTint` ne peut jamais le désaturer (ADR-014) — `render/colorRemap.ts` (nouveau module pur,
+  `setTint` ne peut jamais le désaturer (ADR-014) — `render/assets/colorRemap.ts` (nouveau module pur,
   testé) reteint par LUMINANCE plutôt que par teinte, ce qui garde le relief (reflet, ombre) du
   dessin en changeant sa couleur vers l'or. ⚠ Bug réel corrigé dans la foulée : la texture
   recomposée gardait la marge transparente du canevas source (64×64, 24 px peints) — `setDisplaySize`
@@ -239,7 +244,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   plus à la sim. ⚠ Deux textes d'UI annonçaient encore les kills — une monnaie doit **dire** ce
   qu'elle récompense. Garanties testées, courbe prouvée par mutation.
 - **Chemins & cartes (ADR-019)** : le tracé dessiné ne s'écarte plus du chemin que suit la sim
-  (spline de Catmull-Rom → arrondi de coins borné, `render/path.ts` pur) — **64,7 px d'écart mesurés
+  (spline de Catmull-Rom → arrondi de coins borné, `render/world/path.ts` pur) — **64,7 px d'écart mesurés
   avant, 5,8 après**, pour une route de 46 de large. Les unités marchaient visiblement à côté de leur
   route alors que les tours visaient leur position réelle. Les layouts `LAYOUT_RIFT`/`LAYOUT_PINCER`
   (ch.2-10) sont redessinés : « Tenailles » convergeait mal (voie 2 à 940 px contre 1280, couverte
@@ -279,7 +284,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   principe que `render/components/` (scène passée en paramètre explicite, jamais capturée via
   `this`). Refactor pur, aucun changement de gameplay ni d'équilibrage.
 - **Viewport (ADR-010)** : cible **paysage**, le jeu remplit l'écran entier (avant : 35 % de la
-  surface sur mobile portrait, le reste en bandes noires). `render/viewport.ts` = source unique
+  surface sur mobile portrait, le reste en bandes noires). `render/platform/viewport.ts` = source unique
   (framebuffer, zoom, rectangle visible, encoches), réactif au resize/rotation ; invite « tournez
   votre appareil » en CSS sur mobile portrait.
 - **Chantier UI/UX en cours** : socle format (ADR-010) + cibles tactiles (ADR-011, `touchSize`) +
@@ -287,7 +292,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   (ADR-013). Tous les sous-écrans du campement sont passés sur le kit ; `backButton()`/`row()`
   positionnelles supprimées. L'état « inabordable » du GDD est enfin rendu (coût rouge, cadre
   atténué) + fonds générés sur canvas, bandeau de titre et harmonisation du terrain (ADR-014,
-  `render/backdrop.ts` — l'herbe fluo du pack est lavée par un voile chaud, `setTint` ne désature
+  `render/assets/backdrop.ts` — l'herbe fluo du pack est lavée par un voile chaud, `setTint` ne désature
   pas) + échelle typographique réelle, plein écran et correction des bornes de pointeur au resize
   (ADR-015). **Reste** : transitions d'écran et retours visuels (pulsation sur gain de monnaie,
   retour d'achat), et le fond du campement pourrait gagner un élément de décor (bannière,
