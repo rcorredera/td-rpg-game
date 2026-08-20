@@ -410,6 +410,28 @@ place rochers et buissons sur une grille jitterée en évitant routes, dalles et
 la cendre et le givre sont à 0 buisson, la forêt à 0,75. Sort `rock-*`/`bush-*` de la réserve
 d'assets ; les nuages y restent.
 
+## Animation des unités — refaite (ADR-064)
+Le PO jugeait le mouvement inutilisable (« le petit sautillement, ça passe pas du tout »), et la
+cause était structurelle : pivot à 62 % de la hauteur (au MILIEU du corps) et `dy` jusqu'à
+4,6 px qui translatait le sprite entier — les pieds décollaient. L'écrasement, lui, plafonnait
+à 6 %, six fois plus faible que la translation, donc invisible.
+
+Principe désormais : **les pieds restent au sol, c'est le corps qui travaille**. Ancrage par les
+pieds (`setOrigin(0.5, 1)`, compensé par `LEGACY_ORIGIN_Y` pour ne déplacer aucune unité),
+mouvement vertical porté par l'écrasement (jusqu'à 12 %, phasé sur le contact du pied), et
+`UnitPose.dx` nouveau : le report du poids d'un appui sur l'autre, qui est ce qui fait lire une
+démarche. Mesuré en jeu : 3,5 px d'amplitude verticale réelle sur l'orc, contre un écrasement
+auparavant imperceptible.
+
+⚠ **L'animation par frames dessinées est écartée DÉFINITIVEMENT**, et pas pour son volume :
+un générateur ne redessine pas LE MÊME personnage dans une autre pose (couleurs et proportions
+dérivent), donc un cycle de 4 frames donnerait 4 créatures qui clignotent. `Rope` (déformation
+par maillage) est écarté aussi : WebGL uniquement, or le jeu tourne en `Phaser.AUTO` avec repli
+canvas sur cible mobile.
+
+Reste : le **héros** garde son ancien bob (1,5 px) et son ancrage — son arc de lame est calé sur
+sa position, le reprendre demanderait de revoir cette géométrie.
+
 ## Backlog conception — non scopé, en attente
 - **Deuxième héros** (Archer, Sorcier — capacités distinctes du Chevalier actuel) et **tour
   "troupe"** qui invoque des unités pour aggro les monstres au sol. Intention exprimée par le PO

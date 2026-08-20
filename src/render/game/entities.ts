@@ -20,6 +20,19 @@ import type { FacingState } from "./types";
 /** Durée du recul d'une tour après un tir, en ms murs (pas la sim). */
 const RECOIL_MS: number = 160;
 
+/**
+ * Ancrage HISTORIQUE des sprites d'unité : le pivot tombait à 62 % de la hauteur,
+ * donc au milieu du corps — l'écrasement et l'inclinaison pivotaient dans le vide
+ * et la créature se soulevait tout entière.
+ *
+ * Les unités sont désormais ancrées par les PIEDS (ADR-064). Cette valeur est
+ * conservée comme RÉFÉRENCE DE POSITION : elle dit où se trouvait le bas du
+ * sprite, et permet donc de changer de pivot sans déplacer une seule unité à
+ * l'écran. La supprimer ferait remonter tout le bestiaire d'un tiers de sa
+ * hauteur.
+ */
+const LEGACY_ORIGIN_Y: number = 0.62;
+
 /** État de rendu des entités du champ de bataille : direction du regard (par uid)
  *  et recul des tours au tir (par slotIndex). Persiste tout le run — reconstruit
  *  seulement par `GameScene.init` (nouveau run), jamais par `relayout`. */
@@ -152,6 +165,7 @@ export class BattlefieldEntities {
   }
 
   /** Taille d'affichage d'un ennemi, EN UNITÉS LOGIQUES (ADR-016).
+   *  (voir `LEGACY_ORIGIN_Y` en tête de fichier pour l'ancrage)
    *  Exprimée en pixels plutôt qu'en facteur d'échelle : les entités faisaient
    *  ~15 px à l'écran et étaient indiscernables. La hiérarchie de taille porte
    *  aussi de l'information — la brute doit se voir grosse au premier regard. */
@@ -180,26 +194,31 @@ export class BattlefieldEntities {
         ? idlePose(now, phase)
         : walkPose(now, phase, def.speed / 55, weight);
 
-    const y: number = (def.flying ? e.pos.y - 14 : e.pos.y) + pose.dy;
     const face: number = this.facingOf(e.uid, e.pos.x);
     const size: number = this.enemySize(e);
     // Proportions natives conservées (`fitSquare`, ADR-046) : un sprite importé
     // rogné à sa silhouette (chauve-souris large, gobelin haut) ne fait pas ~1:1
     // comme le skin SVG maison — un carré forcé l'écrasait ou l'étirait.
     const { w: fitW, h: fitH } = fitSquare(s.frame.width, s.frame.height, size);
-    s.setOrigin(0.5, 0.62)
+    // Ancrage par les PIEDS (ADR-064). L'écrasement et l'inclinaison pivotent
+    // alors sur le point d'appui : le sommet du corps travaille, la base reste
+    // plantée. Avec l'ancrage précédent (0,62, au milieu du corps) la créature
+    // se soulevait tout entière et paraissait sautiller sur place.
+    // Le décalage reproduit EXACTEMENT le rectangle qu'occupait cet ancrage,
+    // pour ne pas déplacer toutes les unités du jeu au passage.
+    const ground: number = (def.flying ? e.pos.y - 14 : e.pos.y) + (1 - LEGACY_ORIGIN_Y) * fitH + pose.dy;
+    s.setOrigin(0.5, 1)
       .setDisplaySize(fitW * pose.scaleX, fitH * pose.scaleY)
       .setRotation(pose.tilt * face)
       .setFlipX(face < 0);
-    s.setPosition(Math.round(e.pos.x), Math.round(y));
+    s.setPosition(Math.round(e.pos.x + pose.dx), Math.round(ground));
     s.setDepth(100 + e.pos.y); // tri en profondeur par position verticale
     // Boss : reteinté or chaud (le registre n'a pas de sprite dédié).
     if (this.isBoss(e)) s.setTint(0xffd98a);
-    // Sommet RÉEL du sprite CETTE frame — origin.y=0.62 rapporté à la hauteur
-    // affichée, pas à `size` (ADR-047) : les sprites importés sont rognés à
-    // leur silhouette, sans marge constante comme l'ancien SVG maison, donc
-    // leur tête ne tombe plus au même ratio pour tous.
-    this.enemyTop.set(e.uid, s.y - 0.62 * fitH * pose.scaleY);
+    // Sommet RÉEL du sprite CETTE frame (ADR-047) : la barre de PV s'y accroche,
+    // et les sprites rognés à leur silhouette n'ont pas la tête au même ratio de
+    // hauteur pour tous. Ancré aux pieds, le sommet se lit directement.
+    this.enemyTop.set(e.uid, ground - fitH * pose.scaleY);
   }
 
   /** Overlay d'ennemi (gfx) : barre de PV, anneaux de statut, couronne de boss. */
