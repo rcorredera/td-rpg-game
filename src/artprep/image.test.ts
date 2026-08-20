@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  components, crop, downscale, dropFragments, feather, FRINGE_LUMA,
+  BACKGROUND_MIN, components, crop, downscale, dropFragments, feather, floodBackground, FRINGE_LUMA,
+  isFringe,
   type FragmentResult, type FringeResult,
   isBorder, lightBorderCount, luma, opaqueBox, type Rgba, stripFringe,
 } from "./image";
@@ -237,5 +238,158 @@ describe("chaîne complète", () => {
     const out: Rgba = crop(img);
     expect([out.width, out.height]).toEqual([6, 6]); // le liseré est parti, le noir reste
     expect(lightBorderCount(out)).toBe(0);
+  });
+});
+
+describe("floodBackground", () => {
+  /** Sujet noir sur fond blanc opaque, avec une POCHE blanche enfermée dedans —
+   *  un reflet d'armure, un œil. C'est elle que le détourage doit épargner. */
+  function subjectOnWhite(): Rgba {
+    const img: Rgba = blank(9, 9);
+    for (let y: number = 0; y < 9; y++) {
+      for (let x: number = 0; x < 9; x++) put(img, x, y, 255, 255, 255, 255);
+    }
+    // Anneau noir de (2,2) à (6,6), intérieur laissé blanc.
+    for (let y: number = 2; y <= 6; y++) {
+      for (let x: number = 2; x <= 6; x++) {
+        const onRing: boolean = x === 2 || y === 2 || x === 6 || y === 6;
+        if (onRing) put(img, x, y, 10, 10, 10, 255);
+      }
+    }
+    return img;
+  }
+
+  it("retire le fond blanc atteignable depuis les bords", () => {
+    const img: Rgba = subjectOnWhite();
+    const removed: number = floodBackground(img);
+    expect(removed).toBeGreaterThan(0);
+    expect(alphaAt(img, 0, 0)).toBe(0);
+    expect(alphaAt(img, 8, 8)).toBe(0);
+  });
+
+  it("ÉPARGNE une poche claire enfermée dans le dessin", () => {
+    // Le piège classique du détourage par couleur : traiter « tout pixel clair »
+    // mange les reflets et les yeux. Déjà payé une fois par le projet (ADR-050).
+    const img: Rgba = subjectOnWhite();
+    floodBackground(img);
+    expect(alphaAt(img, 4, 4)).toBe(255); // cœur de la poche, intact
+    expect(alphaAt(img, 2, 2)).toBe(255); // contour noir, intact
+  });
+
+  it("ne touche pas un sujet sans fond clair", () => {
+    const img: Rgba = blank(5, 5);
+    for (let y: number = 0; y < 5; y++) for (let x: number = 0; x < 5; x++) put(img, x, y, 30, 40, 50, 255);
+    expect(floodBackground(img)).toBe(0);
+  });
+
+  it("est sans effet sur une image DÉJÀ détourée", () => {
+    // C'est ce qui permet de l'appliquer sans condition : un PNG à fond
+    // transparent traverse l'étape inchangé.
+    const img: Rgba = blank(7, 7);
+    for (let y: number = 2; y <= 4; y++) for (let x: number = 2; x <= 4; x++) put(img, x, y, 20, 20, 20, 255);
+    expect(floodBackground(img)).toBe(0);
+    expect(alphaAt(img, 3, 3)).toBe(255);
+  });
+
+  it("respecte le seuil : un gris moyen n'est pas du fond", () => {
+    const img: Rgba = blank(4, 4);
+    for (let y: number = 0; y < 4; y++) for (let x: number = 0; x < 4; x++) put(img, x, y, 150, 150, 150, 255);
+    expect(floodBackground(img, BACKGROUND_MIN)).toBe(0);
+    expect(floodBackground(img, 100)).toBe(16);
+  });
+
+  it("suit le fond dans une échancrure, jusqu'au fond du creux", () => {
+    // Un fond en U doit être vidé entièrement : le remplissage progresse, il ne
+    // se contente pas d'un anneau au bord de l'image.
+    const img: Rgba = blank(7, 5);
+    for (let y: number = 0; y < 5; y++) for (let x: number = 0; x < 7; x++) put(img, x, y, 255, 255, 255, 255);
+    for (let y: number = 0; y < 4; y++) { put(img, 2, y, 0, 0, 0, 255); put(img, 4, y, 0, 0, 0, 255); }
+    floodBackground(img);
+    expect(alphaAt(img, 3, 0)).toBe(0); // entre les deux murs, ouvert par le haut
+    expect(alphaAt(img, 3, 3)).toBe(0); // fond du creux, atteint en descendant
+  });
+});
+
+describe("isFringe — distinguer la frange du dessin clair", () => {
+  /** Bande horizontale : [vide] [bord clair] [intérieur] — on décide du bord. */
+  function strip(edge: readonly [number, number, number], inner: readonly [number, number, number]): Rgba {
+    const img: Rgba = blank(4, 1);
+    put(img, 1, 0, edge[0], edge[1], edge[2], 255);
+    put(img, 2, 0, inner[0], inner[1], inner[2], 255);
+    put(img, 3, 0, inner[0], inner[1], inner[2], 255);
+    return img;
+  }
+
+  it("retient un pixel clair posé devant un contour NOIR", () => {
+    // La frange typique : un dégradé vers le blanc qui borde le trait noir.
+    expect(isFringe(strip([250, 250, 250], [12, 12, 12]), 1, 0)).toBe(true);
+  });
+
+  it("ÉPARGNE un pixel clair posé devant un dessin AUSSI clair", () => {
+    // Le vrai défaut trouvé sur le troll et le chef de guerre : peau gris-bleu
+    // et lame claire étaient rongées couche après couche, sans jamais s'épuiser.
+    expect(isFringe(strip([200, 205, 210], [198, 203, 208]), 1, 0)).toBe(false);
+  });
+
+  it("épargne un pixel clair devant un dessin PLUS clair encore", () => {
+    expect(isFringe(strip([180, 180, 180], [230, 230, 230]), 1, 0)).toBe(false);
+  });
+
+  it("ne touche jamais un pixel sombre, même isolé", () => {
+    expect(isFringe(strip([20, 20, 20], [200, 200, 200]), 1, 0)).toBe(false);
+  });
+
+  it("retire un éclat clair sans rien derrière lui", () => {
+    // Un ou deux pixels flottants, restes de sélection : jamais du dessin.
+    const img: Rgba = blank(3, 1);
+    put(img, 1, 0, 245, 245, 245, 255);
+    expect(isFringe(img, 1, 0)).toBe(true);
+  });
+
+  it("exige un écart NET, pas une différence de bruit", () => {
+    // Sans marge, le grain du JPEG suffirait à déclarer « frange » et l'érosion
+    // repartirait pour un tour à chaque passe.
+    expect(isFringe(strip([204, 204, 204], [200, 200, 200]), 1, 0)).toBe(false);
+    expect(isFringe(strip([215, 215, 215], [200, 200, 200]), 1, 0)).toBe(true);
+  });
+});
+
+describe("stripFringe — convergence", () => {
+  it("s'arrête sur un sujet CLAIR au lieu de le ronger jusqu'au bout", () => {
+    // Le test de non-régression du défaut troll/warlord : un disque pâle bordé
+    // d'une frange plus pâle encore. Seule la frange doit partir.
+    const img: Rgba = blank(11, 11);
+    for (let y: number = 0; y < 11; y++) {
+      for (let x: number = 0; x < 11; x++) {
+        const d: number = Math.hypot(x - 5, y - 5);
+        if (d <= 3) put(img, x, y, 195, 200, 205, 255);      // sujet clair
+        else if (d <= 4.5) put(img, x, y, 250, 250, 250, 255); // frange plus claire
+      }
+    }
+    const before: number = [...img.data].filter((_, i) => i % 4 === 3 && img.data[i] !== 0).length;
+    stripFringe(img);
+    const after: number = [...img.data].filter((_, i) => i % 4 === 3 && img.data[i] !== 0).length;
+    expect(after).toBeGreaterThan(0);
+    expect(after).toBeLessThan(before);
+    expect(alphaAt(img, 5, 5)).toBe(255); // cœur du sujet intact
+    expect(alphaAt(img, 5, 2)).toBe(255); // bord du sujet clair, conservé
+  });
+});
+
+describe("isFringe — halo blanc uniforme", () => {
+  it("retire un halo à la couleur du fond, même adossé à du blanc", () => {
+    // Cas d'une sélection dure sous Photoshop : le halo est opaque et uniforme,
+    // donc chaque couche ressemble à la suivante et la règle du contraste seule
+    // ne mordrait jamais dedans. `floodBackground` l'ôte en amont dans la chaîne,
+    // mais `stripFringe` doit rester correcte utilisée seule.
+    const img: Rgba = blank(5, 1);
+    put(img, 1, 0, 252, 252, 252, 255);
+    put(img, 2, 0, 252, 252, 252, 255);
+    put(img, 3, 0, 15, 15, 15, 255);
+    expect(isFringe(img, 1, 0)).toBe(true);
+    stripFringe(img);
+    expect(alphaAt(img, 1, 0)).toBe(0);
+    expect(alphaAt(img, 2, 0)).toBe(0);
+    expect(alphaAt(img, 3, 0)).toBe(255); // le trait noir survit
   });
 });

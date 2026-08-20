@@ -38,9 +38,9 @@ Trois provenances y coexistent :
 
 | Origine | Fichiers | Licence |
 |---|---|---|
-| **CraftPix** (packs de monstres) | les sprites au nom hérité du pack : `goblin-knight`, `orc-fang`, `brute-zombie`, `steel-golem`, `ghost`, `dark-knight`, `troll`, `ogre`, `warlord`, et les 10 du deuxième acte | licence CraftPix (ADR-043/044/049) |
+| **CraftPix** (packs de monstres) | les sprites au nom hérité du pack, pas encore repris : `goblin-knight`, `ghost`, et les 10 du deuxième acte | licence CraftPix (ADR-043/044/049) |
 | **Génération IA, suffixe `-ai`** | volants, héros, tours (ADR-045/047) | générés pour le projet |
-| **Génération IA, nommés par `defId`** | `diablotin.png`, `scorpion.png` — refonte en cours (ADR-061) | générés pour le projet |
+| **Génération IA, nommés par `defId`** | `diablotin`, `scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord` — refonte en cours (ADR-061/063) | générés pour le projet |
 
 **Convention de nommage cible : `<defId>.png`, snake_case strict**, identique à l'identifiant
 dans `src/content/enemies.ts` / `towers.ts`. Les tours suffixent le palier et la spécialisation

@@ -4,15 +4,24 @@ Document de travail (PO). Chaque ligne = **un fichier à remplacer sur place**, 
 même nom. Le code n'a alors rien à changer : `sprites.ts` / `assets.ts` / `icons.ts` pointent
 déjà dessus (point de swap unique, ADR-005/012).
 
-## Méthode : un monstre à la fois
+## Méthode : tu génères, tu déposes, je fais le reste
 
-1. Tu génères **une** créature avec le préambule + son prompt spécifique.
-2. Tu me la donnes (fichier ou image) en me disant de quelle entité il s'agit.
-3. Je **renomme au format `<defId>.png`**, je place le fichier, je recâble `assets.ts`,
-   je lance `npm test` / `npm run lint` / `npm run build` et je contrôle le rendu en jeu.
-4. On passe au suivant.
+1. Tu génères les créatures avec le préambule + leur prompt spécifique.
+2. **Tu déposes les JPEG tels quels**, sans rien détourer, en les nommant d'après leur
+   `defId` (`troll.jpeg`, `dark_knight.jpeg`…). Un dossier commun suffit, tu me donnes le
+   chemin.
+3. Je convertis en PNG, je passe `npm run sprite` — qui **retire le fond blanc lui-même**
+   (ADR-063), décape la frange, rogne, adoucit le bord et réduit à 256 px —, je place le
+   fichier sous son `defId`, je recâble `assets.ts`, je lance tests / lint / build et je
+   contrôle le rendu en jeu.
 
-Les noms actuels viennent des packs sources, pas du jeu — d'où le renommage.
+**Ne détoure plus rien sous Photoshop.** C'était contre-productif : une sélection dure
+supprime l'anticrénelage et rend les pixels de frange totalement opaques — la reprise
+« plus propre » du scorpion était pire que la première (1 067 → 3 552 pixels clairs en
+bordure). L'outil s'appuie sur une propriété vraie de tous ces sprites : fond uni clair,
+contour noir fermé.
+
+Les noms de fichiers actuels viennent des packs sources, pas du jeu — d'où le renommage.
 
 ### Convention de nommage
 
@@ -61,11 +70,14 @@ sera renommé (`skin-ai/` ou équivalent) et le README des licences mis à jour,
 1. **Je m'occupe du renommage et du recâblage.** `assets.integrity.test.ts` échoue si un
    fichier cité n'existe pas, ou si un fichier présent n'est chargé par personne — donc pas
    de dépôt « en avance » d'un asset sans entité correspondante.
-2. **PNG avec vraie transparence alpha**, jamais de fond blanc ni de damier. Gemini rend
-   souvent un fond opaque : détourer avant d'intégrer.
-3. **Rogner les marges transparentes** au plus près de la silhouette. Les tailles d'affichage
-   (`size` dans `sprites.ts`) supposent un sprite serré ; du vide autour = sprite qui paraît
-   deux fois trop petit en jeu.
+2. **Dépose les JPEG bruts, fond blanc compris.** Le détourage est fait par l'outil
+   (ADR-063) : remplissage depuis les bords, qui épargne les zones claires ENFERMÉES dans
+   le dessin (reflets d'armure, yeux, dents). Ce que le prompt doit garantir, c'est un
+   **fond uni clair** et un **contour noir fermé** — les deux conditions du procédé.
+3. **Ne rogne pas, ne redimensionne pas, ne retouche pas.** L'outil rogne au pixel près sur
+   l'alpha et réduit à 256 px de grand côté. À la main, on laisse toujours du jeu — et les
+   tailles d'affichage (`size` dans `sprites.ts`) supposent un sprite serré : du vide autour
+   donne un sprite qui paraît deux fois trop petit en jeu.
 4. **Proportions natives libres** (`fitSquare` s'en charge, ADR-046) — pas besoin de carré.
 5. **Ne pas remplacer les `.svg` par des `.png`** : ils sont chargés via `load.svg` avec une
    taille de rasterisation. Un PNG à la place échoue au chargement. Voir « Cas particulier SVG ».

@@ -43,12 +43,12 @@ const CRAFTPIX: Record<string, string> = {
   spr_troll: "troll.png",
   spr_ghost: "ghost.png",
   spr_ogre: "ogre.png",
-  spr_dark_knight: "dark-knight.png",
+  spr_dark_knight: "dark_knight.png",
   spr_diablotin: "diablotin.png",
   spr_goblin: "goblin-knight.png",
-  spr_orc: "orc-fang.png",
-  spr_brute: "brute-zombie.png",
-  spr_golem: "steel-golem.png",
+  spr_orc: "orc.png",
+  spr_brute: "brute.png",
+  spr_golem: "golem.png",
   spr_warlord: "warlord.png",
   // Créatures volantes générées par IA (ADR-045) : aucune des 20 variantes
   // CraftPix des deux packs de monstres n'en propose — dernier reliquat du

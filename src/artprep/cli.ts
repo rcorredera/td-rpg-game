@@ -20,7 +20,7 @@
 // ============================================================
 
 import {
-  crop, downscale, dropFragments, feather, lightBorderCount,
+  crop, downscale, dropFragments, feather, floodBackground, lightBorderCount,
   type FragmentResult, type FringeResult, type Rgba,
   stripFringe,
 } from "./image";
@@ -61,6 +61,9 @@ const keepFragments: boolean = flags.includes("--keep-fragments");
 let img: Rgba = decode(readFileSync(src));
 const sourceSize: string = `${img.width}x${img.height}`;
 
+// Détourage d'abord : Gemini livre sur fond blanc opaque. Sur une image déjà
+// détourée, l'étape ne trouve rien et ne fait rien.
+const background: number = floodBackground(img);
 const fringe: FringeResult = stripFringe(img);
 const fragments: FragmentResult = keepFragments
   ? { dropped: 0, droppedPx: 0, kept: [] }
@@ -76,6 +79,7 @@ writeFileSync(dst, encode(img));
 const lines: string[] = [
   `${src} -> ${dst}`,
   `  source          ${sourceSize}`,
+  `  fond retiré     ${background} px`,
   `  frange claire   ${fringe.removed} px en ${fringe.passes} passe(s)`,
   `  fragments       ${fragments.dropped} détaché(s) supprimé(s), ${fragments.droppedPx} px`,
   `  rognage         ${cropped}`,
