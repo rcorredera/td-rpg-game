@@ -26,6 +26,16 @@ public/assets/  Assets du jeu — voir README.md du dossier (licences + provenan
 
 Conséquences : testable sans navigateur, et si un jour il faut un serveur autoritaire (leaderboards de Failles), la sim tourne côté serveur telle quelle.
 
+`core/sim.ts` — `stepOnce` (ADR-058) : le pas de simulation est découpé en six phases NOMMÉES
+(`spawnDueEnemies`, `stepHero`, `resolveMelee`, `advanceEnemies`, `fireTowers`, `resolveEndOfWave`),
+et `stepOnce` n'est plus que leur enchaînement. L'ordre est une décision de gameplay — les tours
+tirent APRÈS le déplacement, sinon elles viseraient la position du tick précédent — donc il se lit
+en six lignes au lieu de se déduire de commentaires distants de 70 lignes. Le couplage entre phases
+passe par les signatures (`resolveMelee` rend l'ennemi bloqué, `advanceEnemies` rend `false` quand
+un boss atteint le château) et non par des variables locales partagées. Règle générale : quand
+l'ORDRE de plusieurs traitements porte une décision métier, cet ordre doit être une liste d'appels
+lisible d'un coup d'œil, pas une succession de blocs dans une longue fonction.
+
 ## Persistence (ADR-002)
 
 Le profil passe par l'interface `SaveAdapter` (`meta/save.ts`). Implémentation v0 : localStorage avec validation/fallback sur profil neuf si corruption. Un swap vers cloud save ne touche que ce fichier.

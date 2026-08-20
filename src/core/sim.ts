@@ -349,8 +349,30 @@ export function tick(s: RunState, c: ContentPack, dtReal: number): SimEvent[] {
   return events;
 }
 
+/**
+ * Un pas de simulation, décomposé en six phases dans un ORDRE qui est une
+ * décision de gameplay et non un détail (ADR-058) : on fait naître, puis on
+ * déplace, puis on frappe, puis on conclut. Déplacer une phase change le jeu —
+ * une tour qui tirerait avant que les ennemis n'avancent viserait la position
+ * du tick précédent.
+ *
+ * Chaque phase est une fonction nommée. Le couplage entre elles passe par des
+ * valeurs de retour explicites, jamais par des variables partagées :
+ * `resolveMelee` rend l'ennemi bloqué que `advanceEnemies` doit laisser sur
+ * place, et `advanceEnemies` rend `false` quand un boss a atteint le château —
+ * le run est fini, les tours n'ont plus à tirer.
+ */
 function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, lengthsByPath: number[][], events: SimEvent[]): void {
-  // 1. Spawns — chacun sur son chemin d'arrivée
+  spawnDueEnemies(s, c, ch);
+  stepHero(s, c, dt);
+  const blockedUid: number | null = resolveMelee(s, c, dt, events);
+  if (!advanceEnemies(s, c, ch, dt, lengthsByPath, blockedUid, events)) return;
+  fireTowers(s, c, ch, dt, events);
+  resolveEndOfWave(s, ch, events);
+}
+
+/** 1. Naissances dues : chaque spawn arrive sur SON chemin (ADR-004). */
+function spawnDueEnemies(s: RunState, c: ContentPack, ch: PlayableChapter): void {
   for (let i: number = s.pendingSpawns.length - 1; i >= 0; i--) {
     const p: PendingSpawn = s.pendingSpawns[i]!;
     if (s.time >= p.at) {
@@ -365,8 +387,10 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
       s.pendingSpawns.splice(i, 1);
     }
   }
+}
 
-  // 2. Héros : respawn, déplacement
+/** 2. Héros : réapparition puis déplacement vers la cible désignée au doigt. */
+function stepHero(s: RunState, c: ContentPack, dt: number): void {
   const h: HeroState = s.hero;
   if (!h.alive && s.time >= h.respawnAt) {
     h.alive = true; h.hp = h.maxHp;
@@ -379,8 +403,15 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
       h.pos.y += ((h.target.y - h.pos.y) / d) * step;
     }
   }
+}
 
-  // 3. Blocage mêlée : le héros bloque l'ennemi terrestre le plus avancé à portée
+/**
+ * 3. Blocage au corps à corps : le héros retient l'ennemi terrestre le PLUS
+ * AVANCÉ à portée — celui qui menace le château, pas le plus proche.
+ * Rend son `uid` pour que la phase de déplacement le laisse sur place.
+ */
+function resolveMelee(s: RunState, c: ContentPack, dt: number, events: SimEvent[]): number | null {
+  const h: HeroState = s.hero;
   let blockedUid: number | null = null;
   if (h.alive) {
     let best: EnemyState | null = null;
@@ -402,8 +433,18 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
       }
     }
   }
+  return blockedUid;
+}
 
-  // 4. Déplacement ennemis — chacun sur son chemin (+ brûlure des spécialisations feu)
+/**
+ * 4. Déplacement des ennemis (+ brûlure des spécialisations feu).
+ * Rend `false` si un BOSS a atteint le château : le run est perdu sur-le-champ
+ * et le pas de simulation s'arrête là (ADR-024).
+ */
+function advanceEnemies(
+  s: RunState, c: ContentPack, ch: PlayableChapter, dt: number,
+  lengthsByPath: number[][], blockedUid: number | null, events: SimEvent[],
+): boolean {
   for (const e of s.enemies) {
     if (!e.alive) continue;
     // La brûlure ronge un % des PV max : elle IGNORE l'armure, ce qui en fait la
@@ -428,36 +469,50 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
       // Un boss doit être ABATTU pour emporter le niveau. Sans cette règle, il
       // suffisait de le laisser passer : atteindre le château le retirait du jeu,
       // la vague se terminait et la victoire tombait quand même (ADR-024).
-      if (e.boss) { s.castleHp = Math.max(0, s.castleHp); s.phase = "defeat"; return; }
+      if (e.boss) { s.castleHp = Math.max(0, s.castleHp); s.phase = "defeat"; return false; }
     }
   }
+  return true;
+}
 
-  // 5. Tirs des tours — cibles les plus avancées à portée (multishot via spécialisation)
+/**
+ * Aura de givre (spécialisation) : la tour ne TIRE pas, elle ralentit en continu
+ * tout ce qui entre dans son rayon. Séparée du tir parce que c'est une mécanique
+ * distincte et non une variante — elle n'a ni cadence, ni cible, ni projectile.
+ */
+function applyFrostAura(
+  s: RunState, c: ContentPack, aura: NonNullable<TowerSpecDef["aura"]>,
+  def: TowerDef, slot: Vec2, dt: number, events: SimEvent[],
+): void {
+  for (const e of s.enemies) {
+    const eDef: EnemyDef = c.enemies[e.defId]!;
+    if (!e.alive || (def.groundOnly && eDef.flying) || eDef.slowImmune) continue;
+    if (dist(e.pos, slot) <= aura.radius) {
+      e.slowUntil = s.time + 0.15;
+      e.slowFactor = aura.slowFactor;
+      // L'armure s'applique au TAUX par seconde, pas par tick (1/60 s) : lui
+      // faire traverser `damageEnemy` telle quelle appliquerait le plancher
+      // d'armure à un dégât minuscule à CHAQUE tick, écrasant l'aura à 25 %
+      // de sa valeur nominale dès la moindre armure. On réduit donc le taux
+      // ICI puis on passe `ignoreArmor` pour ne pas la compter deux fois.
+      if (aura.dps) {
+        const armor: number = eDef.armor ?? 0;
+        const netDps: number = armor > 0 ? Math.max(aura.dps * ARMOR_FLOOR, aura.dps - armor) : aura.dps;
+        damageEnemy(s, c, e, netDps * dt, events, false, true);
+      }
+    }
+  }
+}
+
+/** 5. Tirs des tours : cibles les plus avancées à portée, multishot compris. */
+function fireTowers(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, events: SimEvent[]): void {
   for (const t of s.towers) {
     const def: TowerDef = c.towers[t.defId]!;
     const spec: TowerSpecDef | undefined = specOf(c, t);
 
-    // Aura de givre (spécialisation) : pas de tir, ralentissement continu dans le rayon
+    // Aura de givre : pas de tir du tout, la tour agit en continu.
     if (spec?.aura) {
-      const slot: Vec2 = ch.map.slots[t.slotIndex]!;
-      for (const e of s.enemies) {
-        const eDef: EnemyDef = c.enemies[e.defId]!;
-        if (!e.alive || (def.groundOnly && eDef.flying) || eDef.slowImmune) continue;
-        if (dist(e.pos, slot) <= spec.aura.radius) {
-          e.slowUntil = s.time + 0.15;
-          e.slowFactor = spec.aura.slowFactor;
-          // L'armure s'applique au TAUX par seconde, pas par tick (1/60 s) : lui
-          // faire traverser `damageEnemy` telle quelle appliquerait le plancher
-          // d'armure à un dégât minuscule à CHAQUE tick, écrasant l'aura à 25 %
-          // de sa valeur nominale dès la moindre armure. On réduit donc le taux
-          // ICI puis on passe `ignoreArmor` pour ne pas la compter deux fois.
-          if (spec.aura.dps) {
-            const armor: number = eDef.armor ?? 0;
-            const netDps: number = armor > 0 ? Math.max(spec.aura.dps * ARMOR_FLOOR, spec.aura.dps - armor) : spec.aura.dps;
-            damageEnemy(s, c, e, netDps * dt, events, false, true);
-          }
-        }
-      }
+      applyFrostAura(s, c, spec.aura, def, ch.map.slots[t.slotIndex]!, dt, events);
       continue;
     }
 
@@ -508,8 +563,11 @@ function stepOnce(s: RunState, c: ContentPack, ch: PlayableChapter, dt: number, 
       }
     }
   }
+}
 
-  // 6. Fin de vague / de run
+/** 6. Fin de vague / de run : défaite si le château tombe, sinon revenu de vague
+ *  nettoyée puis passage à la vague suivante ou victoire. */
+function resolveEndOfWave(s: RunState, ch: PlayableChapter, events: SimEvent[]): void {
   if (s.castleHp <= 0) { s.castleHp = 0; s.phase = "defeat"; return; }
   if (s.phase === "wave" && s.pendingSpawns.length === 0 && s.enemies.every(e => !e.alive)) {
     s.enemies = [];
