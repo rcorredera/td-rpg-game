@@ -162,6 +162,12 @@ export function tileFor(kind: TileKind): SpriteRef {
  *  encore aux FX (flamme d'explosion) le temps de leur reprise. */
 export const SHEET_FRAME_MAX: number = 298;
 
+/** Dimensions d'affichage d'un sprite, proportions natives conservées (ADR-046).
+ *  Nommée plutôt que recopiée : la forme sert au rendu ET à ses tests
+ *  (`.ai/conventions.md` — un type anonyme utilisé plus d'une fois devient une
+ *  interface). */
+export interface SpriteFit { w: number; h: number }
+
 /**
  * Dimensions d'affichage qui FONT TENIR une texture de `nativeW`×`nativeH` dans
  * une case `target`×`target`, en conservant ses proportions natives.
@@ -174,7 +180,7 @@ export const SHEET_FRAME_MAX: number = 298;
  * en combat ET dans le Bestiaire. Le plus grand côté est calé sur `target`,
  * l'autre suit au même ratio ; jamais l'inverse (qui déborderait la case).
  */
-export function fitSquare(nativeW: number, nativeH: number, target: number): { w: number; h: number } {
+export function fitSquare(nativeW: number, nativeH: number, target: number): SpriteFit {
   if (nativeW <= 0 || nativeH <= 0) return { w: target, h: target };
   const scale: number = target / Math.max(nativeW, nativeH);
   return { w: nativeW * scale, h: nativeH * scale };

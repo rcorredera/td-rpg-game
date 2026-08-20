@@ -11,7 +11,6 @@
 // ============================================================
 
 declare global {
-  // eslint-disable-next-line no-var -- déclaration ambiante Vite, pas une variable de module.
   const __BUILD_ID__: string;
 }
 

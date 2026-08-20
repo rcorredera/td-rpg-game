@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { CONTENT } from "../../content/index";
 import { enemyView, fitSquare, heroView, keepView, SHEET_FRAME_MAX, tileFor, towerView, type SpriteRef, type TileKind } from "./sprites";
-import type { TowerView } from "./sprites";
+import type { SpriteFit, TowerView } from "./sprites";
 
 /** Une référence doit désigner soit une texture autonome (`key` seul), soit une
  *  frame de planche valide. Les deux formes coexistent depuis ADR-016. */
@@ -81,20 +81,20 @@ describe("paliers visuels de tour (ADR-017)", () => {
 describe("fitSquare (ADR-046)", () => {
   it("garde le côté le plus grand calé sur la cible, sans dépasser", () => {
     // Chauve-souris rognée à sa silhouette : ~2:1, bien plus large que haute.
-    const wide = fitSquare(380, 184, 50);
+    const wide: SpriteFit = fitSquare(380, 184, 50);
     expect(wide.w).toBeCloseTo(50, 5);
     expect(wide.h).toBeLessThan(wide.w);
     expect(wide.h).toBeCloseTo(184 * (50 / 380), 5);
   });
 
   it("étire dans l'autre sens pour un sprite plus haut que large", () => {
-    const tall = fitSquare(134, 212, 50);
+    const tall: SpriteFit = fitSquare(134, 212, 50);
     expect(tall.h).toBeCloseTo(50, 5);
     expect(tall.w).toBeLessThan(tall.h);
   });
 
   it("ne déforme jamais une texture déjà carrée", () => {
-    const square = fitSquare(200, 200, 50);
+    const square: SpriteFit = fitSquare(200, 200, 50);
     expect(square.w).toBeCloseTo(50, 5);
     expect(square.h).toBeCloseTo(50, 5);
   });
