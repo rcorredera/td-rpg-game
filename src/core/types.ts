@@ -458,4 +458,7 @@ export type SimEvent =
   | { type: "waveIncome"; gold: number }
   | { type: "castleHit"; damage: number }
   | { type: "heroDied" }
-  | { type: "explosion"; pos: Vec2; radius: number };
+  // `towerDefId` absent = explosion d'un pouvoir du héros (tourbillon, sort de
+  // compte) plutôt que de l'impact d'une tour à zone — le rendu choisit son SFX
+  // en fonction (ADR-054).
+  | { type: "explosion"; pos: Vec2; radius: number; towerDefId?: string; specId?: string | null };

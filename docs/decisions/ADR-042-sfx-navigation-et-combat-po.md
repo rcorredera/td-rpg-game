@@ -31,9 +31,8 @@ Deux catégories de besoin distinctes :
 - `bestiaryOpen` (`sfx-bestiary-open.ogg`, `map_open.wav`) et `chroniclesOpen`
   (`sfx-chronicles-open.ogg`, `sword_slice.wav`) — joués UNIQUEMENT à l'ouverture de ces deux
   tuiles depuis le Campement (`homeView.ts`, nouveau champ `sfx?: SfxKey` par entrée). Les 3
-  autres tuiles (Histoire, Failles, Armurerie) restent silencieuses : `uiTile` n'a jamais joué
-  de son (contrairement à `uiButton`), pas de doublon à éviter mais pas de son générique non
-  plus — seuls ces 2 rôles ont un SFX dédié demandé par le PO.
+  autres tuiles (Histoire, Failles, Armurerie) restent silencieuses à ce stade — révisé par
+  ADR-053 (réemploi de ces mêmes rôles pour Histoire et l'entrée en niveau).
 
 **SFX de combat, avec variantes selon spécialisation** (catégorie `damage`) :
 - `shotArcher`/`shotArcherSpec` (`Bow Attack 1`/`2`) — l'Archerie de base tire différemment

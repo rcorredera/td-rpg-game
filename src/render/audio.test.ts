@@ -60,7 +60,7 @@ describe("routage par catégorie/master (ADR-038)", () => {
     // (uiClick, purchase, bestiaryOpen, chroniclesOpen) sont volontairement exclus :
     // « notifications », pas « dégâts » (ADR-042).
     const s: AudioSettings = { ...ALL_ON, damage: false, notifications: true };
-    const notificationKeys: SfxKey[] = ["uiClick", "purchase", "bestiaryOpen", "chroniclesOpen"];
+    const notificationKeys: SfxKey[] = ["uiClick", "purchase", "bestiaryOpen", "chroniclesOpen", "victory", "defeat"];
     const damageKeys: SfxKey[] = (Object.keys(SFX) as SfxKey[]).filter(k => !notificationKeys.includes(k));
     for (const key of damageKeys) expect(sfxEnabled(s, key)).toBe(false);
   });

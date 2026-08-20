@@ -16,7 +16,7 @@ les tests — c'est voulu.
 | `tiny-swords/` | UI 9-slice, bâtiments, FX, décors — voir plus bas | **Pixel Frog** — pixelfrog-assets.itch.io | **CC0** |
 | `kenney-td/` | `sheet.png` seule (planche 64×64, 23 colonnes) — ne sert plus qu'aux FX | Kenney (kenney.nl) | **CC0** |
 | `kenney-ui/` | 4 images : `btn-grey`, `btn-yellow`, `panel-grey`, `divider` | Kenney (kenney.nl) | **CC0** |
-| `audio/` (SFX) | 15 SFX (tirs + variantes spécialisées, impact, morts, dégât château, coup d'épée héros, clic UI, navigation, achat) — voir détail plus bas | Kenney + RPG Sound Pack + 400 Sounds Pack + Free Fantasy SFX Pack (TomMusic) | **CC0/gratuit** |
+| `audio/` (SFX) | 20 SFX (tirs + variantes spécialisées, impact, morts, dégât château, coup d'épée héros, clic UI, navigation, achat, sorts héros, victoire/défaite) — voir détail plus bas | Kenney + RPG Sound Pack + 400 Sounds Pack + Free Fantasy SFX Pack (TomMusic) | **CC0/gratuit** |
 | `audio/music-menu.ogg` | Musique de menu, boucle fabriquée par montage (ADR-039) — voir détail plus bas | Nastelbom (déclaré) | non confirmée, non bloquant (ADR-041) |
 | `../fonts/` | Cinzel (titres) + Alegreya (textes) | Natanael Gama / Juan Pablo del Peral | **OFL 1.1** |
 
@@ -52,24 +52,30 @@ exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir b
 
 ## `audio/` — détail (ADR-037/038/040/041/042)
 
-15 SFX, quatre sources.
+20 SFX, quatre sources.
 
 | Fichier | Pack source | Fichier d'origine |
 |---|---|---|
 | `sfx-shot-archer.ogg` | Free Fantasy SFX Pack (TomMusic, itch.io) | `Bow Attack 1.wav` |
 | `sfx-shot-archer-spec.ogg` | Free Fantasy SFX Pack (TomMusic) | `Bow Attack 2.wav` (Archerie spécialisée, ADR-042) |
-| `sfx-shot-catapult.ogg` | Kenney — Impact Sounds | `impactWood_heavy_000.ogg` (ADR-041 : un swing d'épée ne convenait pas à un engin de siège) |
-| `sfx-shot-frost.ogg` | Free Fantasy SFX Pack (TomMusic) | `Ice Throw 1.wav` |
+| `sfx-shot-catapult.ogg` | Free Fantasy SFX Pack (TomMusic) | `Rock Meteor Throw 1.wav` (ADR-053 : remplace `impactWood_heavy_000.ogg` d'ADR-041, jugé pas assez « impact de projectile lourd » par le PO) |
+| `sfx-shot-frost.ogg` | Free Fantasy SFX Pack (TomMusic) | `Ice Barrage 1.wav` (ADR-053 : remplace `Ice Throw 1.wav`, jugé pas adapté par le PO) |
 | `sfx-shot-frost-fire.ogg` | Free Fantasy SFX Pack (TomMusic) | `Fireball 1.wav` (spécialisation « Givre ardent », ADR-042) |
-| `sfx-impact.ogg` | RPG Sound Pack | `battle/spell.wav` |
+| `sfx-impact.ogg` | RPG Sound Pack | `battle/spell.wav` — impact générique (catapulte, sort de compte hors seuil) |
+| `sfx-impact-frost.ogg` | Free Fantasy SFX Pack (TomMusic) | `Ice Freeze 1.wav` (ADR-054 : impact dédié de la tour de givre, jusqu'ici indifférenciable de l'impact générique ET du tourbillon du héros) |
 | `sfx-enemy-died.ogg` | RPG Sound Pack | `NPC/gutteral beast/mnstr3.wav` |
 | `sfx-castle-hit.ogg` | Kenney — Impact Sounds | `impactBell_heavy_000.ogg` |
 | `sfx-hero-died.ogg` | RPG Sound Pack | `inventory/armor-light.wav` |
 | `sfx-hero-attack.ogg` | Free Fantasy SFX Pack (TomMusic) | `Sword Attack 1.wav` (ADR-042) |
 | `sfx-ui-click.ogg` | 400 Sounds Pack (itch.io) | `item_equip.wav` (ADR-042) |
 | `sfx-purchase.ogg` | 400 Sounds Pack (itch.io) | `coins_gather_quick.wav` (ADR-042) |
-| `sfx-bestiary-open.ogg` | 400 Sounds Pack (itch.io) | `map_open.wav` (ADR-042) |
-| `sfx-chronicles-open.ogg` | 400 Sounds Pack (itch.io) | `sword_slice.wav` (ADR-042) |
+| `sfx-bestiary-open.ogg` | 400 Sounds Pack (itch.io) | `map_open.wav` (ADR-042 ; réutilisé pour Histoire depuis ADR-053) |
+| `sfx-chronicles-open.ogg` | 400 Sounds Pack (itch.io) | `sword_slice.wav` (ADR-042 ; réutilisé pour l'entrée en niveau depuis ADR-053) |
+| `sfx-victory.wav` | 400 Sounds Pack (itch.io) | `brass_positive_long.wav` (ADR-053) |
+| `sfx-defeat.wav` | 400 Sounds Pack (itch.io) | `brass_defeated.wav` (ADR-053) |
+| `sfx-hero-whirlwind.wav` | 400 Sounds Pack (itch.io) | `whoosh_1.wav` (ADR-053) |
+| `sfx-hero-rally.wav` | 400 Sounds Pack (itch.io) | `brass_chime_quick.wav` (ADR-053) |
+| `sfx-account-spell.ogg` | Free Fantasy SFX Pack (TomMusic) | `Rock Meteor Swarm 1.wav` (ADR-053 : distingue le sort de compte d'un simple impact de tour à zone) |
 
 Kenney (kenney.nl) et RPG Sound Pack (artisticdude, opengameart.org/content/rpg-sound-pack) :
 **CC0**. 400 Sounds Pack et Free Fantasy SFX Pack by TomMusic (tommusic.itch.io) : packs

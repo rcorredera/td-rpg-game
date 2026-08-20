@@ -5,6 +5,7 @@
 
 import Phaser from "phaser";
 import { CONTENT } from "../../content/index";
+import { playSfx } from "../audio";
 import {
   buildTower, sellRefundFor, sellTower, specializeTower, specOf, upgradeTower,
 } from "../../core/sim";
@@ -30,7 +31,9 @@ function measureTextWidth(scene: Phaser.Scene, txt: string, px: number): number 
 
 /** Entrées du slot : construction (vide) ou amélioration/spécialisation/vente
  *  (occupé). `close` est appelé après toute action, mutation de sim ou non. */
-function buildEntries(run: RunState, slotIdx: number, existing: TowerState | undefined, unlocks: string[], close: () => void): SlotMenuEntry[] {
+function buildEntries(
+  scene: Phaser.Scene, run: RunState, slotIdx: number, existing: TowerState | undefined, unlocks: string[], close: () => void,
+): SlotMenuEntry[] {
   if (!existing) {
     // cb null = entrée désactivée (or insuffisant) : grisée, coût en rouge.
     // sub/sub2 = lignes secondaires (pitch, stats).
@@ -46,7 +49,7 @@ function buildEntries(run: RunState, slotIdx: number, existing: TowerState | und
           label: `${t.name} (${cost} ◆)`,
           sub: `⚔ ${lv1.damage}  ⊙ ${lv1.range}  ${lv1.fireRate}/s · ${role}${extra}`,
           color: afford ? C.uiText : "#e74c3c",
-          cb: afford ? () => { buildTower(run, CONTENT, slotIdx, t.id, unlocks); close(); } : null,
+          cb: afford ? () => { buildTower(run, CONTENT, slotIdx, t.id, unlocks); playSfx(scene, "purchase"); close(); } : null,
         };
       });
   }
@@ -61,7 +64,7 @@ function buildEntries(run: RunState, slotIdx: number, existing: TowerState | und
       label: `Améliorer niv.${existing.level + 1} (${cost} ◆)`,
       sub: `⚔ ${cur.damage}→${next.damage}  ⊙ ${cur.range}→${next.range}  ${cur.fireRate}→${next.fireRate}/s`,
       color: afford ? C.uiText : "#e74c3c",
-      cb: afford ? () => { upgradeTower(run, CONTENT, slotIdx); close(); } : null,
+      cb: afford ? () => { upgradeTower(run, CONTENT, slotIdx); playSfx(scene, "purchase"); close(); } : null,
     });
   } else if (!existing.specId && def.specs?.length && !run.canSpecialize) {
     // Rang 4 verrouillé à la méta : le dire, plutôt que d'afficher des options
@@ -85,7 +88,7 @@ function buildEntries(run: RunState, slotIdx: number, existing: TowerState | und
         sub: sp.desc,
         sub2: stats,
         color: afford ? "#e8c252" : "#e74c3c",
-        cb: afford ? () => { specializeTower(run, CONTENT, slotIdx, sp.id); close(); } : null,
+        cb: afford ? () => { specializeTower(run, CONTENT, slotIdx, sp.id); playSfx(scene, "purchase"); close(); } : null,
       });
     }
   } else {
@@ -97,7 +100,7 @@ function buildEntries(run: RunState, slotIdx: number, existing: TowerState | und
   entries.push({
     label: `Vendre (+${refund} ◆)`,
     color: "#e8a87c",
-    cb: () => { sellTower(run, CONTENT, slotIdx); close(); },
+    cb: () => { sellTower(run, CONTENT, slotIdx); playSfx(scene, "purchase"); close(); },
   });
   return entries;
 }
@@ -117,7 +120,7 @@ export function buildSlotMenu(
     Phaser.Math.Clamp(slot.x, v.safeLeft + 125, v.safeRight - 125),
     Math.max(v.safeTop + 70, slot.y - 70),
   );
-  const entries: SlotMenuEntry[] = buildEntries(run, slotIdx, existing, unlocks, close);
+  const entries: SlotMenuEntry[] = buildEntries(scene, run, slotIdx, existing, unlocks, close);
 
   // Largeur DÉRIVÉE du contenu : à 230 en dur, la ligne descriptive la plus
   // longue mesurait 275 unités et débordait des deux côtés du panneau. Le défaut

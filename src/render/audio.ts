@@ -25,6 +25,7 @@ export const SFX = {
   shotFrost: "sfx_shot_frost",
   shotFrostFire: "sfx_shot_frost_fire",
   impact: "sfx_impact",
+  impactFrost: "sfx_impact_frost",
   enemyDied: "sfx_enemy_died",
   castleHit: "sfx_castle_hit",
   heroDied: "sfx_hero_died",
@@ -33,6 +34,11 @@ export const SFX = {
   purchase: "sfx_purchase",
   bestiaryOpen: "sfx_bestiary_open",
   chroniclesOpen: "sfx_chronicles_open",
+  victory: "sfx_victory",
+  defeat: "sfx_defeat",
+  heroWhirlwind: "sfx_hero_whirlwind",
+  heroRally: "sfx_hero_rally",
+  accountSpell: "sfx_account_spell",
 } as const;
 
 export type SfxKey = keyof typeof SFX;
@@ -41,10 +47,14 @@ export type SfxKey = keyof typeof SFX;
 const FILES: Record<SfxKey, string> = {
   shotArcher: "sfx-shot-archer.ogg",
   shotArcherSpec: "sfx-shot-archer-spec.ogg",
+  // ADR-053 : remplace le fichier initial d'ADR-042, jugé inadapté par le PO
+  // (pas assez « impact de projectile lourd ») — piste « Rock Meteor Throw »
+  // du pack TomMusic, déjà sourcée (mêmes conditions de licence).
   shotCatapult: "sfx-shot-catapult.ogg",
   shotFrost: "sfx-shot-frost.ogg",
   shotFrostFire: "sfx-shot-frost-fire.ogg",
   impact: "sfx-impact.ogg",
+  impactFrost: "sfx-impact-frost.ogg",
   enemyDied: "sfx-enemy-died.ogg",
   castleHit: "sfx-castle-hit.ogg",
   heroDied: "sfx-hero-died.ogg",
@@ -53,6 +63,11 @@ const FILES: Record<SfxKey, string> = {
   purchase: "sfx-purchase.ogg",
   bestiaryOpen: "sfx-bestiary-open.ogg",
   chroniclesOpen: "sfx-chronicles-open.ogg",
+  victory: "sfx-victory.wav",
+  defeat: "sfx-defeat.wav",
+  heroWhirlwind: "sfx-hero-whirlwind.wav",
+  heroRally: "sfx-hero-rally.wav",
+  accountSpell: "sfx-account-spell.ogg",
 };
 
 /** Volume par rôle (mix relatif, sous le volume global — ADR-038). Défaut
@@ -72,6 +87,7 @@ const CATEGORY_BY_KEY: Record<SfxKey, AudioCategory> = {
   shotFrost: "damage",
   shotFrostFire: "damage",
   impact: "damage",
+  impactFrost: "damage",
   enemyDied: "damage",
   castleHit: "damage",
   heroDied: "damage",
@@ -80,6 +96,11 @@ const CATEGORY_BY_KEY: Record<SfxKey, AudioCategory> = {
   purchase: "notifications",
   bestiaryOpen: "notifications",
   chroniclesOpen: "notifications",
+  victory: "notifications",
+  defeat: "notifications",
+  heroWhirlwind: "damage",
+  heroRally: "damage",
+  accountSpell: "damage",
 };
 
 /** Tir d'une tour → SFX, variante selon la spécialisation niv.4 active (ADR-042) :
@@ -98,6 +119,19 @@ export function shotSfx(towerDefId: string, specId: string | null = null): SfxKe
   const pick: ((specId: string | null) => SfxKey) | undefined = SHOT_BY_TOWER[towerDefId];
   if (!pick) throw new Error(`audio: tour non mappée « ${towerDefId} »`);
   return pick(specId);
+}
+
+/** Impact d'une tour À ZONE (`explosion` de sim avec `towerDefId`) → SFX
+ *  (ADR-054) : le givre a désormais son propre éclat glacé plutôt que
+ *  l'« impact » générique — sinon indifférenciable du tourbillon du héros, qui
+ *  utilisait le même son (confondant : deux sources totalement différentes).
+ *  Toute autre tour à zone (catapulte) retombe sur l'impact générique. */
+const IMPACT_BY_TOWER: Partial<Record<string, SfxKey>> = {
+  tower_frost: "impactFrost",
+};
+
+export function impactSfx(towerDefId: string): SfxKey {
+  return IMPACT_BY_TOWER[towerDefId] ?? "impact";
 }
 
 /** Charge tous les SFX. Idempotent entre scènes (cache Phaser), comme preloadSprites/preloadIcons. */

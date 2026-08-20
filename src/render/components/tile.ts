@@ -19,6 +19,7 @@ import { uiRibbon, uiRibbonAvailable, uiRibbonHeight, uiRibbonKey, type RibbonTo
 import { composeTile } from "./tileContent";
 import type { TileContentBox } from "./tileContent";
 import type { Vec2 } from "../../core/types";
+import { UI_SKIN_RIBBON_BIG } from "../uiSkin";
 
 export interface UiTileOpts {
   w: number;
@@ -127,7 +128,17 @@ export function uiTile(scene: Phaser.Scene, x: number, y: number, opts: UiTileOp
   // Origine CENTRÉE une fois posé sur le ruban : aligner son haut le décalerait
   // vers le bas d'une demi-hauteur de ruban.
   title.setOrigin(0.5, ruban ? 0.5 : 0);
-  title.setY(ruban ? box.titleTop + titleBlockH / 2 : box.titleTop);
+  // La grande planche de ruban (ADR-035, tuile PRINCIPALE) n'a pas son encre
+  // centrée dans sa cellule source : mesuré pixel par pixel sur
+  // `ribbons-big.png`, l'encre opaque occupe les lignes 20 à 122 d'une cellule
+  // de 128 (centre à 71, pas 64) — 20 px de marge transparente au-dessus contre
+  // seulement 6 en dessous. Un texte centré sur la cellule (comme le ruban lui
+  // pose son image) se retrouve donc visiblement AU-DESSUS du centre du bandeau
+  // dessiné. `ribbons-small.png` (tuiles secondaires), lui, est déjà centré à
+  // 2 px près — négligeable, aucune correction là.
+  const BIG_RIBBON_INK_OFFSET: number = 71 / 128 - 0.5; // ≈ 0.055, mesuré sur ribbons-big.png
+  const ribbonInkDy: number = ruban && ribbonKey === UI_SKIN_RIBBON_BIG ? BIG_RIBBON_INK_OFFSET * ribbonH : 0;
+  title.setY((ruban ? box.titleTop + titleBlockH / 2 : box.titleTop) + ribbonInkDy);
   container.add(title);
   if (sub) {
     sub.setY(box.subTop);

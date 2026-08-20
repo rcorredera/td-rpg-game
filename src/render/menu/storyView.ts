@@ -5,6 +5,7 @@
 
 import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
+import { playSfx } from "../audio";
 import { TEXT } from "../theme";
 import { viewport } from "../viewport";
 import { ensureTerrainTextures, grassTextureKey } from "../terrain";
@@ -40,7 +41,7 @@ export function buildStory(ctx: MenuCtx): void {
       // Le lieu se découvre : un chapitre verrouillé garde son décor caché.
       biomeTexture: unlocked || won ? grassTextureKey(ch.biome) : undefined,
       onSelect: unlocked
-        ? () => ctx.scene.scene.start("game", { profileSvc: ctx.profileSvc, chapterIndex: i })
+        ? () => { playSfx(ctx.scene, "chroniclesOpen"); ctx.scene.scene.start("game", { profileSvc: ctx.profileSvc, chapterIndex: i }); }
         : undefined,
     };
   });
