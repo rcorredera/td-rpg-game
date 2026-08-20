@@ -10,7 +10,7 @@
 import type { ChapterDef, MapDef, WaveDef, WaveSpawn } from "../core/types";
 
 const NEWCOMER: Record<number, string> = {
-  2: "rat",         // saturation → dégâts de zone
+  2: "diablotin",       // saturation → dégâts de zone
   3: "wraith",      // insensible au froid → puissance brute
   4: "gargoyle",    // volant lourd → anti-aérien investi
   5: "golem",       // cuirassé → gros coups ou brûlure
@@ -35,7 +35,7 @@ const NEWCOMER: Record<number, string> = {
  *  nombre, un cuirassé à l'unité. Calibré au banc — la première version noyait le
  *  joueur sous neuf gargouilles et faisait tomber le chapitre 4 en une vague. */
 const FRESH_COUNT: Record<string, number> = {
-  rat: 8, wraith: 3, gargoyle: 1.6, golem: 1.2,
+  diablotin: 8, wraith: 3, gargoyle: 1.6, golem: 1.2,
   scorpion: 6, troll: 2, ogre: 1.3, dark_knight: 1.5,
   bog_sprite: 6, shade_warder: 1.3, four_eyed_warden: 1.4, corrupted_hermit: 1.1,
   scarlet_prickler: 7, howling_bones: 1, frontier_raider: 2, rift_marauder: 2,
@@ -43,8 +43,8 @@ const FRESH_COUNT: Record<string, number> = {
 };
 
 /** Newcomers "essaim" (cadence de spawn serrée en vague de présentation) plutôt
- *  qu'élite/tank isolé — même distinction que rat/scorpion pour le premier acte. */
-const SWARM_NEWCOMERS: ReadonlySet<string> = new Set(["rat", "scorpion", "bog_sprite", "scarlet_prickler"]);
+ *  qu'élite/tank isolé — même distinction que diablotin/scorpion pour le premier acte. */
+const SWARM_NEWCOMERS: ReadonlySet<string> = new Set(["diablotin", "scorpion", "bog_sprite", "scarlet_prickler"]);
 
 /** Une entrée du pool de mélange des vagues "default" (ADR-060). */
 interface TowerMixEntry {
@@ -156,8 +156,8 @@ export function makeWaves(num: number, pathCount: number): WaveDef[] {
             ? { enemyId: "bog_sprite", count: Math.round(6 * k), intervalS: 0.32, delayS: 3 }
             : has("scorpion")
               ? { enemyId: "scorpion", count: Math.round(6 * k), intervalS: 0.3, delayS: 3 }
-              : has("rat")
-                ? { enemyId: "rat", count: Math.round(6 * k), intervalS: 0.32, delayS: 3 }
+              : has("diablotin")
+                ? { enemyId: "diablotin", count: Math.round(6 * k), intervalS: 0.32, delayS: 3 }
                 : { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.5, delayS: 3 });
         break;
       default: {

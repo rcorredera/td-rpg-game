@@ -10,7 +10,8 @@ les tests — c'est voulu.
 
 | Dossier | Contenu | Auteur | Licence |
 |---|---|---|---|
-| `skin-medieval/` | **SKIN ACTIF du monde** — 10 ennemis, héros, 3 tours × 2 paliers, Bastion, dalle (19 SVG) | **projet Bastion** (ADR-016) | maison |
+| `skin-craftpix/` | **SKIN ACTIF du monde** — 24 ennemis, héros, Archerie et Givre (paliers + spécialisations). Provenance MÊLÉE, voir plus bas | CraftPix + génération IA (ADR-043/044/045/047/050/061) | mêlée — détail plus bas |
+| `skin-medieval/` | Reliquat du skin maison : Bastion, dalle, catapulte × 2 paliers (4 SVG) | **projet Bastion** (ADR-016) | maison |
 | `icons/ui-*.svg` | Icônes d'UI — parchemin, livre, portail, cadenas, donjon ; `ui-shield.svg` ne sert plus qu'à l'icône d'installation PWA (`manifest.webmanifest`), le jeu affiche le bouclier du pack | **projet Bastion** (ADR-012) | maison |
 | `icons/` (3 autres) | Icônes de sorts : `tornado`, `flying-flag`, `arrow-cluster` | **Lorc** — game-icons.net | **CC BY 3.0** ⚠ crédit obligatoire |
 | `tiny-swords/` | UI 9-slice, bâtiments, FX, décors — voir plus bas | **Pixel Frog** — pixelfrog-assets.itch.io | **CC0** |
@@ -26,6 +27,33 @@ OFL 1.1 = libre y compris commercial ; ne pas revendre les polices seules.
 ⚠ **CC BY 3.0 (icônes de sorts)** : crédit obligatoire à l'écran avant toute distribution —
 « Icons by Lorc — game-icons.net — CC BY 3.0 ». Les fonds noirs des SVG d'origine ont été
 retirés (glyphe blanc sur transparent, teintable par Phaser).
+
+## `skin-craftpix/` — provenance mêlée, refonte en cours (ADR-061)
+
+Le nom du dossier est un **reliquat** : il ne contient plus seulement du CraftPix. Il sera
+renommé quand la refonte graphique sera terminée, pas avant — un renommage par fichier
+brouillerait l'historique de la reprise.
+
+Trois provenances y coexistent :
+
+| Origine | Fichiers | Licence |
+|---|---|---|
+| **CraftPix** (packs de monstres) | les sprites au nom hérité du pack : `goblin-knight`, `orc-fang`, `brute-zombie`, `steel-golem`, `ghost`, `dark-knight`, `troll`, `ogre`, `warlord`, et les 10 du deuxième acte | licence CraftPix (ADR-043/044/049) |
+| **Génération IA, suffixe `-ai`** | volants, héros, tours (ADR-045/047) | générés pour le projet |
+| **Génération IA, nommés par `defId`** | `diablotin.png`, `scorpion.png` — refonte en cours (ADR-061) | générés pour le projet |
+
+**Convention de nommage cible : `<defId>.png`, snake_case strict**, identique à l'identifiant
+dans `src/content/enemies.ts` / `towers.ts`. Les tours suffixent le palier et la spécialisation
+(`tower_archer_t3.png`, `tower_archer_spec_longbow.png`). Les noms hérités des packs et les
+suffixes `-ai` disparaissent au fil des reprises.
+
+**Résolution de stockage : 256 px de grand côté.** Les sprites ne dépassent jamais 62 px à
+l'affichage (portrait du Bestiaire) et 82 px en jeu ; au-delà de 256 px on ne stocke que du
+poids. Les fichiers antérieurs à cette règle (`hero-ai.png` 177 Ko, `wyvern-ai.png` 201 Ko,
+`the_gravedigger.png`) seront ramenés à cette taille en passant.
+
+Les prompts et la chaîne de nettoyage sont dans `docs/PROMPTS-GEMINI.md` et
+`docs/REFONTE-GRAPHIQUE-GEMINI.md`.
 
 ## `tiny-swords/` — réserve en attente de câblage
 

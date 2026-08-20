@@ -39,6 +39,28 @@ describe("LocalStorageSaveAdapter", () => {
     expect(p.bestiary).toEqual([]);
   });
 
+  it("migration du bestiaire : l'ancien id `rat` devient `diablotin` (ADR-061)", () => {
+    // Sans ce remappage, renommer un defId effacerait SILENCIEUSEMENT une page de
+    // Bestiaire déjà gagnée chez tous les joueurs existants.
+    mockStorage({ [KEY]: JSON.stringify({ bestiary: ["goblin", "rat", "orc"] }) });
+    const p: Profile = new LocalStorageSaveAdapter().load();
+    expect(p.bestiary).toEqual(["goblin", "diablotin", "orc"]);
+  });
+
+  it("migration du bestiaire : ancien et nouvel id ne font qu'une seule entrée", () => {
+    // Un profil ayant croisé la créature avant ET après le renommage porterait
+    // sinon les deux identifiants, donc deux fois la même page.
+    mockStorage({ [KEY]: JSON.stringify({ bestiary: ["rat", "diablotin", "orc"] }) });
+    const p: Profile = new LocalStorageSaveAdapter().load();
+    expect(p.bestiary).toEqual(["diablotin", "orc"]);
+  });
+
+  it("migration du bestiaire : les ids non renommés passent tels quels", () => {
+    mockStorage({ [KEY]: JSON.stringify({ bestiary: ["troll", "wyvern"] }) });
+    const p: Profile = new LocalStorageSaveAdapter().load();
+    expect(p.bestiary).toEqual(["troll", "wyvern"]);
+  });
+
   it("migration chaptersWon : une victoire archivée vaut chapitre 1 conquis", () => {
     mockStorage({
       [KEY]: JSON.stringify({

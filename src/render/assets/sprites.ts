@@ -46,7 +46,7 @@ export interface TowerView {
 // La taille croît avec la menace : le joueur doit hiérarchiser une vague d'un coup
 // d'œil, avant d'avoir lu la moindre barre de vie.
 const ENEMIES: Record<string, SpriteRef> = {
-  rat:         { key: "spr_rat", size: 38 },
+  diablotin:   { key: "spr_diablotin", size: 38 },
   scorpion:    { key: "spr_scorpion", size: 36 },
   goblin:      { key: "spr_goblin", size: 46 },
   wraith:      { key: "spr_ghost", size: 50 }, // sprite CraftPix (ADR-043)

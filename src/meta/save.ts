@@ -44,7 +44,7 @@ function normalize(parsed: Partial<Profile>): Profile {
     chaptersWon: Array.isArray(parsed.chaptersWon)
       ? parsed.chaptersWon
       : (Array.isArray(parsed.bestRuns) && parsed.bestRuns.some(r => r.victory) ? [0] : []),
-    bestiary: Array.isArray(parsed.bestiary) ? parsed.bestiary : fresh.bestiary,
+    bestiary: Array.isArray(parsed.bestiary) ? migrateEnemyIds(parsed.bestiary) : fresh.bestiary,
     chapterStars: parsed.chapterStars && typeof parsed.chapterStars === "object" ? parsed.chapterStars : fresh.chapterStars,
     unlocks: Array.isArray(parsed.unlocks) ? parsed.unlocks : fresh.unlocks,
     forge: parsed.forge && typeof parsed.forge === "object" ? parsed.forge : fresh.forge,
@@ -55,6 +55,34 @@ function normalize(parsed: Partial<Profile>): Profile {
     bestRuns: Array.isArray(parsed.bestRuns) ? parsed.bestRuns : fresh.bestRuns,
     audio: normalizeAudio(parsed.audio),
   };
+}
+
+/**
+ * Identifiants d'ennemis renommés, ancien → nouveau.
+ *
+ * Le bestiaire d'un profil est une liste de `defId` ÉCRITE SUR LE DISQUE. Renommer
+ * un identifiant dans `content/enemies.ts` ne fait donc pas que toucher du code :
+ * sans remappage, la créature redevient silencieusement « non découverte » chez
+ * tous les joueurs existants, et la page du Bestiaire qu'ils avaient gagnée
+ * disparaît. Rien ne le signalerait — ni le typage, ni les tests de contenu.
+ *
+ * Toute future renomination d'un `defId` DOIT ajouter son entrée ici.
+ */
+const RENAMED_ENEMY_IDS: Readonly<Record<string, string>> = {
+  // ADR-061 : `rat` ne désignait plus aucune créature du jeu depuis le reskin
+  // en diablotin (ADR-044) — l'identifiant suit enfin l'image et le nom affiché.
+  rat: "diablotin",
+};
+
+/** Applique les renominations et dédoublonne : un profil ayant croisé la créature
+ *  avant ET après le renommage porterait sinon les deux identifiants. */
+function migrateEnemyIds(ids: string[]): string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    const mapped: string = RENAMED_ENEMY_IDS[id] ?? id;
+    if (!out.includes(mapped)) out.push(mapped);
+  }
+  return out;
 }
 
 /** Champ par champ, comme le reste du profil : un vieux client qui n'a écrit
