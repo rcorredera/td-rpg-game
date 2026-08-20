@@ -69,3 +69,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 059 | Le profil est une donnée NON FIABLE, bornée à l'entrée de la simulation | [`ADR-059-profil-donnee-non-fiable.md`](ADR-059-profil-donnee-non-fiable.md) |
 | 060 | Plafond du pool de mélange des vagues (`default`) | [`ADR-060-plafond-du-melange-de-vague.md`](ADR-060-plafond-du-melange-de-vague.md) |
 | 061 | Refonte graphique : nommage par `defId` et chaîne de nettoyage des sprites | [`ADR-061-refonte-graphique-et-nommage-par-defid.md`](ADR-061-refonte-graphique-et-nommage-par-defid.md) |
+| 062 | Décor semé sur le champ de bataille, reteint par biome | [`ADR-062-decor-seme-par-biome.md`](ADR-062-decor-seme-par-biome.md) |

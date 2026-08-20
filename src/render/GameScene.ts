@@ -21,6 +21,7 @@ import type { ProfileService } from "../meta/profile";
 import { onSceneResize, preloadUi, setupCamera } from "./theme/ui";
 import { preloadIcons } from "./theme/icons";
 import { preloadSprites } from "./assets/assets";
+import { preloadDecor } from "./assets/decorTextures";
 import { applyAudioSettings, impactSfx, playSfx, preloadAudio, shotSfx } from "./platform/audio";
 import { enemyView, heroView, towerView } from "./assets/sprites";
 import { projectileFor, type ProjectileStyle } from "./world/projectiles";
@@ -92,7 +93,7 @@ export class GameScene extends Phaser.Scene {
     this.castleHitAt = -9999;
   }
 
-  preload() { preloadUi(this); preloadSprites(this); preloadIcons(this); preloadAudio(this); }
+  preload() { preloadUi(this); preloadSprites(this); preloadIcons(this); preloadAudio(this); preloadDecor(this); }
 
   create() {
     setupCamera(this);
