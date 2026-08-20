@@ -40,6 +40,16 @@ lisible d'un coup d'œil, pas une succession de blocs dans une longue fonction.
 
 Le profil passe par l'interface `SaveAdapter` (`meta/save.ts`). Implémentation v0 : localStorage avec validation/fallback sur profil neuf si corruption. Un swap vers cloud save ne touche que ce fichier.
 
+**Le profil est une donnée NON FIABLE** (ADR-059). Il vient de `localStorage` : il peut avoir été
+écrit par une version antérieure du jeu, avoir survécu à une réduction du content, ou avoir été
+modifié à la main dans la console — pour un jeu web, la dernière hypothèse n'est pas théorique.
+`normalize` vérifie le TYPE des champs, pas que leurs valeurs désignent quelque chose : un profil
+portant `skills.rally: 99` faisait planter la partie au premier tir de tour. Toute valeur du profil
+qui sert à INDEXER une table du content est donc bornée à `createRun`, unique point d'entrée du
+profil dans la simulation — et bornée, pas réinitialisée : écraser à 1 effacerait une progression
+payée en Sceaux. Le bornage vit dans `core/`, pas dans `meta/save.ts`, qui n'a délibérément pas
+accès au `ContentPack` (la persistance reste ignorante de ce qu'elle sérialise).
+
 ## Content as data (ADR-003, découpé par ADR-057)
 
 Toutes les valeurs d'équilibrage vivent dans `src/content/`, typées par `ContentPack`. Règle absolue : aucune stat en dur dans `core/` ou `render/`. Rééquilibrer = modifier le content, sans toucher à la logique.

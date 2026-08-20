@@ -1,4 +1,4 @@
-# ADR-059 — Le profil est une donnée NON FIABLE, borné à l'entrée de la simulation
+# ADR-059 — Le profil est une donnée NON FIABLE, bornée à l'entrée de la simulation
 
 ## Statut
 Accepté (2026-08-20).
