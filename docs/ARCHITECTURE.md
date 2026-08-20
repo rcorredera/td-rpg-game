@@ -30,11 +30,27 @@ Conséquences : testable sans navigateur, et si un jour il faut un serveur autor
 
 Le profil passe par l'interface `SaveAdapter` (`meta/save.ts`). Implémentation v0 : localStorage avec validation/fallback sur profil neuf si corruption. Un swap vers cloud save ne touche que ce fichier.
 
-## Content as data (ADR-003)
+## Content as data (ADR-003, découpé par ADR-057)
 
-Toutes les valeurs d'équilibrage vivent dans `src/content/index.ts`, typées par `ContentPack`. Règle absolue : aucune stat en dur dans `core/` ou `render/`. Rééquilibrer = modifier le content, sans toucher à la logique.
+Toutes les valeurs d'équilibrage vivent dans `src/content/`, typées par `ContentPack`. Règle absolue : aucune stat en dur dans `core/` ou `render/`. Rééquilibrer = modifier le content, sans toucher à la logique.
 
 Le barème de fin de run (`rewards`) y a rejoint le reste à l'ADR-018 : il était en dur dans `computeResult`, ce qui l'a laissé dériver pendant deux passes d'équilibrage sans que personne ne le voie. Leçon générale : une valeur d'équilibrage hors du content n'est pas seulement une entorse à la règle, c'est une valeur que plus personne ne rééquilibre.
+
+Depuis ADR-057, `content/` est découpé par NATURE de donnée plutôt que rassemblé dans un fichier de 970 lignes :
+
+```
+content/
+  index.ts    Assemblage du ContentPack + chapitres, héros, économie, déblocages,
+              récompenses, notation. Point d'entrée unique : tout le projet importe `CONTENT` d'ici.
+  towers.ts   Catalogue des tours (coûts, paliers, spécialisations).
+  enemies.ts  Catalogue des créatures (stats + lore de Bestiaire).
+  maps.ts     Géométrie des cartes ch.2-20 (celle du ch.1 reste avec son chapitre).
+  waves.ts    Génération des vagues et chapitres 2-20 — de la LOGIQUE, pas de la donnée.
+```
+
+Un refactor de fichier de données doit prouver qu'il ne change aucune valeur : le découpage a été validé par comparaison `JSON.stringify(CONTENT)` avant/après (égalité stricte, ordre des clés compris), elle-même validée par mutation pour ne pas être une tautologie.
+
+`content/integrity.test.ts` garde l'intégrité RÉFÉRENTIELLE de l'ensemble : tout `enemyId`, `pathIndex`, `requiresUnlock` cité désigne quelque chose qui existe, aucun id n'est dupliqué, et les tables indexées par chapitre couvrent tous les chapitres.
 
 ## Banc d'essai d'équilibrage (ADR-018)
 
