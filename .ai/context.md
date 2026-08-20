@@ -3,12 +3,23 @@
 Prototype v0 d'un TD médiéval (« Bastion », univers du Roi-Charogne) avec méta-progression :
 valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 
-## État actuel (2026-06)
-- **`render/` rangé par couche (ADR-055)** : la racine ne garde que `GameScene`/`MenuScene`/
-  `EntityLayer` ; le reste vit dans `theme/`, `skin/`, `assets/`, `world/`, `platform/`, à côté des
-  `components/`, `game/`, `menu/` existants. Refactor pur (aucune logique touchée, 259 tests verts).
-  Lève l'homonymie `render/terrain.ts` vs `render/game/terrain.ts` — désormais `assets/terrain.ts`
-  (fabrique la texture) vs `game/terrain.ts` (monte le décor).
+## État actuel (2026-08)
+- **Passe de qualité structurelle (ADR-055 à 059) — FAIT** : `render/` rangé par couche (ADR-055) ;
+  `npm run lint` remis au vert et **câblé en CI** (ADR-056, il était rouge sur `main` sans que
+  personne le voie) ; `content/index.ts` découpé de 970 à 228 lignes par nature de donnée
+  (ADR-057 — `maps`/`waves`/`towers`/`enemies`) ; `stepOnce` découpé de 182 à 8 lignes en six
+  phases nommées (ADR-058) ; et le **profil traité comme donnée non fiable** (ADR-059 — un
+  `skills.rally: 99` venu de `localStorage` faisait planter la partie au premier tir de tour).
+  Deux filets nouveaux : `content/integrity.test.ts` (tout identifiant cité désigne quelque chose,
+  aucun id dupliqué) et `core/profileTrust.test.ts`. Les refactors de `content` et de `sim` ont
+  été prouvés NEUTRES par comparaison de trace avant/après, elle-même validée par mutation.
+- **Deuxième acte (ADR-049/050/051) — FAIT** : l'Histoire passe de 10 à **20 chapitres**. Le
+  Roi-Charogne (ch.10) devient un boss INTERMÉDIAIRE, Le Roi Fangeux (ch.20) est le vrai boss
+  final et conditionne le déblocage des Failles. Bestiaire porté à **24 créatures**, une nouvelle
+  par chapitre du second acte.
+- **Bestiaire illustré (ADR-043/044/045/046/047/048)** : sprites CraftPix pour les créatures,
+  héros et volants générés, proportions calées par `fitSquare` (le plus grand côté sur la cible,
+  jamais de déformation), barres de vie et IA de tours.
 - **Audio — SFX + réglages + musique de menu en place (ADR-037/038/039/040/041/042)** : registre
   `render/platform/audio.ts` (même principe que `sprites.ts`/`icons.ts`), SFX branchés sur les `SimEvent`
   de tir/impact/dégât château + mort ennemi/héros (ces deux derniers n'avaient encore aucun
@@ -46,13 +57,22 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
 - **In-run** : 3 tours à 3 niveaux + **spécialisation niv.4** (choix binaire définitif : multishot,
   longue portée, brûlure % PV max, aura de givre) + vente (65%), héros bloqueur à 2 sorts,
   auto-vague, x2, multi-chemins et portails de Faille supportés par la sim. Étoiles 1-3 par chapitre.
-- **Rendu** : **skin médiéval dessiné pour le projet** (ADR-016) — 10 sprites SVG maison dans `public/assets/skin-medieval/` (gobelin, orc, brute, chauve-souris, chevalier, 3 tours, Bastion, dalle), style aplats + contour sombre, silhouettes porteuses de sens. Palette dédiée (`render/theme/palette.ts`), sol et chemins générés sur canvas (`render/assets/terrain.ts`), projectiles typés par tour (`render/world/projectiles.ts`), animation procédurale des unités et paliers visuels de tour (ADR-017, `render/assets/animation.ts` — marche/vol/repos calculés sur la transform, rang 3 et specs ont leur propre sprite). Le tout via la couche swappable (ADR-005) : `sprites.ts` = registre, `EntityLayer.ts` = `SpriteLayer<T>`, `assets.ts` = préchargement. Historique : skin **pixel médiéval Tiny** (rejeté « pas giga beau »), puis **Kenney TD sci-fi** — des CHARS et DRONES dans un jeu de chevaliers, remplacé pour incohérence d'univers. ⚠ Tout changement de skin doit s'accompagner du renommage du contenu (noms + lore dans `content/index.ts`).
-- **Wording** : passe sci-fi faite sur les noms in-game (Éclaireur/Blindé/Char lourd/Drone ;
-  Tourelle/Mortier/Canon cryo + specs). **Saga/chapitres/lore profond = en attente du fichier lore du PO.**
-- **Tests** : 60 (sim + profil + save + registre de sprites + thème + composants UI purs + viewport).
-  Le test de déterminisme protège ADR-001 ; `sprites.test.ts` garantit que tout ennemi/tour de
-  CONTENT a un sprite ; `viewport.test.ts` garantit que la zone de jeu reste visible sur tout écran.
-- **CI/hébergement** : GitHub Actions (ADR-006) — tests+build sur push/PR, déploiement GitHub Pages
+- **Rendu** : **skin médiéval** (ADR-016) — au départ 10 sprites SVG maison ; il n'en reste que 4 dans `public/assets/skin-medieval/` (Bastion, dalle, catapulte rangs 1 et 3), les créatures et le héros ayant été remplacés par les sprites CraftPix et générés de `public/assets/skin-craftpix/` (ADR-043/044/045). Palette dédiée (`render/theme/palette.ts`), sol et chemins générés sur canvas (`render/assets/terrain.ts`), projectiles typés par tour (`render/world/projectiles.ts`), animation procédurale des unités et paliers visuels de tour (ADR-017, `render/assets/animation.ts` — marche/vol/repos calculés sur la transform, rang 3 et specs ont leur propre sprite), proportions natives conservées par `fitSquare` (ADR-046). Le tout via la couche swappable (ADR-005) : `sprites.ts` = registre, `EntityLayer.ts` = `SpriteLayer<T>`, `assets.ts` = préchargement. Historique : skin **pixel médiéval Tiny** (rejeté « pas giga beau »), puis **Kenney TD sci-fi** — des CHARS et DRONES dans un jeu de chevaliers, remplacé pour incohérence d'univers. ⚠ Tout changement de skin doit s'accompagner du renommage du contenu (noms + lore dans `content/enemies.ts` et `content/towers.ts` depuis ADR-057).
+- **Wording** : noms in-game entièrement MÉDIÉVAUX depuis le skin maison (Archerie/Catapulte/Tour
+  de givre + specs Salve, Arc long, Trébuchet, Feu grégeois… ; Gobelin/Orc/Brute/Chauve-souris/
+  Diablotin de faille…). La passe sci-fi d'origine (Éclaireur/Blindé/Char lourd/Drone ;
+  Tourelle/Mortier/Canon cryo) a disparu avec le skin Kenney TD qui l'avait motivée.
+  **Saga/chapitres/lore profond = en attente du fichier lore du PO** (`docs/LORE.md`).
+- **Tests** : **276 dans 35 fichiers** (`npm test`), et le rendu est testé lui aussi — pas la
+  peinture Phaser, mais tout cœur PUR qu'on en extrait. Les filets structurants : déterminisme de
+  la sim (protège ADR-001) ; tests MIROIRS du banc d'essai (chaque formule dupliquée est confrontée
+  à la sim, jamais à une valeur écrite à la main) ; intégrité RÉFÉRENTIELLE du content ; profil
+  traité comme donnée non fiable (ADR-059) ; `sprites.test.ts` (tout ennemi/tour de CONTENT a un
+  sprite) ; `viewport.test.ts` (la zone de jeu reste visible sur tout écran) ; et les tests de
+  SOURCE qui interdisent une forme entière (`layoutLiterals`, `skinSwap`, `assets.integrity`).
+  ⚠ Un chiffre de tests dans une doc se périme en une PR : ce qui compte est la LISTE des familles
+  gardées, pas le total.
+- **CI/hébergement** : GitHub Actions (ADR-006) — **lint** (ADR-056) + tests + build sur push/PR, déploiement GitHub Pages
   auto sur `main` (project page). Pages est actif en mode branche `gh-pages` : `main` à la racine,
   et **une preview par PR** dans `pr-<n>/`, commentée sur la PR puis nettoyée à sa fermeture (ADR-008).
 - **Thèmes d'interface (ADR-026) — FAIT** : l'habillage des menus est une DONNÉE (`render/theme/uiTheme.ts`),
@@ -71,7 +91,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   `uiNavCard` supprimé (orphelin). ⚠ Deux bugs introduits puis corrigés : `setInteractive({})` ne définit
   aucune zone de clic, et le clic TRAVERSAIT d'un écran à l'autre (`pointerdown` vs `pointerup`).
 - **Règles de niveau (ADR-024) — FAIT** : (1) un BOSS doit être ABATTU — s'il atteint le château la partie est perdue ; avant, il était retiré du jeu en touchant le château, la vague se terminait et la victoire tombait quand même. (2) Les 3 tours sont constructibles dès la 1re partie : la Tour de givre verrouillée à 30 ◆ rendait le ch.1 très rude, et un joueur bloqué ne gagne pas de quoi se débloquer. (3) La méta vend des PALIERS (`maxTowerLevel`, `allowSpecialize`) — les 3 rangs sont ouverts d'emblée, « Doctrines de siège » débloque le rang 4. ⚠ Plafonner au rang 2 rendait le ch.1 infranchissable (400 or inutilisable) : ce qui est nécessaire pour finir la 1re partie doit être disponible dans la 1re partie. Boss allégés d'environ 30 % — les rendre éliminatoires change leur fonction. Effet de bord surveillé : le triangle de rôles se resserre (9 vs 8 victoires contre 10 vs 7), un boss étant une cible isolée qui favorise le mono-cible.
-- **Forge (ADR-024)** : 4 → **6 rangs** par tour (20/45/80/130/200/300 ◆, 2 325 ◆ au total) et surtout elle est devenue la **CONDITION du dernier chapitre** — le boss final (Vouivre ×2,8) n'est pas abattable avec des tours jamais forgées, quelle que soit la stratégie. Mesuré avant correction : la Forge ne pesait que **5 PV de château cumulés sur 10 chapitres**, c'était un puits d'Éclats et non une progression. Un axe de méta qu'on peut ignorer sera ignoré : mesurer chaque axe avec et sans.
+- **Forge (ADR-024)** : 4 → **6 rangs** par tour (20/45/80/130/200/300 ◆, 2 325 ◆ au total) et surtout elle est devenue la **CONDITION du dernier chapitre** — le boss final (la Vouivre du ch.10 à l'époque, Le Roi Fangeux du ch.20 depuis ADR-050 ; l'invariant se calcule sur le DERNIER chapitre jouable, donc il a suivi seul) n'est pas abattable avec des tours jamais forgées, quelle que soit la stratégie. Mesuré avant correction : la Forge ne pesait que **5 PV de château cumulés sur 10 chapitres**, c'était un puits d'Éclats et non une progression. Un axe de méta qu'on peut ignorer sera ignoré : mesurer chaque axe avec et sans.
 - **Biomes de chapitre (ADR-023) — FAIT** : chaque chapitre a son identité visuelle (prairie, cendres,
   marécage, forêt, carrières, glace, tertres, ruines, toundra, terre gâtée). « Le Col du Gel » s'affichait
   sur la même prairie verte que tous les autres. Le content NOMME un biome, `render/assets/biomes.ts` décide de
@@ -222,7 +242,8 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   l'habillage, et `render/layoutLiterals.test.ts` interdit la FORME entière (toute abscisse ≥ 100
   en littéral dans les scènes), pas les cinq cas trouvés. Mesuré après : pire marge 20 unités sur
   les 29 textes de la grille des chapitres, zéro texte à moins de 20 d'un bord aux Chroniques.
-- **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures**, chacune conçue pour NEUTRALISER une tour
+- **Bestiaire (ADR-022) — FAIT** : 4 → **10 créatures** (relevé à la date de cet ADR ; **24 aujourd'hui**
+  depuis le deuxième acte, ADR-049/051), chacune conçue pour NEUTRALISER une tour
   et en valoriser une autre. Rat de faille (saturation → AoE), Spectre (`slowImmune` → le givre ne
   sert plus), Gargouille (volant lourd → la catapulte ne peut rien), Golem (`armor` 11 → gros coups
   ou brûlure), + 2 vrais boss : **Chef de guerre** (v5/v10) et **Vouivre** (boss VOLANT du ch.10).
