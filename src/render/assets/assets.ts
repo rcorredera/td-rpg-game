@@ -35,12 +35,16 @@ const MEDIEVAL: Record<string, [file: string, px: number]> = {
 /** Sprites CraftPix (raster, licence CraftPix — cf. ADR-043/044) : coexistent avec le
  *  skin SVG maison le temps de la transition, même point de swap unique (ADR-005). */
 const CRAFTPIX: Record<string, string> = {
+  // Sprites régénérés (Gemini) et nommés d'après leur `defId` (ADR-061) : le nom
+  // de fichier se dérive de l'entité, plus besoin de savoir que le diablotin
+  // s'appelait « imp » chez CraftPix — ni que son identifiant a été `rat`
+  // jusqu'ici. Les autres suivront au fil de la reprise graphique.
   spr_scorpion: "scorpion.png",
   spr_troll: "troll.png",
   spr_ghost: "ghost.png",
   spr_ogre: "ogre.png",
   spr_dark_knight: "dark-knight.png",
-  spr_rat: "imp.png",
+  spr_diablotin: "diablotin.png",
   spr_goblin: "goblin-knight.png",
   spr_orc: "orc-fang.png",
   spr_brute: "brute-zombie.png",

@@ -353,6 +353,31 @@ portée du 3★ à toute forge, mais ce n'est plus un souci de contenu : le châ
 des PV, seules les morts du héros bloquent — artefact du pilotage naïf de l'étalon (ADR-018), pas
 un déséquilibre. **Point clos.**
 
+## Refonte graphique du bestiaire — EN COURS (ADR-061)
+Le PO régénère tous les sprites du monde avec Gemini, **un par un**. Deux documents pilotent :
+`docs/PROMPTS-GEMINI.md` (un prompt complet et autonome par entité, à copier-coller) et
+`docs/REFONTE-GRAPHIQUE-GEMINI.md` (règles, table de renommage, ce qu'il ne faut PAS régénérer).
+
+Boucle par sprite : le PO génère, détoure sous Photoshop, dépose le PNG ; on passe
+`npm run sprite -- <source> <destination>` (`src/artprep/`, ADR-061) qui décape la frange de
+détourage, rogne, adoucit le bord et réduit à 256 px ; on renomme en `<defId>.png` et on recâble
+`assets.ts`. Le nom de fichier se dérive désormais de l'entité, plus du pack d'origine.
+
+**Faits : `diablotin` (ex-`imp.png`, defId `rat` renommé + migration de sauvegarde) et `scorpion`.** Restent 22 ennemis, le héros et 8 sprites de tours.
+
+Deux points volontairement remis à la FIN de la série :
+- **Les `size` de `sprites.ts` ne sont pas retouchés.** Le cadrage portrait et la pose de marche
+  donnent des silhouettes plus élancées : à `size` égal un nouveau sprite occupe moins de surface
+  qu'un ancien CraftPix. La hiérarchie reste juste entre nouveaux ; c'est le mélange
+  ancien/nouveau qui détonne pendant la transition. Les régler maintenant reviendrait à calibrer
+  sur une référence qui change à chaque livraison.
+- **`skin-craftpix/` n'est pas renommé** et le README des licences pas refondu — un renommage de
+  dossier par fichier livré brouillerait l'historique.
+
+Hors périmètre tant que rien n'est tranché : les icônes monochromes et `skin-medieval/` (chargés
+par `load.svg`, il faudrait basculer sur `load.image`), et le chrome d'UI 9-slice dont `uiSkin.ts`
+découpe la géométrie — une image générée librement la casserait.
+
 ## Backlog conception — non scopé, en attente
 - **Deuxième héros** (Archer, Sorcier — capacités distinctes du Chevalier actuel) et **tour
   "troupe"** qui invoque des unités pour aggro les monstres au sol. Intention exprimée par le PO

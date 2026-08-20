@@ -33,9 +33,11 @@ export const ENEMIES: Record<string, EnemyDef> = {
 
   // Question : la saturation. Réponse : les dégâts de zone.
   // Reskin CraftPix (ADR-044) : diablotin plutôt que rongeur — le nom suit
-  // l'image, pas l'inverse.
-  rat: {
-    id: "rat", name: "Diablotin de faille",
+  // l'image, pas l'inverse. L'identifiant est resté `rat` deux reskins durant,
+  // à ne désigner plus aucune créature du jeu ; aligné en `diablotin` par
+  // ADR-061, avec remappage des sauvegardes (`meta/save.ts`).
+  diablotin: {
+    id: "diablotin", name: "Diablotin de faille",
     lore: "Ils sortent du sol par vagues, violets et innombrables.\nUn seul ne vaut pas une flèche. C'est bien le problème.",
     hp: 14, speed: 100, flying: false, goldReward: 4, damageToCastle: 1, meleeDps: 4,
   },
@@ -61,7 +63,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     hp: 58, speed: 88, flying: false, goldReward: 16, damageToCastle: 2, meleeDps: 12,
     slowImmune: true,
   },
-  // Question : la saturation, en plus dur que le rat. Réponse : dégâts de zone soutenus.
+  // Question : la saturation, en plus dur que le diablotin. Réponse : dégâts de zone soutenus.
   scorpion: {
     id: "scorpion", name: "Scorpion des sables",
     lore: "Il file bas, sous la portée des premières flèches.\nUn seul dard ne perce rien ; la nuée, si.",

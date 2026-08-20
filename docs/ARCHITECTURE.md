@@ -15,9 +15,13 @@ src/
   balance/   Banc d'essai d'équilibrage headless (ADR-018) : fiches analytiques, joueur
              artificiel, santé de la méta. `npm run balance`. Ne fait PAS partie du jeu —
              aucun module de core/render ne l'importe, et il n'entre pas dans le bundle.
+  artprep/   Préparation des sprites livrés par le PO (ADR-061) : décapage de la frange de
+             détourage, rognage, anticrénelage, réduction. `npm run sprite`. Même statut que
+             balance/ : outil d'atelier, hors du jeu et hors du bundle.
 public/assets/  Assets du jeu — voir README.md du dossier (licences + provenance de chaque
                 fichier). Skin médiéval maison (ADR-016) + pack Tiny Swords pour l'UI, bestiaire
-                CraftPix (ADR-043/044), 20 SFX et une piste de menu de quatre sources CC0/gratuites.
+                CraftPix (ADR-043/044) en cours de refonte IA (ADR-061), 20 SFX et une piste de
+                menu de quatre sources CC0/gratuites.
 ```
 
 ## Frontière core / render (ADR-001)
@@ -239,4 +243,6 @@ npm test        # tests (Vitest) : core, meta, balance, et les cœurs purs de re
 npm run lint    # ESLint (typage explicite, ADR-033), câblé en CI (ADR-056)
 npm run build   # typecheck + build prod
 npm run balance # banc d'essai d'équilibrage headless (ADR-018)
+npm run sprite  # prépare un sprite livré par le PO (ADR-061) :
+                #   npm run sprite -- <source> <destination> [--max 256] [--keep-fragments]
 ```
