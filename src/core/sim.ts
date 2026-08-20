@@ -5,7 +5,7 @@
 // ============================================================
 
 import { BATTLEFIELD } from "./types";
-import type { ChapterDef, ContentPack, EnemyDef, EnemyState, HeroState, PendingSpawn, PlayableChapter, Profile, RallyLevel, RewardRules, RunResult, RunState, SimEvent, SlowEffect, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, UnlockDef, Vec2, WaveDef, WhirlwindLevel } from "./types";
+import type { ChapterDef, ContentPack, EnemyDef, EnemyState, HeroState, PendingSpawn, PlayableChapter, Profile, RallyLevel, RewardRules, RunResult, RunState, SimEvent, SkillTrack, SlowEffect, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, UnlockDef, Vec2, WaveDef, WhirlwindLevel } from "./types";
 
 const FIXED_DT: number = 1 / 60; // pas de temps fixe : la vitesse x2 multiplie le nb de ticks, pas dt
 
@@ -95,6 +95,23 @@ function resolveBudget(c: ContentPack, chapterIndex: number, waves: readonly Wav
   };
 }
 
+/**
+ * Un niveau venu du PROFIL sert à indexer une table du CONTENT — et le profil
+ * n'est pas une donnée de confiance : il vient de `localStorage`, donc d'une
+ * version antérieure du jeu, d'une sauvegarde bricolée, ou d'un stockage abîmé.
+ * `normalize` (meta/save.ts) vérifie que c'est un NOMBRE, pas qu'il désigne un
+ * palier existant : un profil portant `rally: 99` traversait tout et faisait
+ * planter la partie au premier tir de tour, sur
+ * `c.hero.skills.rally.levels[98]!.fireRateMult`.
+ *
+ * On borne ICI, à l'unique endroit où le profil entre dans la simulation — pas
+ * à chacun des sites d'usage, qui sont trois et qui augmenteront.
+ */
+function clampSkillLevel(level: number | undefined, track: SkillTrack<unknown>): number {
+  const n: number = Math.floor(level ?? 1);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(Math.max(1, n), track.levels.length);
+}
 export function createRun(content: ContentPack, profile: Profile, chapterIndex = 0): RunState {
   const ch: ChapterDef | undefined = content.chapters[chapterIndex];
   if (!ch || !ch.playable) throw new Error(`chapitre ${chapterIndex} injouable`);
@@ -132,7 +149,10 @@ export function createRun(content: ContentPack, profile: Profile, chapterIndex =
     killGoldScale: budget.killGoldScale,
     waveIncome: budget.waveIncome,
     nextUid: 1, kills: 0, heroKills: 0, heroDeaths: 0, heroBlockSeconds: 0,
-    skillLevels: { whirlwind: profile.skills?.whirlwind ?? 1, rally: profile.skills?.rally ?? 1 },
+    skillLevels: {
+      whirlwind: clampSkillLevel(profile.skills?.whirlwind, content.hero.skills.whirlwind),
+      rally: clampSkillLevel(profile.skills?.rally, content.hero.skills.rally),
+    },
     forgeLevels: { ...profile.forge },
     seenEnemies: [],
   };
