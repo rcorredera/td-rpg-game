@@ -18,7 +18,14 @@
 ## Definition of Done — à CHAQUE modification, dans le même livrable
 1. **Code** qui build (`npm run build`) ;
 2. **Tests** : tout nouveau comportement de `core/` ou `meta/` arrive avec ses tests ; les tests
-   existants passent (`npm test`). Le rendu (`render/`) n'est pas testé unitairement — vérification visuelle.
+   existants passent (`npm test`). **`render/` est testé lui aussi** — pas la peinture Phaser, mais
+   tout CŒUR PUR qu'on en extrait : géométrie (`world/`, `skin/`), registres (`assets/sprites.ts`,
+   `theme/icons.ts`, `platform/audio.ts`), calculs de mise en page (`components/hubLayout.ts`,
+   `components/tileContent.ts`), et les tests de SOURCE qui gardent une forme interdite
+   (`layoutLiterals.test.ts`, `skin/skinSwap.test.ts`). Règle : dès qu'un rendu se vérifie « à l'œil
+   sur une capture », c'est qu'il manque un cœur pur à extraire et à tester (ADR-025/029/030/032).
+   Seul le dessin proprement dit (`render/game/`, `render/menu/`, les scènes) reste en vérification
+   visuelle.
 3. **Docs à jour** :
    - gameplay/équilibrage → `docs/GDD.md` ;
    - choix structurant → nouvel ADR dans `docs/decisions/` + `docs/ARCHITECTURE.md` si la structure bouge ;

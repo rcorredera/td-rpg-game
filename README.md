@@ -9,7 +9,8 @@ Tower defense + méta-progression RPG, en TypeScript strict + Phaser 3 + Vite.
 ```bash
 npm install
 npm run dev     # serveur de dev
-npm test        # tests (core + meta)
+npm test        # tests (core, meta, balance, et les cœurs purs de render)
+npm run lint    # typage explicite obligatoire (ADR-033)
 npm run build   # typecheck + build de prod
 npm run balance # banc d'essai d'équilibrage, sans navigateur (ADR-018)
 ```
