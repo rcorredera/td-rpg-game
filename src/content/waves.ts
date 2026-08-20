@@ -46,6 +46,39 @@ const FRESH_COUNT: Record<string, number> = {
  *  qu'élite/tank isolé — même distinction que rat/scorpion pour le premier acte. */
 const SWARM_NEWCOMERS: ReadonlySet<string> = new Set(["rat", "scorpion", "bog_sprite", "scarlet_prickler"]);
 
+/** Une entrée du pool de mélange des vagues "default" (ADR-060). */
+interface TowerMixEntry {
+  enemyId: string;
+  countFactor: number;
+  intervalS: number;
+  delayS: number;
+}
+
+/**
+ * Créatures qui rejoignent le mélange complet (case "default") une fois débloquées —
+ * celles qui n'ont pas déjà leur propre cascade dédiée (le tank le plus récent en
+ * case 3, l'essaim en case 3 second slot). Dans l'ORDRE de déblocage : `MAX_MIX_ENTRIES`
+ * en garde les plus RÉCENTES, jamais les plus anciennes (ADR-060).
+ */
+const MIX_POOL: readonly TowerMixEntry[] = [
+  { enemyId: "gargoyle", countFactor: 0.7, intervalS: 3.5, delayS: 6 },
+  { enemyId: "wraith", countFactor: 1.4, intervalS: 1.1, delayS: 3 },
+  { enemyId: "troll", countFactor: 0.8, intervalS: 2.6, delayS: 4 },
+  { enemyId: "dark_knight", countFactor: 0.6, intervalS: 3.0, delayS: 7 },
+  // Deuxième acte : le mélange continue de s'enrichir plutôt que de plafonner
+  // à dark_knight (ch.9) pour dix chapitres de plus.
+  { enemyId: "shade_warder", countFactor: 0.9, intervalS: 2.4, delayS: 5 },
+  { enemyId: "frontier_raider", countFactor: 0.9, intervalS: 2.2, delayS: 4 },
+  { enemyId: "rift_marauder", countFactor: 0.9, intervalS: 2.2, delayS: 6 },
+  { enemyId: "veiled_assassin", countFactor: 0.5, intervalS: 3.2, delayS: 8 },
+];
+
+/** Nombre de types simultanés dans une vague "default" — le premier acte plafonnait
+ *  déjà naturellement à 4 (gargoyle/wraith/troll/dark_knight au ch.9) ; ce plafond
+ *  rend cette limite EXPLICITE au lieu de la laisser dériver avec le nombre de
+ *  chapitres écrits (ADR-060). */
+const MAX_MIX_ENTRIES: number = 4;
+
 /** Créatures disponibles à un chapitre donné : le socle plus tout ce qui précède. */
 function rosterFor(num: number): string[] {
   const base: string[] = ["goblin", "orc", "bat", "brute"];
@@ -127,21 +160,25 @@ export function makeWaves(num: number, pathCount: number): WaveDef[] {
                 ? { enemyId: "rat", count: Math.round(6 * k), intervalS: 0.32, delayS: 3 }
                 : { enemyId: "goblin", count: Math.round(7 * k), intervalS: 0.5, delayS: 3 });
         break;
-      default:
+      default: {
         // Mélange complet : le ciel s'alourdit, et le contrôle ne suffit plus
         // quand des spectres l'ignorent. C'est ici que les créatures se combinent.
         spawns.push({ enemyId: "orc", count: Math.round(5 * k), intervalS: 1.0, delayS: 1 },
                     { enemyId: "bat", count: Math.round(4 * k), intervalS: 0.7, delayS: 5 });
-        if (has("gargoyle")) spawns.push({ enemyId: "gargoyle", count: Math.max(1, Math.round(0.7 * k)), intervalS: 3.5, delayS: 6 });
-        if (has("wraith")) spawns.push({ enemyId: "wraith", count: Math.max(1, Math.round(1.4 * k)), intervalS: 1.1, delayS: 3 });
-        if (has("troll")) spawns.push({ enemyId: "troll", count: Math.max(1, Math.round(0.8 * k)), intervalS: 2.6, delayS: 4 });
-        if (has("dark_knight")) spawns.push({ enemyId: "dark_knight", count: Math.max(1, Math.round(0.6 * k)), intervalS: 3.0, delayS: 7 });
-        // Deuxième acte : le mélange continue de s'enrichir plutôt que de plafonner
-        // à dark_knight (ch.9) pour dix chapitres de plus.
-        if (has("shade_warder")) spawns.push({ enemyId: "shade_warder", count: Math.max(1, Math.round(0.9 * k)), intervalS: 2.4, delayS: 5 });
-        if (has("frontier_raider")) spawns.push({ enemyId: "frontier_raider", count: Math.max(1, Math.round(0.9 * k)), intervalS: 2.2, delayS: 4 });
-        if (has("rift_marauder")) spawns.push({ enemyId: "rift_marauder", count: Math.max(1, Math.round(0.9 * k)), intervalS: 2.2, delayS: 6 });
-        if (has("veiled_assassin")) spawns.push({ enemyId: "veiled_assassin", count: Math.max(1, Math.round(0.5 * k)), intervalS: 3.2, delayS: 8 });
+        // Pool cumulatif, plafonné aux 4 plus RÉCENTES entrées (ADR-060). Sans plafond,
+        // ce pool grandit d'une créature à chaque nouveau chapitre — mesuré, la vague
+        // finale du ch.19 empilait 9 types distincts + le boss + le renfort de voie sur
+        // UNE vague, contre 4 types au maximum sur tout le premier acte (qui, lui,
+        // plafonnait naturellement à 4 : gargoyle/wraith/troll/dark_knight). Un chapitre
+        // à mi-acte 2 n'a aucune raison d'être plus chargé que le dernier avant boss.
+        // Les plus récentes et non les plus anciennes : la nouveauté qui vient d'entrer
+        // en scène doit rester visible dans le mélange, l'ancienne peut s'effacer.
+        const mixPool: TowerMixEntry[] = MIX_POOL.filter(e => has(e.enemyId)).slice(-MAX_MIX_ENTRIES);
+        for (const e of mixPool) {
+          spawns.push({ enemyId: e.enemyId, count: Math.max(1, Math.round(e.countFactor * k)), intervalS: e.intervalS, delayS: e.delayS });
+        }
+        break;
+      }
     }
     // Distribue les renforts sur les voies secondaires en tourniquet (1..pathCount-1) :
     // un chapitre à 3 voies alterne entre elles au lieu de toujours viser la voie 1.
