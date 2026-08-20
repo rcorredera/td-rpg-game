@@ -66,3 +66,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 056 | `npm run lint` remis au vert et câblé en CI | [`ADR-056-lint-en-ci.md`](ADR-056-lint-en-ci.md) |
 | 057 | `content/` découpé par nature de donnée | [`ADR-057-decoupage-du-content.md`](ADR-057-decoupage-du-content.md) |
 | 058 | `stepOnce` découpé en phases nommées | [`ADR-058-stepOnce-en-phases-nommees.md`](ADR-058-stepOnce-en-phases-nommees.md) |
+| 059 | Le profil est une donnée NON FIABLE, bornée à l'entrée de la simulation | [`ADR-059-profil-donnee-non-fiable.md`](ADR-059-profil-donnee-non-fiable.md) |
