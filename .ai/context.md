@@ -39,7 +39,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   1:1 aux 10 biomes de chapitre (ash/marsh/forest/quarry/frost/barrow/ruins/tundra/blight/…) et
   ADR-039 avait explicitement limité la musique au Campement (jamais en run) — décision à
   reconfirmer avec le PO avant de construire un nouveau système d'ambiance in-run.
-- **Modes** : Histoire (10 chapitres, déblocage séquentiel, ch.2-10 en contenu généré provisoire) ;
+- **Modes** : Histoire (20 chapitres en deux actes, déblocage séquentiel, ch.2-20 en contenu généré provisoire — ADR-049/051) ;
   Failles infinies = mode séparé, verrouillé tant que l'Histoire n'est pas achevée, à implémenter (v1).
 - **Méta** : 2 monnaies — Éclats ◆ (unlocks Arsenal + Forge) et Sceaux ⚜ (sorts du héros, gagnés
   via les kills du héros). Bestiaire à découverte progressive (créatures + défenses). Chroniques (top 5 runs).
@@ -252,7 +252,7 @@ valider le fun de la boucle run → monnaies → unlocks → run plus fort.
   propriétés de carte sont désormais testées sur chaque voie de chaque chapitre (écart de tracé,
   couverture ≥ 2/3, longueurs à ±25 %), **prouvées par mutation**. `PATH_WIDTH` = source unique.
 - **Banc d'essai (ADR-018)** : `npm run balance` mesure le jeu sans y jouer — fiches ennemis/tours,
-  pression par vague, santé de la méta, et un joueur artificiel (3 politiques) sur les 10 chapitres.
+  pression par vague, santé de la méta, et un joueur artificiel (3 politiques) sur les 20 chapitres.
   `src/balance/`, hors bundle. Les formules qui doublent celles de la sim sont verrouillées par des
   **tests miroirs** (comparaison à la sim, pas à des valeurs écrites à la main) — sans eux l'outil
   pourrait mentir sans rien casser. **Constats non encore corrigés** : récompense quasi identique

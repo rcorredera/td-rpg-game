@@ -245,7 +245,7 @@ Gobelin (rapide/fragile), Orc (standard), Brute (lent/tanky), Chauve-souris (vol
 
 `npm run balance` mesure le jeu sans y jouer : fiches d'ennemis et de tours, masse et
 pression de chaque chapitre, santé de la méta, et un joueur artificiel qui rejoue les
-10 chapitres selon trois stratégies. Les passes précédentes utilisaient un bot jetable
+20 chapitres selon trois stratégies. Les passes précédentes utilisaient un bot jetable
 jamais commité — d'où des mesures invérifiables et une méthode réinventée à chaque fois.
 
 `npm run balance -- --chapter 3` détaille un chapitre (pression vague par vague + trace).
@@ -339,7 +339,7 @@ fin : chaque palier franchi durcit le suivant.
   quatre niveaux de Forge, et surtout amélioration des **spécialisations** elles-mêmes
   — quitte à en ajouter de nouvelles réservées à ce mode.
 - **Beaucoup de cartes** : un mode sans fin consomme les parcours bien plus vite qu'une
-  campagne de dix chapitres. À prévoir comme une contrainte de production, pas comme un
+  campagne de vingt chapitres. À prévoir comme une contrainte de production, pas comme un
   détail — c'est probablement là que se justifiera une génération procédurale de
   tracés, contrainte par les garanties de carte de l'ADR-019 (couverture ≥ 2/3 des
   emplacements par voie, écart de longueur entre voies < 25 %).

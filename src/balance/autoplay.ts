@@ -3,7 +3,7 @@
 //
 // Rejoue un chapitre entier sans rendu ni interaction : la sim étant pure et
 // déterministe (ADR-001, aucun RNG), un run se rejoue à l'identique et se
-// mesure. C'est ce qui permet d'équilibrer 10 chapitres en une seconde plutôt
+// mesure. C'est ce qui permet d'équilibrer 20 chapitres en une seconde plutôt
 // qu'en dix parties manuelles.
 //
 // CE QUE CE MODULE N'EST PAS : un bon joueur. Les politiques ci-dessous sont

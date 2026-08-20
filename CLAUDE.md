@@ -5,7 +5,7 @@ Jeu tower defense + méta-progression RPG. TypeScript strict + Phaser 3 + Vite, 
 ## Avant toute modification
 1. Lire `docs/ARCHITECTURE.md` et `.ai/conventions.md`.
 2. Pour tout gameplay/équilibrage : lire `docs/GDD.md`.
-3. Choix structurant → nouvel ADR dans `docs/decisions/`.
+3. Choix structurant → nouvel ADR dans `docs/decisions/` (sommaire : `docs/decisions/README.md`).
 
 ## Règles non négociables
 - `src/core/` ne doit JAMAIS importer Phaser ni toucher au DOM (ADR-001).
@@ -13,14 +13,15 @@ Jeu tower defense + méta-progression RPG. TypeScript strict + Phaser 3 + Vite, 
 - Le rendu ne mute jamais `RunState` directement : commandes de `core/sim.ts` uniquement.
 - Tout sprite/tuile/emblème passe par `render/assets/sprites.ts` (registre de skin, point de swap unique — ADR-005). Pas de frame en dur dans `GameScene`/`MenuScene`.
 - **Definition of Done : code + TESTS + doc à jour dans le MÊME livrable.** Concrètement, à chaque modification :
-  - comportement de `core/` ou `meta/` → ses tests (`npm test` vert) ;
+  - comportement de `core/`, `meta/`, ou tout CŒUR PUR de `render/` → ses tests (`npm test` vert) ;
   - gameplay/équilibrage → `docs/GDD.md` ;
   - choix structurant → ADR dans `docs/decisions/` (+ `docs/ARCHITECTURE.md` si la structure bouge) ;
   - piège découvert → `.ai/pitfalls.md` ; état du projet qui évolue → `.ai/context.md`.
   - Détail complet : `.ai/conventions.md`. Un changement sans ses tests et sa doc n'est PAS terminé.
 
 ## Commandes
-`npm run dev` (dev), `npm test` (tests core), `npm run build` (typecheck + build).
+`npm run dev` (dev), `npm test` (tests), `npm run lint` (typage explicite, ADR-033),
+`npm run build` (typecheck + build), `npm run balance` (banc d'essai headless, ADR-018).
 
 ## Skills Claude (secure-dev-standards, game-ux)
 Ces skills sont versionnés dans un repo dédié : [github.com/rcorredera/claude-skills](https://github.com/rcorredera/claude-skills) (privé), symlinkés dans `~/.claude/skills/` et resynchronisés automatiquement (`git pull`) à chaque lancement de Claude Code.

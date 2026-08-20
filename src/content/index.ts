@@ -776,7 +776,8 @@ export const CONTENT: ContentPack = {
     },
   },
 
-  // Mode Histoire (ADR-004) : 10 chapitres déclarés, seul le 1er a du contenu.
+  // Mode Histoire (ADR-004) : 20 chapitres en deux actes (ADR-049/051), tous jouables.
+  // Le ch.1 est écrit à la main, les ch.2-20 ont un contenu GÉNÉRÉ (makeWaves/makeChapter).
   // Noms et lore = placeholders en attente du fichier de contexte (docs/LORE.md).
   chapters: [
     {

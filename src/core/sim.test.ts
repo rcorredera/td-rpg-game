@@ -190,7 +190,7 @@ describe("sim core", () => {
     expect(sellTower(s, CONTENT, 0)).toBe(false); // slot vide
   });
 
-  it("contenu : les 10 chapitres sont jouables et cohérents (ennemis, chemins, slots)", () => {
+  it("contenu : les 20 chapitres sont jouables et cohérents (ennemis, chemins, slots)", () => {
     expect(CONTENT.chapters).toHaveLength(20);
     for (const ch of CONTENT.chapters) {
       expect(ch.playable).toBe(true);

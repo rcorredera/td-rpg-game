@@ -15,7 +15,9 @@ src/
   balance/   Banc d'essai d'équilibrage headless (ADR-018) : fiches analytiques, joueur
              artificiel, santé de la méta. `npm run balance`. Ne fait PAS partie du jeu —
              aucun module de core/render ne l'importe, et il n'entre pas dans le bundle.
-public/assets/  Packs Kenney CC0 (TD + UI) — voir README.md du dossier. Re-skin sprites à venir.
+public/assets/  Assets du jeu — voir README.md du dossier (licences + provenance de chaque
+                fichier). Skin médiéval maison (ADR-016) + pack Tiny Swords pour l'UI, bestiaire
+                CraftPix (ADR-043/044), 20 SFX et une piste de menu de quatre sources CC0/gratuites.
 ```
 
 ## Frontière core / render (ADR-001)
@@ -77,7 +79,8 @@ plus `enemyDied`/`heroDied` qui n'avaient encore aucun consommateur côté rendu
 (`render/components/button.ts`), point d'entrée unique de tout clic habillé du jeu. Mute persisté
 dans `Profile.muted` (`ProfileService.isMuted`/`toggleMuted`), appliqué via `scene.sound.mute` —
 le `SoundManager` Phaser est UNE instance partagée par toutes les scènes du même `Phaser.Game`.
-Musique de fond : hors périmètre (aucune source CC0 Kenney bouclable trouvée).
+Musique de fond : ajoutée depuis (ADR-039) — piste fournie par le PO, bouclée par montage, jouée
+au Campement uniquement.
 
 **Réglages audio (ADR-038)** : `Profile.audio: AudioSettings` (`master`, `music`, `notifications`,
 `damage`, `volume`) remplace le mute unique d'ADR-037. `render/platform/audio.ts` garde un cache
@@ -195,7 +198,8 @@ l'annotation réélargirait le type précis qu'ils gardent). Pas encore câblé 
 ```
 npm install     # première fois
 npm run dev     # serveur de dev Vite
-npm test        # tests du core (Vitest)
-npm run lint    # ESLint (typage explicite, ADR-033)
+npm test        # tests (Vitest) : core, meta, balance, et les cœurs purs de render
+npm run lint    # ESLint (typage explicite, ADR-033) — PAS encore câblé en CI
 npm run build   # typecheck + build prod
+npm run balance # banc d'essai d'équilibrage headless (ADR-018)
 ```

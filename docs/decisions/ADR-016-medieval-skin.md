@@ -1,8 +1,12 @@
 # ADR-016 — Skin médiéval maison (maquette)
 
 ## Statut
-Proposé (2026-08-11) — **maquette soumise à validation**. Remplace le skin Kenney TD comme skin
-actif si elle est retenue. Exerce le point de swap d'ADR-005.
+Accepté — la maquette a été retenue et le skin médiéval maison est le skin ACTIF depuis
+(voir `.ai/context.md`). Le statut « Proposé » de la rédaction initiale est conservé ci-dessous
+pour mémoire : cet ADR a été écrit avant l'arbitrage.
+
+> Proposé (2026-08-11) — **maquette soumise à validation**. Remplace le skin Kenney TD comme skin
+> actif si elle est retenue. Exerce le point de swap d'ADR-005.
 
 ## Contexte
 Après plusieurs passes d'exécution (format, cibles tactiles, icônes, navigation, lisibilité), le
