@@ -66,7 +66,8 @@ usage dans un jeu autorisé sans crédit). 59 fichiers retenus sur 462.
 | `ui/` (reste) | `banner*`, `icon-{01,02,03,04,07,08,09,10,11}` | réserve — bandeaux de titre, pas encore d'usage trouvé pour ces 9 icônes-ressources |
 | `buildings/` | `castle-blue`, `archery-blue`, `tower-{blue,purple,red}` | `castle-blue` **branché** (emblème Histoire, ADR-031) ; le reste en réserve — donjon, paliers visuels de tour |
 | `fx/` | `explosion-*`, `fire-*`, `dust-*`, `water-splash` | réserve — impacts catapulte, feu grégeois |
-| `decor/` | `rock-*`, `bush-*` (planches animées 8 frames), `clouds-*` | réserve — habillage des biomes (ADR-023) |
+| `decor/` | `rock-*`, `bush-*` | **branchés** — semés sur le champ de bataille et reteints par biome (ADR-062). Des planches animées de buissons, seule la première frame sert |
+| `decor/` (reste) | `clouds-*` | réserve — pas encore d'usage trouvé |
 
 Ce qui reste en réserve est exempté du test d'orphelins via la liste `RESERVE`. **Cette
 exemption est une dette**, pas un statut : ce qui n'est pas câblé doit finir branché ou supprimé.
