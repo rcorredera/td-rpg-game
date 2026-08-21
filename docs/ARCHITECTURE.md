@@ -243,6 +243,6 @@ npm test        # tests (Vitest) : core, meta, balance, et les cœurs purs de re
 npm run lint    # ESLint (typage explicite, ADR-033), câblé en CI (ADR-056)
 npm run build   # typecheck + build prod
 npm run balance # banc d'essai d'équilibrage headless (ADR-018)
-npm run sprite  # prépare un sprite livré par le PO (ADR-061) :
-                #   npm run sprite -- <source> <destination> [--max 256] [--keep-fragments]
+npm run sprite  # prépare un sprite livré par le PO (ADR-061/063/065) :
+                #   npm run sprite -- <source> <destination> [--max 256] [--keep-fragments] [--strip]
 ```

@@ -55,9 +55,35 @@ export const WALK_LIFT_MAX: number = 2;
  * pas, effet très artificiel). `weight` module le caractère : une brute
  * s'écrase et roule des épaules, un gobelin reste léger et vif.
  */
-export function walkPose(timeMs: number, phase: number, speed: number, weight: number): UnitPose {
+/**
+ * Position 0..1 dans le cycle de marche.
+ *
+ * Partagée par la pose procédurale ET la lecture de frames dessinées (ADR-065) :
+ * les deux doivent battre exactement au même rythme, sinon une créature animée et
+ * sa voisine statique marcheraient à des cadences différentes pour une même
+ * vitesse de déplacement.
+ */
+export function walkCyclePos(timeMs: number, phase: number, speed: number): number {
   const cycle: number = 620 / Math.max(0.35, speed);        // plus rapide = pas plus courts
-  const t: number = ((timeMs / cycle) + phase) % 1;
+  return ((timeMs / cycle) + phase) % 1;
+}
+
+/**
+ * Index de frame dans une planche de `count` poses, pour une créature ANIMÉE.
+ *
+ * Les poses d'une planche sont rangées dans l'ordre du cycle (contact, passage,
+ * contact opposé, passage opposé), donc un simple découpage régulier du cycle
+ * suffit — pas de table de correspondance à tenir à jour.
+ */
+export function walkFrame(timeMs: number, phase: number, speed: number, count: number): number {
+  if (count <= 1) return 0;
+  const i: number = Math.floor(walkCyclePos(timeMs, phase, speed) * count);
+  // `walkCyclePos` peut rendre exactement 1 sur un temps négatif arrondi.
+  return Math.min(count - 1, Math.max(0, i));
+}
+
+export function walkPose(timeMs: number, phase: number, speed: number, weight: number): UnitPose {
+  const t: number = walkCyclePos(timeMs, phase, speed);
   /** Progression DANS le pas courant : deux fois par cycle. */
   const step: number = (t * 2) % 1;
   /** 1 au contact du pied, 0 en milieu d'appui — c'est au contact qu'on s'écrase. */

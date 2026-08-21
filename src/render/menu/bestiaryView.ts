@@ -6,7 +6,7 @@
 import type Phaser from "phaser";
 import type { EnemyDef, TowerDef, TowerLevelStats } from "../../core/types";
 import { CONTENT } from "../../content/index";
-import { enemyView, towerView } from "../assets/sprites";
+import { enemyView, portraitFrame, towerView } from "../assets/sprites";
 import { layoutCursor, type LayoutCursor, type UiScrollList } from "../components";
 import { header, lorePage, scrollArea, tabs } from "./helpers";
 import { CX, DIM, GOLD, LIGHT, TXT } from "./theme";
@@ -35,7 +35,7 @@ export function buildBestiary(ctx: MenuCtx, bestiaryTab: BestiaryTab, onTabChang
       lorePage(ctx, cursor, c, [
         { text: "???", size: 17, color: DIM },
         { text: "Croisez cette créature au combat pour compléter sa page.", size: 12, color: DIM, wrap: 560 },
-      ], 0x4a3f2e, 0x221b12, { key: enemyView(e.id).key, known: false });
+      ], 0x4a3f2e, 0x221b12, { key: enemyView(e.id).key, known: false, frame: portraitFrame(e.id) });
       return;
     }
     const stats: string = [
@@ -55,7 +55,7 @@ export function buildBestiary(ctx: MenuCtx, bestiaryTab: BestiaryTab, onTabChang
       { text: `${e.name}${traits.length ? `  ·  ${traits.join("  ·  ")}` : ""}`, size: 17, color: GOLD },
       { text: e.lore, size: 11, color: DIM, wrap: 560 },
       { text: stats, size: 12, color: LIGHT, wrap: 560 },
-    ], 0xc9a227, 0x2b2118, { key: enemyView(e.id).key, known: true });
+    ], 0xc9a227, 0x2b2118, { key: enemyView(e.id).key, known: true, frame: portraitFrame(e.id) });
   });
   c.add(ctx.scene.add.text(CX, cursor.next(28) - 6,
     "Les mini-boss sont des variantes renforcées des créatures connues.",

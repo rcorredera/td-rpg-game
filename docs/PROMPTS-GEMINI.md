@@ -582,3 +582,51 @@ Sujet : [voir ci-dessous]
   `kenney-td/sheet.png`) : inutile de régénérer.
 - **`skin-medieval/*.svg`** (Bastion de jeu, dalle, catapulte ×2) : même blocage `load.svg`
   que le §8, prompts dans REFONTE-GRAPHIQUE-GEMINI.md.
+
+---
+
+# 10. Cycles de marche — planche de poses (ADR-065)
+
+Une créature ANIMÉE se demande en **une seule image** contenant toutes les poses de son
+cycle. C'est la génération unique qui garantit la cohérence : demandées séparément, les
+poses dérivent en couleur et en proportions.
+
+**Ne pas retirer la ligne de sol du prompt** : c'est elle qui aligne les pieds, et l'outil
+s'en sert comme référence commune avant de l'effacer.
+
+**Ne pas demander de poses miroir** : le miroir se calcule sans erreur, une génération peut
+rater. Attention en revanche à ne pas confondre — un miroir sert à l'ORIENTATION (marcher
+vers la gauche), jamais à fabriquer le pas opposé d'un même cycle, qui ferait changer l'arme
+de main à chaque pas.
+
+Traitement : `npm run sprite -- <source> <destination> --strip`
+
+```
+Planche de sprites : UNE image contenant QUATRE poses du MÊME personnage, alignées horizontalement, régulièrement espacées, toutes tournées dans la MÊME direction.
+
+Les quatre poses forment un cycle de marche complet, dans cet ordre :
+1. CONTACT : jambe gauche tendue en avant, talon posé ; jambe droite tendue en arrière, orteils au sol. Écart maximal entre les jambes.
+2. PASSAGE : jambe droite ramenée sous le corps et pliée, pied décollé ; jambe gauche verticale supportant tout le poids. Corps au plus haut.
+3. CONTACT INVERSE : jambe droite tendue en avant, talon posé ; jambe gauche tendue en arrière. Miroir de la pose 1 pour les JAMBES uniquement — le personnage reste tourné du même côté et tient son arme dans la MÊME main.
+4. PASSAGE INVERSE : jambe gauche ramenée sous le corps et pliée ; jambe droite verticale supportant le poids.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les quatre poses : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seules les jambes et le balancement des bras changent.
+- Échelle rigoureusement identique.
+- Une LIGNE DE SOL horizontale fine traverse toute l'image, et les pieds d'appui des quatre poses la touchent exactement.
+- Espacement régulier et LARGE entre les poses, sans chevauchement.
+- Fond BLANC UNI. Aucun cadre, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour. Proportions stylisées : tête surdimensionnée, corps compact.
+
+Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
+```
+
+## Ce que l'outil rapporte, et pourquoi le lire
+
+- **dispersion de hauteur** : mêle le rebond VOULU du corps (contact bas, passage haut) et
+  une éventuelle dérive d'échelle. L'outil ne peut pas les distinguer, l'œil oui.
+- **dispersion de ligne de base** : doit rester à quelques pixels. Au-delà, une pose a été
+  dessinée flottante et la créature tressautera.
+- **nombre de poses isolées** : s'il ne correspond pas à ce qui a été demandé, les poses se
+  chevauchent ou un morceau détaché a été pris pour une pose.

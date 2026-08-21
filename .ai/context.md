@@ -432,6 +432,34 @@ canvas sur cible mobile.
 Reste : le **héros** garde son ancien bob (1,5 px) et son ancrage — son arc de lame est calé sur
 sa position, le reprendre demanderait de revoir cette géométrie.
 
+## Cycles de marche dessinés — EN COURS (ADR-065)
+L'animation procédurale corrigée (ADR-064) restait jugée « vilaine » par le PO. Il a proposé
+de demander PLUSIEURS POSES DANS UNE SEULE IMAGE — ce qui lève l'objection qui bloquait :
+un générateur ne redessine pas le même personnage d'une image à l'autre, mais il le dessine
+très bien quatre fois dans la même. Vérifié sur l'orc : même armure, même hache, même main.
+
+La planche porte une LIGNE DE SOL dessinée, et c'est elle la clé : les frames sont calées
+dessus, PAS sur leur boîte englobante — ce qui préserve l'élévation voulue du corps (contact
+bas, passage haut, 9 px mesurés) tout en supprimant la dérive (2 px de pieds, soit 0,4 px à
+la taille du jeu). L'ancrage horizontal suit le HAUT du corps, pas la boîte, qui s'élargit
+quand la jambe s'avance : 0,6 px de dispersion sur 247.
+
+`npm run sprite -- <src> <dst> --strip` fait le reste (`src/artprep/strip.ts`, pur et testé).
+**Fait : l'orc**, 4 poses. Le registre a gagné `frames` sur une entrée d'ennemi ; les deux
+régimes coexistent, tout le reste du bestiaire garde son sprite unique et son animation
+procédurale.
+
+⚠ Trois pièges déjà payés : la ligne se reconnaît à sa CONTINUITÉ (100 % de remplissage) et
+non à son étendue — une bande de torses couvre aussi 85 % de la largeur ; elle s'efface
+seulement LÀ OÙ ELLE EST LIBRE, sinon elle perce les bottes ; et une créature à planche ne
+doit PAS recevoir en plus la déformation procédurale, qui compterait le mouvement deux fois.
+
+**Deux arbitrages ouverts** : le coût (262 Ko contre 60 pour un sprite fixe — un bestiaire
+entièrement animé pèserait ~6 Mo), et le CADRAGE (la planche de l'orc est en profil, les 23
+autres sprites sont de face — choix de direction artistique à trancher avant la suite). Les
+angles sur 180° avec miroir pour les 3 autres directions sont reportés tant que le cycle
+n'est pas validé à l'échelle du bestiaire.
+
 ## Backlog conception — non scopé, en attente
 - **Deuxième héros** (Archer, Sorcier — capacités distinctes du Chevalier actuel) et **tour
   "troupe"** qui invoque des unités pour aggro les monstres au sol. Intention exprimée par le PO

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flyPose, idlePose, walkPose, WALK_LIFT_MAX } from "./animation";
+import { flyPose, idlePose, walkCyclePos, walkFrame, walkPose, WALK_LIFT_MAX } from "./animation";
 import type { UnitPose } from "./animation";
 
 /** Balaie un cycle de marche complet et rend les poses. */
@@ -152,5 +152,54 @@ describe("animation procédurale des unités", () => {
     expect(a.scaleY).not.toBeCloseTo(b.scaleY, 4);
     expect(a.dy).toBe(0);
     expect(b.dy).toBe(0);
+  });
+});
+
+describe("walkFrame — lecture d'une planche dessinée", () => {
+  it("parcourt toutes les poses du cycle", () => {
+    const seen: Set<number> = new Set<number>();
+    for (let ms: number = 0; ms < 1400; ms += 10) seen.add(walkFrame(ms, 0, 1, 4));
+    expect([...seen].sort()).toEqual([0, 1, 2, 3]);
+  });
+
+  it("reste dans les bornes de la planche, quel que soit le temps", () => {
+    // Une frame hors planche affiche une case vide, sans lever d'erreur — le
+    // genre de défaut qui ne se voit qu'à l'écran, et tard.
+    for (const ms of [-5000, 0, 137, 1_000_000]) {
+      for (const count of [2, 4, 8]) {
+        const f: number = walkFrame(ms, 0.3, 1, count);
+        expect(f).toBeGreaterThanOrEqual(0);
+        expect(f).toBeLessThan(count);
+      }
+    }
+  });
+
+  it("bat au MÊME rythme que la pose procédurale", () => {
+    // Les deux lisent le même cycle : une créature animée et sa voisine statique
+    // doivent marcher à la même cadence pour une même vitesse de déplacement.
+    // On compte les tours de cycle sur une durée fixe, des deux côtés.
+    const laps = (read: (ms: number) => number): number => {
+      let n: number = 0;
+      for (let ms: number = 10; ms < 6200; ms += 5) if (read(ms) < read(ms - 5)) n++;
+      return n;
+    };
+    const byFrame: number = laps(ms => walkFrame(ms, 0, 1, 4));
+    const byPos: number = laps(ms => walkCyclePos(ms, 0, 1));
+    expect(byFrame).toBe(byPos);
+  });
+
+  it("accélère avec la vitesse de la créature", () => {
+    const laps = (speed: number): number => {
+      let n: number = 0;
+      for (let ms: number = 10; ms < 6200; ms += 5) {
+        if (walkFrame(ms, 0, speed, 4) < walkFrame(ms - 5, 0, speed, 4)) n++;
+      }
+      return n;
+    };
+    expect(laps(2)).toBeGreaterThan(laps(0.5));
+  });
+
+  it("rend toujours 0 pour une créature à sprite unique", () => {
+    for (const ms of [0, 500, 9999]) expect(walkFrame(ms, 0.2, 1, 1)).toBe(0);
   });
 });

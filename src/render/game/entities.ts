@@ -8,7 +8,7 @@ import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
 import { specOf } from "../../core/sim";
 import type { EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2 } from "../../core/types";
-import { flyPose, idlePose, walkPose } from "../assets/animation";
+import { flyPose, idlePose, STILL, walkFrame, walkPose } from "../assets/animation";
 import type { UnitPose } from "../assets/animation";
 import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare } from "../assets/sprites";
 import type { SpriteFit } from "../assets/sprites";
@@ -188,11 +188,22 @@ export class BattlefieldEntities {
     // Le déphasage par uid évite qu'une horde entière bouge au même rythme.
     const phase: number = (e.uid % 17) / 17;
     const weight: number = Math.min(1, def.hp / 260);   // la brute pèse, le gobelin sautille
+    // Créature à planche de marche dessinée (ADR-065) : les poses PORTENT déjà le
+    // mouvement. Y superposer la déformation procédurale le compterait deux fois —
+    // le corps s'écraserait par-dessus des jambes qui plient déjà.
+    const frames: number = enemyView(e.defId).frames ?? 1;
+    const drawn: boolean = frames > 1;
+    const walking: boolean = !def.flying && !e.blocked;
     const pose: UnitPose = def.flying
       ? flyPose(now, phase)
       : e.blocked
         ? idlePose(now, phase)
-        : walkPose(now, phase, def.speed / 55, weight);
+        : drawn ? STILL : walkPose(now, phase, def.speed / 55, weight);
+    if (drawn) {
+      // À l'arrêt, la première pose du cycle : c'est un appui au sol, pas un
+      // temps de passage jambe en l'air.
+      s.setFrame(walking ? walkFrame(now, phase, def.speed / 55, frames) : 0);
+    }
 
     const face: number = this.facingOf(e.uid, e.pos.x);
     const size: number = this.enemySize(e);

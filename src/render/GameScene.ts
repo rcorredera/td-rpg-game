@@ -22,6 +22,7 @@ import { onSceneResize, preloadUi, setupCamera } from "./theme/ui";
 import { preloadIcons } from "./theme/icons";
 import { preloadSprites } from "./assets/assets";
 import { preloadDecor } from "./assets/decorTextures";
+import { ensureSpriteFrames } from "./assets/frames";
 import { applyAudioSettings, impactSfx, playSfx, preloadAudio, shotSfx } from "./platform/audio";
 import { enemyView, heroView, towerView } from "./assets/sprites";
 import { projectileFor, type ProjectileStyle } from "./world/projectiles";
@@ -97,6 +98,9 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     setupCamera(this);
+    // Découpe les planches de marche en cases (ADR-065). Après le preload, une
+    // seule fois : les textures sont partagées par toutes les scènes.
+    ensureSpriteFrames(this);
     // SoundManager partagé par toutes les scènes (une seule instance Phaser.Game,
     // ADR-037) : appliqué ici aussi pour rester correct même si l'ordre de boot change.
     applyAudioSettings(this, this.profileSvc.audioSettings());

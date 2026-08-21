@@ -25,6 +25,12 @@ export interface SpriteRef {
   frame?: number;
   /** Teinte multiplicative (0xRRGGBB). Absent = couleurs natives du sprite. */
   tint?: number;
+  /**
+   * Nombre de poses d'un cycle de marche DESSINÉ (ADR-065). Absent ou 1 = sprite
+   * statique, animé par la transform (ADR-064). La planche range ses poses dans
+   * l'ordre du cycle, côte à côte, toutes calées sur une même ligne de sol.
+   */
+  frames?: number;
   /** Échelle par-dessus l'échelle de base. */
   scale?: number;
   /**
@@ -51,7 +57,7 @@ const ENEMIES: Record<string, SpriteRef> = {
   goblin:      { key: "spr_goblin", size: 46 },
   wraith:      { key: "spr_ghost", size: 50 }, // sprite CraftPix (ADR-043)
   bat:         { key: "spr_bat", size: 52 },
-  orc:         { key: "spr_orc", size: 54 },
+  orc:         { key: "spr_orc", size: 54, frames: 4 },
   troll:       { key: "spr_troll", size: 56 },
   dark_knight: { key: "spr_dark_knight", size: 58 },
   gargoyle:    { key: "spr_gargoyle", size: 60 },
@@ -128,6 +134,31 @@ const TILES: Record<TileKind, SpriteRef> = {
 };
 
 // ---- API ----------------------------------------------------------------
+
+/**
+ * Textures livrées en PLANCHE de marche, avec leur nombre de poses (ADR-065).
+ *
+ * Dérivé du registre plutôt que saisi à part : déclarer `frames` sur une entrée
+ * suffit, et il n'existe aucune seconde liste à tenir en phase — c'est
+ * exactement le genre de doublon qui se périme à la première créature ajoutée.
+ */
+export function animatedSprites(): [key: string, frames: number][] {
+  const out: [string, number][] = [];
+  for (const v of Object.values(ENEMIES)) {
+    if (v.frames !== undefined && v.frames > 1) out.push([v.key, v.frames]);
+  }
+  return out;
+}
+
+/**
+ * Pose à montrer sur une vignette FIXE (Bestiaire) : la première du cycle, un
+ * appui au sol. `undefined` pour une créature à sprite unique, où demander une
+ * frame n'aurait pas de sens.
+ */
+export function portraitFrame(defId: string): number | undefined {
+  const frames: number | undefined = ENEMIES[defId]?.frames;
+  return frames !== undefined && frames > 1 ? 0 : undefined;
+}
 
 export function enemyView(defId: string): SpriteRef {
   const v: SpriteRef | undefined = ENEMIES[defId];

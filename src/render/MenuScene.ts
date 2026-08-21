@@ -15,6 +15,7 @@ import { touchSize, viewport } from "./platform/viewport";
 import { EMBLEM, ICON, preloadIcons } from "./theme/icons";
 import { addBackdrop } from "./assets/backdrop";
 import { preloadSprites } from "./assets/assets";
+import { ensureSpriteFrames } from "./assets/frames";
 import { applyAudioSettings, playMenuMusic, preloadAudio, preloadMusic, stopMenuMusic } from "./platform/audio";
 import { buildLabel } from "./platform/buildInfo";
 import { ACCENT, TEXT } from "./theme/theme";
@@ -50,6 +51,9 @@ export class MenuScene extends Phaser.Scene {
 
   create() {
     setupCamera(this);
+    // Le Bestiaire montre UNE pose d'une planche de marche : les cases doivent
+    // exister, sinon la vignette afficherait la planche entière (ADR-065).
+    ensureSpriteFrames(this);
     // SoundManager partagé par toutes les scènes (une seule instance Phaser.Game,
     // ADR-037) : le Campement démarre toujours en premier (main.ts), donc c'est
     // ici que l'état persisté prend effet pour tout le jeu.
