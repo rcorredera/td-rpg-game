@@ -40,7 +40,7 @@ Trois provenances y coexistent :
 |---|---|---|
 | **CraftPix** (packs de monstres) | les sprites au nom hérité du pack, pas encore repris : `ghost`, et les 10 du deuxième acte | licence CraftPix (ADR-043/044/049) |
 | **Génération IA, suffixe `-ai`** | volants, héros, tours (ADR-045/047) | générés pour le projet |
-| **Génération IA, nommés par `defId`** | `diablotin`, `scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord`, `goblin` — refonte en cours (ADR-061/063). `orc` et `goblin` sont des PLANCHES de marche (ADR-065/067), pas des sprites uniques | générés pour le projet |
+| **Génération IA, nommés par `defId`** | `diablotin`, `scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord`, `goblin` — refonte en cours (ADR-061/063). `orc` et `goblin` sont des PLANCHES de marche à 3 directions (ADR-065/067) : 4 poses pour l'orc, 3 pour le gobelin, dont une pose a été retirée pour cohérence d'équipement (ADR-070) | générés pour le projet |
 
 **Convention de nommage cible : `<defId>.png`, snake_case strict**, identique à l'identifiant
 dans `src/content/enemies.ts` / `towers.ts`. Les tours suffixent le palier et la spécialisation

@@ -7,6 +7,7 @@
 //   npm run sprite -- <source> <destination> --strip     (planche de marche)
 //   npm run sprite -- <source> <destination> --strip --poses 4 --profile-left
 //   npm run sprite -- <source> <destination> --strip --mirror 1:2
+//   npm run sprite -- <source> <destination> --strip --drop 2
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -29,7 +30,7 @@ import {
 } from "./image";
 import { decode, encode } from "./png";
 import {
-  type Band, detectGroundLines, eraseGroundLine,
+  type Band, detectGroundLines, dropPoses, eraseGroundLine,
   type MirrorPredicate, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
 } from "./strip";
 
@@ -76,12 +77,31 @@ if (posesIndex >= 0 && (!Number.isInteger(posesFlag) || posesFlag < 1)) {
 /** La rangée de profil regarde à GAUCHE : la retourner pour tenir la convention. */
 const profileLeft: boolean = flags.includes("--profile-left");
 /**
+ * Poses à RETIRER du cycle, dans toutes les rangées (ADR-070).
+ *
+ * Le remède de premier choix quand le générateur rate une case : la retourner
+ * en échange son équipement de main, et le clignotement se voit. Trois poses
+ * cohérentes valent mieux que quatre dont une saute.
+ */
+const dropIndex: number = argv.indexOf("--drop");
+const dropPosesFlag: Set<number> = new Set<number>();
+if (dropIndex >= 0) {
+  for (const part of (argv[dropIndex + 1] ?? "").split(",")) {
+    const n: number = Number(part.trim());
+    if (!Number.isInteger(n) || n < 0) {
+      console.error(`--drop attend des index de pose séparés par des virgules, reçu « ${part} »`);
+      process.exit(1);
+    }
+    dropPosesFlag.add(n);
+  }
+}
+/**
  * Poses ISOLÉES à retourner, en `rangée:pose` séparées par des virgules.
  *
- * Le générateur ne se trompe pas toujours sur une rangée entière : sur la
- * planche du gobelin, trois poses de profil sur quatre regardaient à droite et
- * la quatrième à gauche. `--profile-left` aurait retourné les trois saines avec
- * elle ; il faut donc pouvoir désigner la seule fautive.
+ * Le générateur ne se trompe pas toujours sur une rangée entière : `--mirror`
+ * désigne la seule case fautive là où `--profile-left` retournerait aussi les
+ * poses saines. À ne garder QUE si la pose porte un équipement symétrique —
+ * sinon `--drop` (ADR-070).
  */
 const mirrorIndex: number = argv.indexOf("--mirror");
 const mirrorArg: string = mirrorIndex >= 0 ? (argv[mirrorIndex + 1] ?? "") : "";
@@ -148,14 +168,21 @@ if (asStrip) {
     console.error("artprep: --strip n'a isolé aucune pose — lignes de sol mal détectées ?");
     process.exit(1);
   }
-  const rows: StripRow[] = bands.map((b, i) => ({
+  const cut: StripRow[] = bands.map((b, i) => ({
     baseline: b.bottom,
     frames: sliceRowInto(img, poses, ...rowRange(i)),
   }));
-  if (rows.some(r => r.frames.length !== poses)) {
-    console.error(`artprep: découpage incomplet (${rows.map(r => r.frames.length).join(", ")} contre ${poses} attendues).`);
+  if (cut.some(r => r.frames.length !== poses)) {
+    console.error(`artprep: découpage incomplet (${cut.map(r => r.frames.length).join(", ")} contre ${poses} attendues).`);
     process.exit(1);
   }
+  // Le retrait vient APRÈS le contrôle de complétude : il doit porter sur un
+  // découpage sain, sinon `--drop 2` masquerait une rangée mal coupée.
+  if (dropPosesFlag.size >= poses) {
+    console.error(`artprep: --drop retirerait les ${poses} poses de chaque rangée.`);
+    process.exit(1);
+  }
+  const rows: StripRow[] = dropPoses(cut, dropPosesFlag);
   // La convention du registre veut un profil tourné vers la DROITE (ADR-067) :
   // la marche vers la gauche en est le miroir. Un générateur qui dessine le
   // profil à gauche se corrige ici, pose par pose — retourner la bande entière

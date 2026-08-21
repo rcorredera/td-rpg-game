@@ -736,3 +736,13 @@ regardaient à droite et la quatrième à gauche — la créature faisait un dem
 par cycle, ce qui se lit exactement comme le va-et-vient d'ADR-068 et l'a masqué une passe de
 plus. Une case isolée se corrige avec `--mirror <rangée>:<pose>` (ADR-069) ; `--profile-left`
 ne sert que si la rangée ENTIÈRE part à l'envers.
+
+Et vérifier **l'équipement**, pas seulement l'orientation. Une case peut regarder du bon côté
+et porter l'épée dans la mauvaise main : le bouclier saute alors d'un bras à l'autre à chaque
+cycle, et c'est le CHANGEMENT qui se voit, pas la position. Les trois planches produites
+jusqu'ici avaient au moins une case fautive, jamais au même endroit. Remèdes (ADR-070) :
+
+- équipement inversé → `--mirror <rangée>:<pose>`, la symétrie remet le dessin d'aplomb ;
+- **autre flanc** du personnage → `--drop <pose>`, aucune symétrie ne le répare.
+
+Les index de `--mirror` s'entendent APRÈS `--drop`.

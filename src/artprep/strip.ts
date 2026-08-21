@@ -396,6 +396,25 @@ export function packFrames(img: Rgba, boxes: readonly FrameBox[], baselineY: num
 }
 
 /**
+ * Retire les poses d'index donné de TOUTES les rangées.
+ *
+ * Le remède d'ADR-069 — retourner la case fautive — échange l'équipement de
+ * main sur cette seule pose, et le PO l'a vu à l'œil nu : le bouclier du
+ * gobelin sautait d'un bras à l'autre en marchant. Un cycle de trois poses
+ * cohérentes vaut mieux qu'un cycle de quatre dont une clignote (ADR-070).
+ *
+ * Le retrait vaut pour toutes les rangées à la fois : elles doivent porter le
+ * MÊME nombre de poses, sans quoi le rangement direction-major se décale et
+ * chaque direction irait puiser dans la suivante.
+ */
+export function dropPoses(rows: readonly StripRow[], drop: ReadonlySet<number>): StripRow[] {
+  return rows.map(r => ({
+    baseline: r.baseline,
+    frames: r.frames.filter((_, i) => !drop.has(i)),
+  }));
+}
+
+/**
  * Faut-il retourner CETTE pose de CETTE rangée ?
  *
  * Un prédicat plutôt qu'une liste de rangées : le générateur ne se trompe pas
