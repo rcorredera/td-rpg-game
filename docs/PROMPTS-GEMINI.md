@@ -630,3 +630,59 @@ Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce docum
   dessinée flottante et la créature tressautera.
 - **nombre de poses isolées** : s'il ne correspond pas à ce qui a été demandé, les poses se
   chevauchent ou un morceau détaché a été pris pour une pose.
+
+---
+
+# 11. Cycles de marche à plusieurs DIRECTIONS (ADR-067)
+
+Le format retenu pour la suite du bestiaire. Une planche par créature, **trois rangées
+(face, profil droit, dos) × deux poses**, chaque rangée sur sa propre ligne de sol.
+
+La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit, calculé sans
+erreur possible. À nombre de pixels constant, six poses au lieu de huit laissent **un tiers
+de surface en plus par pose**.
+
+Traitement : `npm run sprite -- <source> <destination> --strip` — le nombre de rangées et de
+poses est déduit des lignes de sol.
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE image organisée en TROIS RANGÉES et DEUX COLONNES, soit six cases.
+
+Chaque RANGÉE montre le même personnage vu sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la droite.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient DEUX poses d'un pas de marche, côte à côte :
+- Colonne de GAUCHE : jambe gauche en avant, jambe droite en arrière, les deux pieds au sol.
+- Colonne de DROITE : jambe droite en avant, jambe gauche en arrière, les deux pieds au sol. Les bras accompagnent le mouvement en sens inverse des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les six cases : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les six cases.
+- Une LIGNE DE SOL horizontale fine traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, et les pieds des deux poses de la rangée la touchent exactement.
+- Espacement régulier et LARGE entre les deux colonnes, sans chevauchement.
+- Fond BLANC UNI. Aucun cadre, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour. Proportions stylisées : tête surdimensionnée, corps compact.
+
+Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
+```
+
+## Ce que l'outil refuse, et pourquoi
+
+- **Rangées de tailles inégales.** Le rendu indexe ses cases par `direction × poses + pose` :
+  une rangée plus courte décalerait silencieusement toutes les suivantes, et le défaut ne se
+  verrait qu'à l'écran, tard.
+- **Aucune ligne de sol.** C'est la seule référence commune ; sans elle, rien ne garantit que
+  les pieds sont à la même hauteur.
+
+## Les volants sont hors de ce format
+
+Une chauve-souris vue de dos n'a pas de sens, et son animation est un battement d'ailes, pas
+une marche. `bat`, `gargoyle` et `wyvern` restent en animation procédurale.
+
+## Deux poses par direction : une marche « à deux temps »
+
+C'est le rythme des vieux RPG — lisible, mais un peu saccadé, parce qu'il manque le temps de
+passage où le corps monte. Une troisième colonne s'ajoutera sans rien changer au pipeline.

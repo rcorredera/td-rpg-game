@@ -27,8 +27,8 @@ import {
 } from "./image";
 import { decode, encode } from "./png";
 import {
-  type Band, detectGroundLine, eraseGroundLine, type FrameBox,
-  packFrames, type PackedStrip, sliceFrames,
+  type Band, detectGroundLines, eraseGroundLine,
+  packRows, type PackedStrip, sliceFrames, type StripRow,
 } from "./strip";
 
 // `node:fs` est typé localement dans `node.d.ts` (ADR-001).
@@ -74,8 +74,12 @@ const sourceSize: string = `${img.width}x${img.height}`;
 // La ligne de sol se cherche AVANT tout : elle ne touche pas les bords de
 // l'image, donc le détourage la contournerait et elle survivrait au milieu du
 // dessin. Effacée là où elle est libre, elle laisse les pieds intacts.
-const band: Band | null = asStrip ? detectGroundLine(img, BACKGROUND_MIN) : null;
-const groundErased: number = band === null ? 0 : eraseGroundLine(img, band, BACKGROUND_MIN);
+// Une planche complète porte UNE ligne par direction dessinée (ADR-067) : face,
+// profil, dos. Une planche à une seule direction n'en a qu'une, et la suite de
+// la chaîne ne fait pas la différence.
+const bands: Band[] = asStrip ? detectGroundLines(img, BACKGROUND_MIN) : [];
+let groundErased: number = 0;
+for (const b of bands) groundErased += eraseGroundLine(img, b, BACKGROUND_MIN);
 
 // Détourage : Gemini livre sur fond blanc opaque. Sur une image déjà détourée,
 // l'étape ne trouve rien et ne fait rien.
@@ -92,36 +96,50 @@ const fragments: FragmentResult = keepFragments || asStrip
 let packed: PackedStrip | null = null;
 let cropped: string;
 if (asStrip) {
-  if (band === null) {
+  if (bands.length === 0) {
     console.error("artprep: --strip attend une LIGNE DE SOL traversant la planche, aucune trouvée.");
     process.exit(1);
   }
-  const boxes: FrameBox[] = sliceFrames(img);
-  if (boxes.length < 2) {
-    console.error(`artprep: --strip n'a isolé que ${boxes.length} pose(s) — planche attendue.`);
+  // Une rangée va de la fin de la ligne précédente à sa propre ligne : c'est ce
+  // qui la sépare de sa voisine, sans avoir à supposer une hauteur régulière.
+  const rows: StripRow[] = bands.map((b, i) => ({
+    baseline: b.bottom,
+    frames: sliceFrames(img, 30, 2, i === 0 ? 0 : bands[i - 1]!.bottom + 1, b.bottom),
+  }));
+  const counts: number[] = rows.map(r => r.frames.length);
+  if (counts.some(n => n < 1)) {
+    console.error("artprep: --strip a trouvé une rangée VIDE — lignes de sol mal détectées ?");
     process.exit(1);
   }
-  packed = packFrames(img, boxes, band.bottom);
-  cropped = `${packed.sheet.width}x${packed.sheet.height}`;
+  // Toutes les directions doivent porter le même nombre de poses : le rendu
+  // indexe ses cases par `direction * poses + pose`, une rangée plus courte
+  // décalerait silencieusement toutes les suivantes.
+  if (new Set(counts).size > 1) {
+    console.error(`artprep: rangées de tailles inégales (${counts.join(", ")} poses) — le découpage serait décalé.`);
+    process.exit(1);
+  }
+  const sheet: PackedStrip = packRows(img, rows);
+  packed = sheet;
+  cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;
   // Chaque case est rééchantillonnée aux MÊMES dimensions exactes : un facteur
   // d'échelle appliqué case par case dériverait par arrondi, et Phaser
   // découperait de travers.
-  const scale: number = Math.min(1, maxSide / packed.cellH);
-  const cw: number = Math.max(1, Math.round(packed.cellW * scale));
-  const chh: number = Math.max(1, Math.round(packed.cellH * scale));
-  const out: Uint8Array = new Uint8Array(cw * packed.count * chh * 4);
-  for (let i: number = 0; i < packed.count; i++) {
-    const cell: Rgba = { width: packed.cellW, height: packed.cellH, data: new Uint8Array(packed.cellW * packed.cellH * 4) };
-    for (let y: number = 0; y < packed.cellH; y++) {
-      const s: number = (y * packed.sheet.width + i * packed.cellW) * 4;
-      cell.data.set(packed.sheet.data.subarray(s, s + packed.cellW * 4), y * packed.cellW * 4);
+  const scale: number = Math.min(1, maxSide / sheet.cellH);
+  const cw: number = Math.max(1, Math.round(sheet.cellW * scale));
+  const chh: number = Math.max(1, Math.round(sheet.cellH * scale));
+  const out: Uint8Array = new Uint8Array(cw * sheet.count * chh * 4);
+  for (let i: number = 0; i < sheet.count; i++) {
+    const cell: Rgba = { width: sheet.cellW, height: sheet.cellH, data: new Uint8Array(sheet.cellW * sheet.cellH * 4) };
+    for (let y: number = 0; y < sheet.cellH; y++) {
+      const s: number = (y * sheet.sheet.width + i * sheet.cellW) * 4;
+      cell.data.set(sheet.sheet.data.subarray(s, s + sheet.cellW * 4), y * sheet.cellW * 4);
     }
     const small: Rgba = resample(cell, cw, chh);
     for (let y: number = 0; y < chh; y++) {
-      out.set(small.data.subarray(y * cw * 4, (y + 1) * cw * 4), (y * cw * packed.count + i * cw) * 4);
+      out.set(small.data.subarray(y * cw * 4, (y + 1) * cw * 4), (y * cw * sheet.count + i * cw) * 4);
     }
   }
-  img = { width: cw * packed.count, height: chh, data: out };
+  img = { width: cw * sheet.count, height: chh, data: out };
 } else {
   img = crop(img);
   const feathered: number = feather(img);
@@ -136,11 +154,11 @@ writeFileSync(dst, encode(img));
 const lines: string[] = [
   `${src} -> ${dst}`,
   `  source          ${sourceSize}`,
-  ...(asStrip ? [`  ligne de sol    y=${band?.top}..${band?.bottom}, ${groundErased} px effacés`] : []),
+  ...(asStrip ? [`  lignes de sol   ${bands.length} (${bands.map(b => b.bottom).join(", ")}), ${groundErased} px effacés`] : []),
   `  fond retiré     ${background} px`,
   `  frange claire   ${fringe.removed} px en ${fringe.passes} passe(s)`,
   `  fragments       ${fragments.dropped} détaché(s) supprimé(s), ${fragments.droppedPx} px`,
-  asStrip ? `  planche         ${cropped}, ${packed?.count} cases de ${packed?.cellW}x${packed?.cellH}` : `  rognage         ${cropped}`,
+  asStrip ? `  planche         ${cropped}, ${packed?.rows} direction(s) x ${packed?.poses} pose(s) = ${packed?.count} cases de ${packed?.cellW}x${packed?.cellH}` : `  rognage         ${cropped}`,
   `  anticrénelage   ${featheredPx} px de bord`,
   `  sortie          ${img.width}x${img.height}`,
   `  bord clair      ${remaining} px restant(s)`,

@@ -52,10 +52,17 @@ function isBackground(img: Rgba, x: number, y: number, threshold: number): boole
   return img.data[i]! >= threshold && img.data[i + 1]! >= threshold && img.data[i + 2]! >= threshold;
 }
 
-/** Trouve la ligne de sol dessinée. `null` si la planche n'en a pas. */
-export function detectGroundLine(img: Rgba, threshold: number): Band | null {
+/**
+ * Trouve TOUTES les lignes de sol de la planche, de haut en bas.
+ *
+ * Une planche de marche complète en porte une par DIRECTION : face, profil, dos
+ * (ADR-067). Une planche à une seule direction en a une, et le reste de la
+ * chaîne ne fait pas la différence.
+ */
+export function detectGroundLines(img: Rgba, threshold: number): Band[] {
   const { width: w, height: h } = img;
-  let band: Band | null = null;
+  const bands: Band[] = [];
+  let current: Band | null = null;
   for (let y: number = 0; y < h; y++) {
     let n: number = 0, first: number = -1, last: number = -1;
     for (let x: number = 0; x < w; x++) {
@@ -65,11 +72,17 @@ export function detectGroundLine(img: Rgba, threshold: number): Band | null {
       last = x;
     }
     const span: number = last - first + 1;
-    if (span < w * GROUND_MIN_SPAN || n / span < GROUND_MIN_FILL) continue;
-    if (band !== null && y === band.bottom + 1) band.bottom = y;
-    else if (band === null) band = { top: y, bottom: y };
+    const isLine: boolean = span >= w * GROUND_MIN_SPAN && n / span >= GROUND_MIN_FILL;
+    if (isLine && current !== null && y === current.bottom + 1) current.bottom = y;
+    else if (isLine) { current = { top: y, bottom: y }; bands.push(current); }
+    else current = null;
   }
-  return band;
+  return bands;
+}
+
+/** Première ligne de sol, ou `null`. Conservé pour les planches à une rangée. */
+export function detectGroundLine(img: Rgba, threshold: number): Band | null {
+  return detectGroundLines(img, threshold)[0] ?? null;
 }
 
 /**
@@ -124,12 +137,17 @@ export function frameAnchor(img: Rgba, box: FrameBox, topShare: number = 0.35): 
  * des morceaux détachés — un fer de hache, un pied levé — qu'il ne faut pas
  * prendre pour des poses à part entière.
  */
-export function sliceFrames(img: Rgba, minGap: number = 30, minInk: number = 2): FrameBox[] {
-  const { width: w, height: h } = img;
+export function sliceFrames(
+  img: Rgba, minGap: number = 30, minInk: number = 2,
+  yFrom: number = 0, yTo: number = img.height - 1,
+): FrameBox[] {
+  const { width: w } = img;
+  const top: number = Math.max(0, yFrom);
+  const bottom: number = Math.min(img.height - 1, yTo);
   const cols: number[] = [];
   for (let x: number = 0; x < w; x++) {
     let n: number = 0;
-    for (let y: number = 0; y < h; y++) if (img.data[(y * w + x) * 4 + 3] !== 0) n++;
+    for (let y: number = top; y <= bottom; y++) if (img.data[(y * w + x) * 4 + 3] !== 0) n++;
     cols.push(n);
   }
   const spans: [number, number][] = [];
@@ -147,8 +165,8 @@ export function sliceFrames(img: Rgba, minGap: number = 30, minInk: number = 2):
   }
 
   return merged.map(([x0, x1]) => {
-    let y0: number = h, y1: number = -1;
-    for (let y: number = 0; y < h; y++) {
+    let y0: number = bottom + 1, y1: number = -1;
+    for (let y: number = top; y <= bottom; y++) {
       for (let x: number = x0; x <= x1; x++) {
         if (img.data[(y * w + x) * 4 + 3] === 0) continue;
         if (y < y0) y0 = y;
@@ -162,11 +180,22 @@ export function sliceFrames(img: Rgba, minGap: number = 30, minInk: number = 2):
   });
 }
 
+/** Une rangée de la planche : ses poses, et la ligne de sol qui les porte. */
+export interface StripRow {
+  baseline: number;
+  frames: FrameBox[];
+}
+
 export interface PackedStrip {
   sheet: Rgba;
   cellW: number;
   cellH: number;
   count: number;
+  /** Rangées d'origine, c'est-à-dire DIRECTIONS dessinées (ADR-067). */
+  rows: number;
+  /** Poses par direction. Le tout est rangé direction-major : l'index de case
+   *  vaut `direction * poses + pose`. */
+  poses: number;
   /** Dispersion des hauteurs de pose, en px. Le rebond voulu s'y mêle à la
    *  dérive d'échelle — un écart important mérite un œil. */
   heightSpread: number;
@@ -179,19 +208,39 @@ export interface PackedStrip {
  * l'ancre horizontale. Renvoie une NOUVELLE image.
  */
 export function packFrames(img: Rgba, boxes: readonly FrameBox[], baselineY: number, pad: number = 2): PackedStrip {
-  const above: number = Math.max(...boxes.map(b => baselineY - b.y0));
-  const below: number = Math.max(...boxes.map(b => Math.max(0, b.y1 - baselineY)));
-  const left: number = Math.max(...boxes.map(b => b.anchorX - b.x0));
-  const right: number = Math.max(...boxes.map(b => b.x1 - b.anchorX));
+  return packRows(img, [{ baseline: baselineY, frames: [...boxes] }], pad);
+}
+
+/**
+ * Recompose PLUSIEURS rangées en une planche unique de cases régulières.
+ *
+ * Les cases sont dimensionnées sur l'ensemble des poses, toutes rangées
+ * confondues : elles doivent être identiques au pixel près, sinon Phaser
+ * découpe de travers. Chaque pose est calée sur la ligne de sol de SA rangée —
+ * c'est ce qui autorise des directions dessinées à des hauteurs différentes
+ * dans l'image source sans qu'elles sautent une fois en jeu.
+ *
+ * Rangement DIRECTION-MAJOR : `direction * poses + pose`. Le rendu n'a alors
+ * qu'une multiplication à faire pour trouver sa case.
+ */
+export function packRows(img: Rgba, rows: readonly StripRow[], pad: number = 2): PackedStrip {
+  const all: { box: FrameBox; baseline: number }[] = rows.flatMap(
+    r => r.frames.map(box => ({ box, baseline: r.baseline })),
+  );
+  const above: number = Math.max(...all.map(f => f.baseline - f.box.y0));
+  const below: number = Math.max(...all.map(f => Math.max(0, f.box.y1 - f.baseline)));
+  const left: number = Math.max(...all.map(f => f.box.anchorX - f.box.x0));
+  const right: number = Math.max(...all.map(f => f.box.x1 - f.box.anchorX));
   const cellW: number = Math.ceil(left + right) + pad * 2;
   const cellH: number = above + below + pad;
   const anchorInCell: number = Math.ceil(left) + pad;
 
-  const sheetW: number = cellW * boxes.length;
+  const sheetW: number = cellW * all.length;
   const data: Uint8Array = new Uint8Array(sheetW * cellH * 4);
-  boxes.forEach((b, i) => {
+  all.forEach((f, i) => {
+    const b: FrameBox = f.box;
     const dx: number = i * cellW + anchorInCell - Math.round(b.anchorX);
-    const dy: number = above - baselineY;
+    const dy: number = above - f.baseline;
     for (let y: number = b.y0; y <= b.y1; y++) {
       for (let x: number = b.x0; x <= b.x1; x++) {
         const s: number = (y * img.width + x) * 4;
@@ -207,13 +256,17 @@ export function packFrames(img: Rgba, boxes: readonly FrameBox[], baselineY: num
     }
   });
 
-  const heights: number[] = boxes.map(b => b.y1 - b.y0 + 1);
-  const bottoms: number[] = boxes.map(b => b.y1);
+  const heights: number[] = all.map(f => f.box.y1 - f.box.y0 + 1);
+  // Écart des pieds à LEUR ligne de sol : comparer les ordonnées brutes n'aurait
+  // aucun sens entre deux rangées dessinées à des hauteurs différentes.
+  const drops: number[] = all.map(f => f.box.y1 - f.baseline);
   return {
     sheet: { width: sheetW, height: cellH, data },
-    cellW, cellH, count: boxes.length,
+    cellW, cellH, count: all.length,
+    rows: rows.length,
+    poses: rows.length > 0 ? all.length / rows.length : 0,
     heightSpread: Math.max(...heights) - Math.min(...heights),
-    baselineSpread: Math.max(...bottoms) - Math.min(...bottoms),
+    baselineSpread: Math.max(...drops) - Math.min(...drops),
   };
 }
 

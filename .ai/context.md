@@ -390,6 +390,25 @@ Hors périmètre tant que rien n'est tranché : les icônes monochromes et `skin
 par `load.svg`, il faudrait basculer sur `load.image`), et le chrome d'UI 9-slice dont `uiSkin.ts`
 découpe la géométrie — une image générée librement la casserait.
 
+### Directions de marche (ADR-067)
+Le PO : « de gauche à droite c'est ok, les autres sens il tourne pas ». Cause : le rendu ne
+comparait que l'ABSCISSE, donc un segment vertical laissait l'orientation du segment
+précédent. Invisible sur un sprite de FACE (convention admise), criant sur un PROFIL.
+
+Format retenu : 3 rangées dessinées (face, profil droit, dos) x 2 poses, une ligne de sol par
+rangée. La GAUCHE est le miroir du profil — le retournement inverse l'équipement, ce qui est
+la convention universelle pour l'orientation, mais reste INTERDIT pour fabriquer le pas
+opposé d'un même cycle (l'arme sauterait de main à chaque pas). Six poses au lieu de huit
+laissent un tiers de surface en plus par pose.
+
+ (pur, 13 tests) : l'axe DOMINANT décide (sinon oscillation en diagonale),
+rien ne change sous le seuil (une unité bloquée ne pivote pas), et une planche sans rangée
+verticale GARDE son orientation plutôt que de demander une case inexistante — une case hors
+planche s'affiche vide sans lever d'erreur.
+
+Les VOLANTS restent hors de ce format : une chauve-souris de dos n'a pas de sens, et son
+animation est un battement d'ailes.
+
 ## Sols, chemins et décor — tranché (ADR-062)
 Question du PO : fallait-il reprendre aussi les sols, les chemins et les dalles de tour ?
 Réponse : **trois situations différentes**, et une seule se traite comme les créatures.

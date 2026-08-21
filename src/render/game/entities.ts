@@ -10,7 +10,9 @@ import { specOf } from "../../core/sim";
 import type { EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2 } from "../../core/types";
 import { flyPose, idlePose, STILL, walkFrame, walkPose } from "../assets/animation";
 import type { UnitPose } from "../assets/animation";
-import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare } from "../assets/sprites";
+import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare, walkFrameCount } from "../assets/sprites";
+import type { WalkSheet } from "../assets/sprites";
+import { type Facing, type FacingCell, facingCell, facingFrom, frameIndex } from "../world/facing";
 import type { SpriteFit } from "../assets/sprites";
 import { HERO_C, SIGNAL } from "../theme/palette";
 import { STATUS } from "../theme/theme";
@@ -156,12 +158,22 @@ export class BattlefieldEntities {
   // ---------- Créatures & héros (sprites Tiny + overlays) ----------
 
   /** Sens du regard : on mémorise la dernière position pour déduire la direction. */
-  private facingOf(uid: number, x: number): number {
+  /**
+   * Direction de marche d'une entité, mémorisée d'une frame à l'autre.
+   *
+   * `allowVertical` dit si la planche de la créature PORTE des rangées
+   * verticales : sans elles, un déplacement vers le bas doit laisser
+   * l'orientation inchangée plutôt que de demander une case inexistante
+   * (ADR-067).
+   */
+  private facingOf(uid: number, pos: Vec2, allowVertical: boolean): Facing {
     const last: FacingState | undefined = this.facing.get(uid);
-    let face: number = last?.face ?? 1;
-    if (last && Math.abs(x - last.x) > 0.3) face = x > last.x ? 1 : -1;
-    this.facing.set(uid, { x, face });
-    return face;
+    const previous: Facing = last?.facing ?? "right";
+    const facing: Facing = last === undefined
+      ? previous
+      : facingFrom(pos.x - last.x, pos.y - last.y, previous, allowVertical);
+    this.facing.set(uid, { x: pos.x, y: pos.y, facing });
+    return facing;
   }
 
   /** Taille d'affichage d'un ennemi, EN UNITÉS LOGIQUES (ADR-016).
@@ -191,21 +203,30 @@ export class BattlefieldEntities {
     // Créature à planche de marche dessinée (ADR-065) : les poses PORTENT déjà le
     // mouvement. Y superposer la déformation procédurale le compterait deux fois —
     // le corps s'écraserait par-dessus des jambes qui plient déjà.
-    const frames: number = enemyView(e.defId).frames ?? 1;
-    const drawn: boolean = frames > 1;
+    const walk: WalkSheet | undefined = enemyView(e.defId).walk;
+    const drawn: boolean = walkFrameCount(walk) > 1;
     const walking: boolean = !def.flying && !e.blocked;
     const pose: UnitPose = def.flying
       ? flyPose(now, phase)
       : e.blocked
         ? idlePose(now, phase)
         : drawn ? STILL : walkPose(now, phase, def.speed / 55, weight);
-    if (drawn) {
-      // À l'arrêt, la première pose du cycle : c'est un appui au sol, pas un
-      // temps de passage jambe en l'air.
-      s.setFrame(walking ? walkFrame(now, phase, def.speed / 55, frames) : 0);
-    }
 
-    const face: number = this.facingOf(e.uid, e.pos.x);
+    // Une planche à trois rangées porte le haut et le bas ; à une seule, non —
+    // un déplacement vertical laisse alors l'orientation inchangée (ADR-067).
+    const directions: number = walk?.directions ?? 1;
+    const facing: Facing = this.facingOf(e.uid, e.pos, directions >= 3);
+    const cell: FacingCell = facingCell(facing, directions);
+    if (drawn) {
+      // À l'arrêt, la première pose de la rangée : c'est un appui au sol, pas un
+      // temps de passage jambe en l'air.
+      const poses: number = walk?.poses ?? 1;
+      const pose0: number = walking ? walkFrame(now, phase, def.speed / 55, poses) : 0;
+      s.setFrame(frameIndex(cell.row, pose0, poses));
+    }
+    // L'inclinaison procédurale suit toujours le sens horizontal : elle n'a de
+    // sens que sur un corps vu de côté ou de face, jamais retournée de dos.
+    const face: number = cell.flip ? -1 : 1;
     const size: number = this.enemySize(e);
     // Proportions natives conservées (`fitSquare`, ADR-046) : un sprite importé
     // rogné à sa silhouette (chauve-souris large, gobelin haut) ne fait pas ~1:1
@@ -296,7 +317,11 @@ export class BattlefieldEntities {
     const moving: boolean = Math.hypot(h.target.x - h.pos.x, h.target.y - h.pos.y) > 2;
     const bob: number = moving ? Math.sin(now / 110) * 1.5 : 0;
     const x: number = h.pos.x, y: number = h.pos.y + bob;
-    const face: number = foe ? (foe.pos.x >= x ? 1 : -1) : this.facingOf(-1, x);
+    // Le héros a un sprite unique, sans rangée verticale : son orientation reste
+    // horizontale (`allowVertical: false`). Face à un ennemi, il le regarde ;
+    // sinon il suit son propre déplacement.
+    const heroFacing: Facing = this.facingOf(-1, h.pos, false);
+    const face: number = foe ? (foe.pos.x >= x ? 1 : -1) : (heroFacing === "left" ? -1 : 1);
 
     // --- Cycle de frappe -------------------------------------------------
     // Le combat était un simple cercle blanc clignotant. Ici un vrai cycle :
