@@ -396,6 +396,21 @@ export function packFrames(img: Rgba, boxes: readonly FrameBox[], baselineY: num
 }
 
 /**
+ * Faut-il retourner CETTE pose de CETTE rangée ?
+ *
+ * Un prédicat plutôt qu'une liste de rangées : le générateur ne se trompe pas
+ * toujours sur une rangée entière. Sur la planche du gobelin, trois poses de
+ * profil sur quatre regardaient à droite et la quatrième à gauche — la créature
+ * faisait donc un demi-tour d'une image par cycle, ce qui se lit comme un
+ * va-et-vient sur place. Corrigé à la maille de la RANGÉE, on aurait retourné
+ * les trois poses saines avec elle.
+ */
+export type MirrorPredicate = (row: number, pose: number) => boolean;
+
+/** Aucune pose retournée : la planche tient déjà la convention. */
+export const NO_MIRROR: MirrorPredicate = () => false;
+
+/**
  * Recompose PLUSIEURS rangées en une planche unique de cases régulières.
  *
  * Les cases sont dimensionnées sur l'ensemble des poses, toutes rangées
@@ -409,10 +424,10 @@ export function packFrames(img: Rgba, boxes: readonly FrameBox[], baselineY: num
  */
 export function packRows(
   img: Rgba, rows: readonly StripRow[], pad: number = 2,
-  mirrorRows: ReadonlySet<number> = new Set<number>(),
+  mirror: MirrorPredicate = NO_MIRROR,
 ): PackedStrip {
   const all: { box: FrameBox; baseline: number; mirror: boolean }[] = rows.flatMap(
-    (r, i) => r.frames.map(box => ({ box, baseline: r.baseline, mirror: mirrorRows.has(i) })),
+    (r, i) => r.frames.map((box, j) => ({ box, baseline: r.baseline, mirror: mirror(i, j) })),
   );
   const above: number = Math.max(...all.map(f => f.baseline - f.box.y0));
   const below: number = Math.max(...all.map(f => Math.max(0, f.box.y1 - f.baseline)));

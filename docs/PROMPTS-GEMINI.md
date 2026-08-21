@@ -729,3 +729,10 @@ gauche en avançant vers la droite.
 
 Après génération, extraire les cases de la rangée de profil et les regarder agrandies. Le
 personnage doit regarder **à DROITE**. Sinon seulement, relancer avec `--profile-left`.
+
+Et les regarder **une par une**, pas d'un coup d'œil sur la rangée : le générateur dessine
+case par case et se trompe case par case. Sur la planche du gobelin, trois poses de profil
+regardaient à droite et la quatrième à gauche — la créature faisait un demi-tour d'une image
+par cycle, ce qui se lit exactement comme le va-et-vient d'ADR-068 et l'a masqué une passe de
+plus. Une case isolée se corrige avec `--mirror <rangée>:<pose>` (ADR-069) ; `--profile-left`
+ne sert que si la rangée ENTIÈRE part à l'envers.

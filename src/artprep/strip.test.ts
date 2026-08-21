@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { BACKGROUND_MIN, type Rgba } from "./image";
 import {
   type Band, detectGroundLine, detectGroundLines, eraseGroundLine, type FrameBox,
-  frameAnchor, packFrames, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
+  frameAnchor, type MirrorPredicate, packFrames, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
 } from "./strip";
 
 /** Image opaque entièrement blanche — le fond que livre le générateur. */
@@ -287,7 +287,10 @@ describe("sliceRowInto — découpage à nombre de cases connu", () => {
   });
 });
 
-describe("packRows — miroir d'une rangée", () => {
+describe("packRows — miroir pose par pose", () => {
+  /** Toute la rangée 0 retournée. */
+  const ROW_0: MirrorPredicate = (row: number): boolean => row === 0;
+
   /** Rangée de deux poses ASYMÉTRIQUES : un ergot loin à droite du corps. */
   function asymmetricRow(): { img: Rgba; rows: StripRow[] } {
     const img: Rgba = { width: 240, height: 60, data: new Uint8Array(240 * 60 * 4) };
@@ -316,7 +319,7 @@ describe("packRows — miroir d'une rangée", () => {
   it("fait passer l'encre de l'AUTRE côté de l'ancre", () => {
     const { img, rows } = asymmetricRow();
     const plain: PackedStrip = packRows(img, rows);
-    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    const flipped: PackedStrip = packRows(img, rows, 2, ROW_0);
     for (const cell of [0, 1]) {
       expect(inkOffset(plain, cell), ).toBeGreaterThan(0);
       expect(inkOffset(flipped, cell), ).toBeLessThan(0);
@@ -327,7 +330,7 @@ describe("packRows — miroir d'une rangée", () => {
     // Retourner la bande entière ferait marcher le cycle à l'envers : c'est la
     // pose qui se retourne, pas la rangée.
     const { img, rows } = asymmetricRow();
-    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    const flipped: PackedStrip = packRows(img, rows, 2, ROW_0);
     expect(flipped.count).toBe(2);
     expect(inkOffset(flipped, 0)).toBeCloseTo(inkOffset(flipped, 1), 0);
   });
@@ -337,7 +340,7 @@ describe("packRows — miroir d'une rangée", () => {
     // dans la source. Sans cela, l'ergot se ferait trancher au bord de la case.
     const { img, rows } = asymmetricRow();
     const plain: PackedStrip = packRows(img, rows);
-    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    const flipped: PackedStrip = packRows(img, rows, 2, ROW_0);
     const inkCount = (p: PackedStrip): number => {
       let n: number = 0;
       for (let i: number = 0; i < p.sheet.data.length; i += 4) if (p.sheet.data[i + 3] !== 0) n++;
@@ -346,9 +349,21 @@ describe("packRows — miroir d'une rangée", () => {
     expect(inkCount(flipped)).toBe(inkCount(plain));
   });
 
+  it("retourne UNE SEULE pose sans toucher à sa voisine", () => {
+    // Le défaut réel de la planche du gobelin : trois poses de profil sur quatre
+    // regardaient à droite, la quatrième à gauche, et la créature faisait donc un
+    // demi-tour d'une image par cycle. Retourner la RANGÉE aurait retourné les
+    // trois saines avec elle.
+    const { img, rows } = asymmetricRow();
+    const one: MirrorPredicate = (row: number, pose: number): boolean => row === 0 && pose === 1;
+    const p: PackedStrip = packRows(img, rows, 2, one);
+    expect(inkOffset(p, 0)).toBeGreaterThan(0);
+    expect(inkOffset(p, 1)).toBeLessThan(0);
+  });
+
   it("laisse la rangée intacte quand elle n'est pas listée", () => {
     const { img, rows } = asymmetricRow();
     expect(packRows(img, rows, 2).sheet.data)
-      .not.toEqual(packRows(img, rows, 2, new Set<number>([0])).sheet.data);
+      .not.toEqual(packRows(img, rows, 2, ROW_0).sheet.data);
   });
 });

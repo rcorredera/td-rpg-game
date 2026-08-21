@@ -6,6 +6,7 @@
 //   npm run sprite -- <source> <destination> --keep-fragments
 //   npm run sprite -- <source> <destination> --strip     (planche de marche)
 //   npm run sprite -- <source> <destination> --strip --poses 4 --profile-left
+//   npm run sprite -- <source> <destination> --strip --mirror 1:2
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -29,7 +30,7 @@ import {
 import { decode, encode } from "./png";
 import {
   type Band, detectGroundLines, eraseGroundLine,
-  packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
+  type MirrorPredicate, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
 } from "./strip";
 
 // `node:fs` est typé localement dans `node.d.ts` (ADR-001).
@@ -74,6 +75,27 @@ if (posesIndex >= 0 && (!Number.isInteger(posesFlag) || posesFlag < 1)) {
 }
 /** La rangée de profil regarde à GAUCHE : la retourner pour tenir la convention. */
 const profileLeft: boolean = flags.includes("--profile-left");
+/**
+ * Poses ISOLÉES à retourner, en `rangée:pose` séparées par des virgules.
+ *
+ * Le générateur ne se trompe pas toujours sur une rangée entière : sur la
+ * planche du gobelin, trois poses de profil sur quatre regardaient à droite et
+ * la quatrième à gauche. `--profile-left` aurait retourné les trois saines avec
+ * elle ; il faut donc pouvoir désigner la seule fautive.
+ */
+const mirrorIndex: number = argv.indexOf("--mirror");
+const mirrorArg: string = mirrorIndex >= 0 ? (argv[mirrorIndex + 1] ?? "") : "";
+const mirrorCells: Set<string> = new Set<string>();
+if (mirrorIndex >= 0) {
+  for (const part of mirrorArg.split(",")) {
+    const m: RegExpMatchArray | null = part.trim().match(/^(\d+):(\d+)$/);
+    if (m === null) {
+      console.error(`--mirror attend des couples « rangée:pose » séparés par des virgules, reçu « ${part} »`);
+      process.exit(1);
+    }
+    mirrorCells.add(`${Number(m[1])}:${Number(m[2])}`);
+  }
+}
 
 /** Pixels de bord adoucis — 0 sur une planche, dont les cases ne sont pas rognées. */
 let featheredPx: number = 0;
@@ -142,7 +164,12 @@ if (asStrip) {
   // dos). Sur une planche à une seule rangée, cette rangée EST le profil — s'en
   // tenir à l'indice 1 y rendait le drapeau silencieusement inopérant, et le
   // sprite se retournait alors à l'envers en jeu.
-  const mirror: Set<number> = new Set<number>(profileLeft ? [bands.length >= 2 ? 1 : 0] : []);
+  // Le miroir se décide POSE PAR POSE (ADR-069) : `--profile-left` couvre toute
+  // la rangée de profil, `--mirror` désigne les cases isolées que le générateur
+  // a dessinées à l'envers au milieu d'une rangée saine.
+  const profileRow: number = bands.length >= 2 ? 1 : 0;
+  const mirror: MirrorPredicate = (row: number, pose: number): boolean =>
+    (profileLeft && row === profileRow) || mirrorCells.has(`${row}:${pose}`);
   const sheet: PackedStrip = packRows(img, rows, 2, mirror);
   packed = sheet;
   cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;
