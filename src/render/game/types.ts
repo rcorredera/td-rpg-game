@@ -42,7 +42,15 @@ export interface SlotMenuEntry {
  * l'abscisse rendait les segments verticaux invisibles au rendu, et une créature
  * dessinée de profil descendait vers le Bastion en marchant de côté.
  */
-export interface FacingState { x: number; y: number; facing: Facing }
+export interface FacingState {
+  x: number;
+  y: number;
+  facing: Facing;
+  /** Distance parcourue depuis l apparition, en unités monde. Elle pilote le
+   *  cycle de marche dessiné (ADR-068) : caler l animation sur la distance et non
+   *  sur l horloge est ce qui verrouille le pied au sol. */
+  distance: number;
+}
 
 /** Contexte de construction du HUD, calculé une fois par `Hud.build` : habillage
  *  actif et dimensions dont dépendent tous ses boutons. */

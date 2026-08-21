@@ -720,3 +720,12 @@ une marche. `bat`, `gargoyle` et `wyvern` restent en animation procédurale.
 
 C'est le rythme des vieux RPG — lisible, mais un peu saccadé, parce qu'il manque le temps de
 passage où le corps monte. Une troisième colonne s'ajoutera sans rien changer au pipeline.
+
+## ⚠ Vérifier l'orientation sur la planche PRODUITE, jamais sur la source
+
+Piège payé deux fois : lire le sens du profil à l'œil sur la vignette source mène à l'erreur,
+et `--profile-left` appliqué à tort fait marcher la créature **à reculons** — elle regarde à
+gauche en avançant vers la droite.
+
+Après génération, extraire les cases de la rangée de profil et les regarder agrandies. Le
+personnage doit regarder **à DROITE**. Sinon seulement, relancer avec `--profile-left`.

@@ -82,6 +82,35 @@ export function walkFrame(timeMs: number, phase: number, speed: number, count: n
   return Math.min(count - 1, Math.max(0, i));
 }
 
+/**
+ * Distance au sol que couvre UN cycle complet, en part de la taille d'affichage.
+ *
+ * Une enjambée vaut grossièrement la moitié de la hauteur d'un humanoïde, et un
+ * cycle en compte deux — d'où un rapport voisin de 1.
+ */
+export const WALK_STRIDE_RATIO: number = 1.1;
+
+/**
+ * Index de frame d'une créature à planche DESSINÉE, piloté par la DISTANCE
+ * parcourue et non par l'horloge.
+ *
+ * Le pilotage par le temps donnait exactement 34,1 px de sol par cycle pour
+ * TOUTE créature : `cycle = 620 / (vitesse / 55)` multiplié par la vitesse fait
+ * disparaître celle-ci du résultat. Un gobelin de 46 px et un ogre de 66 px
+ * avançaient donc de la même enjambée, et pour les deux le pied glissait en
+ * arrière à chaque appui — ce qui se lit comme un piétinement sur place.
+ *
+ * Caler le cycle sur la distance verrouille le pied au sol : la créature ne
+ * pose un pied que là où elle est réellement passée.
+ */
+export function walkFrameByDistance(distance: number, phase: number, size: number, count: number): number {
+  if (count <= 1) return 0;
+  const stride: number = Math.max(1, size * WALK_STRIDE_RATIO);
+  const t: number = ((distance / stride) + phase) % 1;
+  const i: number = Math.floor((t < 0 ? t + 1 : t) * count);
+  return Math.min(count - 1, Math.max(0, i));
+}
+
 export function walkPose(timeMs: number, phase: number, speed: number, weight: number): UnitPose {
   const t: number = walkCyclePos(timeMs, phase, speed);
   /** Progression DANS le pas courant : deux fois par cycle. */

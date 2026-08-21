@@ -138,7 +138,11 @@ if (asStrip) {
   // la marche vers la gauche en est le miroir. Un générateur qui dessine le
   // profil à gauche se corrige ici, pose par pose — retourner la bande entière
   // inverserait aussi l'ORDRE des poses, et le cycle marcherait à l'envers.
-  const mirror: Set<number> = new Set<number>(profileLeft && bands.length >= 2 ? [1] : []);
+  // Sur une planche complète, le profil est la DEUXIÈME rangée (face, profil,
+  // dos). Sur une planche à une seule rangée, cette rangée EST le profil — s'en
+  // tenir à l'indice 1 y rendait le drapeau silencieusement inopérant, et le
+  // sprite se retournait alors à l'envers en jeu.
+  const mirror: Set<number> = new Set<number>(profileLeft ? [bands.length >= 2 ? 1 : 0] : []);
   const sheet: PackedStrip = packRows(img, rows, 2, mirror);
   packed = sheet;
   cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;

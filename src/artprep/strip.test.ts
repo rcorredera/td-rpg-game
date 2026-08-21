@@ -288,46 +288,67 @@ describe("sliceRowInto — découpage à nombre de cases connu", () => {
 });
 
 describe("packRows — miroir d'une rangée", () => {
-  /** Rangée de deux poses ASYMÉTRIQUES : un ergot à droite du corps. */
+  /** Rangée de deux poses ASYMÉTRIQUES : un ergot loin à droite du corps. */
   function asymmetricRow(): { img: Rgba; rows: StripRow[] } {
-    const img: Rgba = { width: 200, height: 60, data: new Uint8Array(200 * 60 * 4) };
+    const img: Rgba = { width: 240, height: 60, data: new Uint8Array(240 * 60 * 4) };
     const paint = (x0: number, x1: number, y0: number, y1: number): void => {
-      for (let y: number = y0; y <= y1; y++) for (let x: number = x0; x <= x1; x++) img.data[(y * 200 + x) * 4 + 3] = 255;
+      for (let y: number = y0; y <= y1; y++) for (let x: number = x0; x <= x1; x++) img.data[(y * 240 + x) * 4 + 3] = 255;
     };
-    paint(20, 45, 10, 40); paint(46, 55, 20, 24);   // pose 0 + ergot à droite
-    paint(120, 145, 10, 40); paint(146, 155, 20, 24); // pose 1, identique
+    paint(20, 45, 10, 40); paint(46, 70, 30, 34);     // pose 0 + ergot à droite
+    paint(140, 165, 10, 40); paint(166, 190, 30, 34); // pose 1, identique
     const rows: StripRow[] = [{ baseline: 41, frames: sliceRowInto(img, 2, 0, 59) }];
     return { img, rows };
   }
+
+  /** Centre de masse de l'encre d'une case, RELATIF à l'ancre. */
+  function inkOffset(p: PackedStrip, cell: number): number {
+    let sum: number = 0, n: number = 0;
+    for (let y: number = 0; y < p.cellH; y++) {
+      for (let x: number = 0; x < p.cellW; x++) {
+        if (p.sheet.data[(y * p.sheet.width + cell * p.cellW + x) * 4 + 3] === 0) continue;
+        sum += x - p.anchorInCell;
+        n++;
+      }
+    }
+    return n > 0 ? sum / n : 0;
+  }
+
+  it("fait passer l'encre de l'AUTRE côté de l'ancre", () => {
+    const { img, rows } = asymmetricRow();
+    const plain: PackedStrip = packRows(img, rows);
+    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    for (const cell of [0, 1]) {
+      expect(inkOffset(plain, cell), ).toBeGreaterThan(0);
+      expect(inkOffset(flipped, cell), ).toBeLessThan(0);
+    }
+  });
 
   it("retourne chaque pose SANS inverser leur ordre", () => {
     // Retourner la bande entière ferait marcher le cycle à l'envers : c'est la
     // pose qui se retourne, pas la rangée.
     const { img, rows } = asymmetricRow();
-    const packed: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
-    const cw: number = packed.cellW;
-    const sideInk = (cell: number, half: "left" | "right"): number => {
+    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    expect(flipped.count).toBe(2);
+    expect(inkOffset(flipped, 0)).toBeCloseTo(inkOffset(flipped, 1), 0);
+  });
+
+  it("NE COUPE PAS la pose retournée : la case s'élargit du bon côté", () => {
+    // Une pose miroir a besoin de place du côté opposé à celui qu'elle occupe
+    // dans la source. Sans cela, l'ergot se ferait trancher au bord de la case.
+    const { img, rows } = asymmetricRow();
+    const plain: PackedStrip = packRows(img, rows);
+    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    const inkCount = (p: PackedStrip): number => {
       let n: number = 0;
-      for (let y: number = 0; y < packed.cellH; y++) {
-        const from: number = half === "left" ? 0 : Math.floor(cw / 2);
-        const to: number = half === "left" ? Math.floor(cw / 2) : cw - 1;
-        for (let x: number = from; x <= to; x++) {
-          if (packed.sheet.data[(y * packed.sheet.width + cell * cw + x) * 4 + 3] !== 0) n++;
-        }
-      }
+      for (let i: number = 0; i < p.sheet.data.length; i += 4) if (p.sheet.data[i + 3] !== 0) n++;
       return n;
     };
-    // L'ergot est passé à GAUCHE dans les deux cases, et il y en a toujours deux.
-    expect(packed.count).toBe(2);
-    for (const cell of [0, 1]) {
-      expect(sideInk(cell, "left"), `case ${cell}`).toBeGreaterThan(sideInk(cell, "right"));
-    }
+    expect(inkCount(flipped)).toBe(inkCount(plain));
   });
 
   it("laisse la rangée intacte quand elle n'est pas listée", () => {
     const { img, rows } = asymmetricRow();
-    const plain: PackedStrip = packRows(img, rows, 2);
-    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
-    expect(plain.sheet.data).not.toEqual(flipped.sheet.data);
+    expect(packRows(img, rows, 2).sheet.data)
+      .not.toEqual(packRows(img, rows, 2, new Set<number>([0])).sheet.data);
   });
 });

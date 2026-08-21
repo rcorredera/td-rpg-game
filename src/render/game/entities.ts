@@ -8,7 +8,7 @@ import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
 import { specOf } from "../../core/sim";
 import type { EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2 } from "../../core/types";
-import { flyPose, idlePose, STILL, walkFrame, walkPose } from "../assets/animation";
+import { flyPose, idlePose, STILL, walkFrameByDistance, walkPose } from "../assets/animation";
 import type { UnitPose } from "../assets/animation";
 import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare, walkFrameCount } from "../assets/sprites";
 import type { WalkSheet } from "../assets/sprites";
@@ -166,14 +166,19 @@ export class BattlefieldEntities {
    * l'orientation inchangée plutôt que de demander une case inexistante
    * (ADR-067).
    */
-  private facingOf(uid: number, pos: Vec2, allowVertical: boolean): Facing {
+  private facingOf(uid: number, pos: Vec2, allowVertical: boolean): FacingState {
     const last: FacingState | undefined = this.facing.get(uid);
     const previous: Facing = last?.facing ?? "right";
-    const facing: Facing = last === undefined
-      ? previous
-      : facingFrom(pos.x - last.x, pos.y - last.y, previous, allowVertical);
-    this.facing.set(uid, { x: pos.x, y: pos.y, facing });
-    return facing;
+    const dx: number = last === undefined ? 0 : pos.x - last.x;
+    const dy: number = last === undefined ? 0 : pos.y - last.y;
+    const state: FacingState = {
+      x: pos.x,
+      y: pos.y,
+      facing: last === undefined ? previous : facingFrom(dx, dy, previous, allowVertical),
+      distance: (last?.distance ?? 0) + Math.hypot(dx, dy),
+    };
+    this.facing.set(uid, state);
+    return state;
   }
 
   /** Taille d'affichage d'un ennemi, EN UNITÉS LOGIQUES (ADR-016).
@@ -215,19 +220,23 @@ export class BattlefieldEntities {
     // Une planche à trois rangées porte le haut et le bas ; à une seule, non —
     // un déplacement vertical laisse alors l'orientation inchangée (ADR-067).
     const directions: number = walk?.directions ?? 1;
-    const facing: Facing = this.facingOf(e.uid, e.pos, directions >= 3);
-    const cell: FacingCell = facingCell(facing, directions);
+    const track: FacingState = this.facingOf(e.uid, e.pos, directions >= 3);
+    const cell: FacingCell = facingCell(track.facing, directions);
+    const size: number = this.enemySize(e);
     if (drawn) {
+      // Cycle calé sur la DISTANCE parcourue, pas sur l'horloge (ADR-068) : le
+      // pilotage par le temps donnait 34,1 px de sol par cycle pour TOUTE
+      // créature, quelle que soit sa taille — le pied glissait donc en arrière à
+      // chaque appui, ce qui se lit comme un piétinement sur place.
       // À l'arrêt, la première pose de la rangée : c'est un appui au sol, pas un
       // temps de passage jambe en l'air.
       const poses: number = walk?.poses ?? 1;
-      const pose0: number = walking ? walkFrame(now, phase, def.speed / 55, poses) : 0;
+      const pose0: number = walking ? walkFrameByDistance(track.distance, phase, size, poses) : 0;
       s.setFrame(frameIndex(cell.row, pose0, poses));
     }
     // L'inclinaison procédurale suit toujours le sens horizontal : elle n'a de
     // sens que sur un corps vu de côté ou de face, jamais retournée de dos.
     const face: number = cell.flip ? -1 : 1;
-    const size: number = this.enemySize(e);
     // Proportions natives conservées (`fitSquare`, ADR-046) : un sprite importé
     // rogné à sa silhouette (chauve-souris large, gobelin haut) ne fait pas ~1:1
     // comme le skin SVG maison — un carré forcé l'écrasait ou l'étirait.
@@ -320,8 +329,8 @@ export class BattlefieldEntities {
     // Le héros a un sprite unique, sans rangée verticale : son orientation reste
     // horizontale (`allowVertical: false`). Face à un ennemi, il le regarde ;
     // sinon il suit son propre déplacement.
-    const heroFacing: Facing = this.facingOf(-1, h.pos, false);
-    const face: number = foe ? (foe.pos.x >= x ? 1 : -1) : (heroFacing === "left" ? -1 : 1);
+    const heroTrack: FacingState = this.facingOf(-1, h.pos, false);
+    const face: number = foe ? (foe.pos.x >= x ? 1 : -1) : (heroTrack.facing === "left" ? -1 : 1);
 
     // --- Cycle de frappe -------------------------------------------------
     // Le combat était un simple cercle blanc clignotant. Ici un vrai cycle :

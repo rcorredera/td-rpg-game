@@ -1,9 +1,9 @@
 // Tests unitaires du core — la sim doit tourner sans navigateur (ADR-001).
 import { describe, expect, it } from "vitest";
-import type { ContentPack, EnemyDef, EnemyState, Profile, RewardRules, RunResult, RunState, SimEvent, TowerDef, TowerLevelStats, Vec2, WhirlwindLevel } from "./types";
+import type { ContentPack, EnemyDef, EnemyState, PendingSpawn, Profile, RewardRules, RunResult, RunState, SimEvent, TowerDef, TowerLevelStats, Vec2, WhirlwindLevel } from "./types";
 import { BATTLEFIELD, DEFAULT_AUDIO_SETTINGS } from "./types";
 import { CONTENT, UNLOCKS } from "../content/index";
-import { buildTower, castAccountSpell, castWhirlwind, clampToBattlefield, computeResult, createRun, moveHero, sellRefundFor, sellTower, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
+import { buildTower, castAccountSpell, castWhirlwind, clampToBattlefield, computeResult, createRun, moveHero, sellRefundFor, sellTower, spawnOneEnemy, specializeTower, startNextWave, tick, upgradeTower } from "./sim";
 
 const FRESH_PROFILE: Profile = {
   shards: 0, sceaux: 0, introSeen: false, chaptersWon: [], chapterStars: {}, bestiary: [],
@@ -630,5 +630,51 @@ describe("sim core", () => {
       if (s.phase === "building") startNextWave(s, CONTENT);
     }
     expect(s.phase).toBe("defeat");
+  });
+});
+
+describe("spawnOneEnemy — commande d'atelier (ADR-066)", () => {
+  it("fait apparaître la créature demandée sur la voie demandée", () => {
+    const s: RunState = createRun(CONTENT, FRESH_PROFILE, 0);
+    const before: number = s.pendingSpawns.length;
+    expect(spawnOneEnemy(s, CONTENT, "goblin", 0)).toBe(true);
+    expect(s.pendingSpawns.length).toBe(before + 1);
+    const p: PendingSpawn = s.pendingSpawns[s.pendingSpawns.length - 1]!;
+    expect(p.enemyId).toBe("goblin");
+    expect(p.pathIndex).toBe(0);
+    expect(p.at).toBeLessThanOrEqual(s.time);
+  });
+
+  it("la créature apparaît RÉELLEMENT au tick suivant", () => {
+    // Une commande qui empile une apparition jamais consommée ne sert à rien.
+    const s: RunState = createRun(CONTENT, FRESH_PROFILE, 0);
+    spawnOneEnemy(s, CONTENT, "goblin", 0);
+    tick(s, CONTENT, 0.1);
+    expect(s.enemies.some(e => e.defId === "goblin" && e.alive)).toBe(true);
+  });
+
+  it("REFUSE une créature inconnue plutôt que d'empiler une apparition creuse", () => {
+    // `spawnDueEnemies` déréférencerait `c.enemies[id]` dans le vide, et le run
+    // planterait une fraction de seconde plus tard — loin de la cause.
+    const s: RunState = createRun(CONTENT, FRESH_PROFILE, 0);
+    expect(spawnOneEnemy(s, CONTENT, "licorne", 0)).toBe(false);
+    expect(s.pendingSpawns.some(p => p.enemyId === "licorne")).toBe(false);
+  });
+
+  it("REFUSE une voie hors carte", () => {
+    const s: RunState = createRun(CONTENT, FRESH_PROFILE, 0);
+    const paths: number = CONTENT.chapters[0]!.playable ? CONTENT.chapters[0]!.map.paths.length : 0;
+    for (const bad of [-1, paths, 99, 0.5]) {
+      expect(spawnOneEnemy(s, CONTENT, "goblin", bad), `voie ${bad}`).toBe(false);
+    }
+  });
+
+  it("n'accorde aucune récompense : elle ne fait qu'apparaître", () => {
+    // C'est une commande d'ATELIER : elle ne doit pas offrir la progression que
+    // le jeu fait gagner.
+    const s: RunState = createRun(CONTENT, FRESH_PROFILE, 0);
+    const gold: number = s.gold;
+    spawnOneEnemy(s, CONTENT, "goblin", 0);
+    expect(s.gold).toBe(gold);
   });
 });

@@ -75,3 +75,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 065 | Cycles de marche dessinés, générés en une image et calés sur une ligne de sol | [`ADR-065-cycles-de-marche-dessines.md`](ADR-065-cycles-de-marche-dessines.md) |
 | 066 | Pause qui fige tout, et bac à sable d'observation | [`ADR-066-pause-et-bac-a-sable.md`](ADR-066-pause-et-bac-a-sable.md) |
 | 067 | Le rendu regarde les deux axes : planches à plusieurs directions | [`ADR-067-directions-de-marche.md`](ADR-067-directions-de-marche.md) |
+| 068 | Le cycle de marche se cale sur le sol, et une planche s'oriente en la regardant | [`ADR-068-cycle-cale-sur-le-sol.md`](ADR-068-cycle-cale-sur-le-sol.md) |

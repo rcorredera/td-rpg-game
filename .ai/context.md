@@ -409,6 +409,19 @@ planche s'affiche vide sans lever d'erreur.
 Les VOLANTS restent hors de ce format : une chauve-souris de dos n'a pas de sens, et son
 animation est un battement d'ailes.
 
+### Piège d orientation d une planche (ADR-068)
+L orientation du profil se vérifie en EXTRAYANT la rangée de la planche PRODUITE, jamais à
+l oeil sur la vignette source — erreur commise DEUX FOIS (orc et gobelin). Un 
+appliqué à tort fait marcher la créature à reculons : elle regarde à gauche en avançant vers
+la droite. Le personnage doit regarder à DROITE sur la rangée de profil.
+
+### Cycle de marche calé sur la DISTANCE (ADR-068)
+Le pilotage par le temps donnait  ms, soit exactement 34,1 px de sol par
+cycle pour TOUTE créature — la vitesse s annule dans le calcul. Gobelin de 46 px et ogre de
+66 px faisaient la même enjambée, et le pied glissait. Le cycle des planches dessinées est
+maintenant indexé sur la distance parcourue (enjambée = 1,1 x taille). L animation PROCÉDURALE
+reste pilotée par le temps : pas de pied dessiné à trahir.
+
 ## Sols, chemins et décor — tranché (ADR-062)
 Question du PO : fallait-il reprendre aussi les sols, les chemins et les dalles de tour ?
 Réponse : **trois situations différentes**, et une seule se traite comme les créatures.

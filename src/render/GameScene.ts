@@ -12,7 +12,7 @@ import Phaser from "phaser";
 import { CONTENT } from "../content/index";
 import { SANDBOX_CHAPTER } from "../content/sandbox";
 import {
-  castAccountSpell, castRally, castWhirlwind, computeResult, createRun, moveHero, startNextWave, tick,
+  castAccountSpell, castRally, castWhirlwind, computeResult, createRun, moveHero, spawnOneEnemy, startNextWave, tick,
 } from "../core/sim";
 import type {
   ChapterDef, EnemyState, PlayableChapter, RallyLevel, RunResult, RunState,
@@ -33,6 +33,7 @@ import { AUTO_WAVE_DELAY_MS } from "./game/constants";
 import { BattlefieldEntities } from "./game/entities";
 import { FxLayer } from "./game/fx";
 import { Hud, type HudCallbacks } from "./game/hud";
+import { SummonBar, type SummonEntry } from "./game/summonBar";
 import { buildEndRunOverlay, buildQuitConfirm } from "./game/modals";
 import { buildSlotMenu } from "./game/slotMenu";
 import {
@@ -48,6 +49,11 @@ export class GameScene extends Phaser.Scene {
   private content: ContentPack = CONTENT;
   /** Bac à sable (ADR-066) : aucun résultat n'est archivé ni récompensé. */
   private sandbox = false;
+  /** Barre d'invocation du bac à sable ; `null` en partie normale. */
+  private summonBar: SummonBar | null = null;
+  /** Voie de la PROCHAINE invocation : les taps successifs tournent sur les
+   *  quatre voies, sinon tout arriverait par la même et on ne verrait qu'un axe. */
+  private summonPath = 0;
   private ch!: PlayableChapter;
   private gfx!: Phaser.GameObjects.Graphics;
   private groundGfx!: Phaser.GameObjects.Graphics;
@@ -147,7 +153,28 @@ export class GameScene extends Phaser.Scene {
     this.fxPool = new FxLayer(this);
     this.hud = new Hud(this);
     this.hud.build(this.run.hasAccountSpell, this.hudCallbacks());
+    if (this.sandbox) this.buildSummonBar();
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.onTap(p.worldX, p.worldY));
+  }
+
+  /**
+   * Barre d'invocation du bac à sable (ADR-066).
+   *
+   * Elle passe par `spawnOneEnemy`, une COMMANDE de simulation : le rendu ne mute
+   * jamais `RunState` directement (ADR-001), et une exception « juste pour
+   * déboguer » serait le premier pas vers un rendu qui décide de l'état du jeu.
+   */
+  private buildSummonBar(): void {
+    const entries: SummonEntry[] = Object.values(this.content.enemies)
+      .map(e => ({ defId: e.id, name: e.name }));
+    this.summonBar ??= new SummonBar(this);
+    this.summonBar.build(entries, (defId: string) => {
+      const paths: number = this.ch.map.paths.length;
+      spawnOneEnemy(this.run, this.content, defId, this.summonPath % paths);
+      // Voie suivante au prochain tap : tout envoyer par la même ne montrerait
+      // qu'un seul axe de marche, ce qui est justement ce qu'on vient regarder.
+      this.summonPath = (this.summonPath + 1) % paths;
+    });
   }
 
   /** Actions déclenchées par les boutons du HUD (sorts, vitesse, vague, quitter). */
@@ -194,6 +221,9 @@ export class GameScene extends Phaser.Scene {
     this.slotMarkers = terrainBuild.slotMarkers;
     this.hud.destroy();
     this.hud.build(this.run.hasAccountSpell, this.hudCallbacks());
+    // La barre d'invocation est ancrée sur les bords sûrs : elle se replace comme
+    // le HUD, sinon elle resterait calée sur l'ancienne largeur après rotation.
+    if (this.sandbox) this.buildSummonBar();
   }
 
   // ---------- Input ----------

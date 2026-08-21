@@ -338,20 +338,31 @@ export function sliceRowInto(
   return out;
 }
 
-/** Boîte d'une case : bornes verticales de l'encre réelle, plus son ancre. */
-function boxFrom(img: Rgba, x0: number, x1: number, yFrom: number, yTo: number): FrameBox {
+/**
+ * Boîte d'une case, SERRÉE sur l'encre réelle.
+ *
+ * Les bornes reçues sont les traits de coupe, qui englobent le vide entre deux
+ * poses. Les garder telles quelles gonflerait la case, la créature n'en
+ * occuperait plus qu'une partie — et comme `fitSquare` cale l'affichage sur la
+ * CASE (ADR-046), elle paraîtrait d'autant plus petite en jeu.
+ */
+function boxFrom(img: Rgba, from: number, to: number, yFrom: number, yTo: number): FrameBox {
   const { width: w } = img;
   const top: number = Math.max(0, yFrom);
   const bottom: number = Math.min(img.height - 1, yTo);
   let y0: number = bottom + 1, y1: number = -1;
+  let x0: number = to + 1, x1: number = -1;
   for (let y: number = top; y <= bottom; y++) {
-    for (let x: number = x0; x <= x1; x++) {
+    for (let x: number = from; x <= to; x++) {
       if (img.data[(y * w + x) * 4 + 3] === 0) continue;
       if (y < y0) y0 = y;
       if (y > y1) y1 = y;
-      break;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
     }
   }
+  // Case vide : on rend la coupe telle quelle plutôt qu'une boîte inversée.
+  if (x1 < x0) { x0 = from; x1 = to; y0 = top; y1 = bottom; }
   const box: FrameBox = { x0, y0, x1, y1, anchorX: 0 };
   box.anchorX = frameAnchor(img, box);
   return box;
@@ -367,6 +378,8 @@ export interface PackedStrip {
   /** Poses par direction. Le tout est rangé direction-major : l'index de case
    *  vaut `direction * poses + pose`. */
   poses: number;
+  /** Abscisse de l'ancre DANS une case. Toutes les poses y sont alignées. */
+  anchorInCell: number;
   /** Dispersion des hauteurs de pose, en px. Le rebond voulu s'y mêle à la
    *  dérive d'échelle — un écart important mérite un œil. */
   heightSpread: number;
@@ -403,8 +416,15 @@ export function packRows(
   );
   const above: number = Math.max(...all.map(f => f.baseline - f.box.y0));
   const below: number = Math.max(...all.map(f => Math.max(0, f.box.y1 - f.baseline)));
-  const left: number = Math.max(...all.map(f => f.box.anchorX - f.box.x0));
-  const right: number = Math.max(...all.map(f => f.box.x1 - f.box.anchorX));
+  // Débords mesurés APRÈS retournement : une pose miroir a besoin de place du
+  // côté OPPOSÉ à celui qu'elle occupe dans la source. Sans cela, une épée qui
+  // dépassait à gauche se ferait couper à droite une fois la pose retournée.
+  const left: number = Math.max(...all.map(
+    f => f.mirror ? f.box.x1 - f.box.anchorX : f.box.anchorX - f.box.x0,
+  ));
+  const right: number = Math.max(...all.map(
+    f => f.mirror ? f.box.anchorX - f.box.x0 : f.box.x1 - f.box.anchorX,
+  ));
   const cellW: number = Math.ceil(left + right) + pad * 2;
   const cellH: number = above + below + pad;
   const anchorInCell: number = Math.ceil(left) + pad;
@@ -442,7 +462,7 @@ export function packRows(
   const drops: number[] = all.map(f => f.box.y1 - f.baseline);
   return {
     sheet: { width: sheetW, height: cellH, data },
-    cellW, cellH, count: all.length,
+    cellW, cellH, count: all.length, anchorInCell,
     rows: rows.length,
     poses: rows.length > 0 ? all.length / rows.length : 0,
     heightSpread: Math.max(...heights) - Math.min(...heights),

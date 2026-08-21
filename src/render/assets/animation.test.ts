@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { flyPose, idlePose, walkCyclePos, walkFrame, walkPose, WALK_LIFT_MAX } from "./animation";
+import {
+  flyPose, idlePose, walkCyclePos, walkFrame, walkFrameByDistance,
+  WALK_LIFT_MAX, walkPose, WALK_STRIDE_RATIO,
+} from "./animation";
 import type { UnitPose } from "./animation";
 
 /** Balaie un cycle de marche complet et rend les poses. */
@@ -201,5 +204,66 @@ describe("walkFrame — lecture d'une planche dessinée", () => {
 
   it("rend toujours 0 pour une créature à sprite unique", () => {
     for (const ms of [0, 500, 9999]) expect(walkFrame(ms, 0.2, 1, 1)).toBe(0);
+  });
+});
+
+describe("walkFrameByDistance — cycle calé sur le sol (ADR-068)", () => {
+  it("parcourt toutes les poses sur une enjambée complète", () => {
+    const seen: Set<number> = new Set<number>();
+    for (let d: number = 0; d < 46 * WALK_STRIDE_RATIO; d += 1) seen.add(walkFrameByDistance(d, 0, 46, 4));
+    expect([...seen].sort()).toEqual([0, 1, 2, 3]);
+  });
+
+  it("fait avancer une GRANDE créature de plus de sol par cycle", () => {
+    // Le pilotage par le temps donnait exactement 34,1 px par cycle pour TOUTE
+    // créature : `620 / (vitesse / 55)` multiplié par la vitesse fait disparaître
+    // celle-ci. Un gobelin de 46 px et un ogre de 66 avançaient donc de la même
+    // enjambée, et pour les deux le pied glissait en arrière à chaque appui.
+    const cycleOf = (size: number): number => {
+      let laps: number = 0;
+      for (let d: number = 1; d < 1000; d += 1) {
+        if (walkFrameByDistance(d, 0, size, 4) < walkFrameByDistance(d - 1, 0, size, 4)) laps++;
+      }
+      return laps;
+    };
+    expect(cycleOf(66)).toBeLessThan(cycleOf(46));   // moins de cycles = plus de sol par cycle
+  });
+
+  it("ne dépend PAS du temps : à l'arrêt, la pose ne bouge pas", () => {
+    // C'est tout l'intérêt : un ennemi bloqué au contact du héros ne doit pas
+    // continuer à pédaler sur place.
+    const at: number = walkFrameByDistance(120, 0.3, 54, 4);
+    expect(walkFrameByDistance(120, 0.3, 54, 4)).toBe(at);
+  });
+
+  it("reste dans les bornes de la planche", () => {
+    for (const d of [-500, 0, 37, 1e6]) {
+      for (const count of [2, 4, 6]) {
+        const f: number = walkFrameByDistance(d, 0.7, 50, count);
+        expect(f).toBeGreaterThanOrEqual(0);
+        expect(f).toBeLessThan(count);
+      }
+    }
+  });
+
+  it("désynchronise deux créatures par leur phase", () => {
+    let apart: number = 0;
+    for (let d: number = 0; d < 300; d += 3) {
+      apart += walkFrameByDistance(d, 0, 46, 4) === walkFrameByDistance(d, 0.5, 46, 4) ? 0 : 1;
+    }
+    expect(apart).toBeGreaterThan(30);
+  });
+
+  it("rend toujours 0 pour un sprite unique", () => {
+    for (const d of [0, 60, 999]) expect(walkFrameByDistance(d, 0.2, 46, 1)).toBe(0);
+  });
+
+  it("supporte une taille dégénérée sans boucler ni diviser par zéro", () => {
+    for (const size of [0, -12]) {
+      const f: number = walkFrameByDistance(50, 0, size, 4);
+      expect(Number.isInteger(f)).toBe(true);
+      expect(f).toBeGreaterThanOrEqual(0);
+      expect(f).toBeLessThan(4);
+    }
   });
 });
