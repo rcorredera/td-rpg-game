@@ -66,7 +66,7 @@ export interface TowerView {
 const ENEMIES: Record<string, SpriteRef> = {
   diablotin:   { key: "spr_diablotin", size: 38 },
   scorpion:    { key: "spr_scorpion", size: 36 },
-  goblin:      { key: "spr_goblin", size: 46 },
+  goblin:      { key: "spr_goblin", size: 46, walk: { directions: 3, poses: 4 } },
   wraith:      { key: "spr_ghost", size: 50 }, // sprite CraftPix (ADR-043)
   bat:         { key: "spr_bat", size: 52 },
   orc:         { key: "spr_orc", size: 54, walk: { directions: 1, poses: 4 } },

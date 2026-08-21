@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { BACKGROUND_MIN, type Rgba } from "./image";
 import {
-  type Band, detectGroundLine, eraseGroundLine, type FrameBox,
-  frameAnchor, packFrames, type PackedStrip, sliceFrames,
+  type Band, detectGroundLine, detectGroundLines, eraseGroundLine, type FrameBox,
+  frameAnchor, packFrames, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
 } from "./strip";
 
 /** Image opaque entièrement blanche — le fond que livre le générateur. */
@@ -211,5 +211,123 @@ describe("packFrames", () => {
       }
       expect(n, `chevauchement à la case ${i}`).toBe(0);
     }
+  });
+});
+
+describe("detectGroundLines — sol dessiné en plusieurs segments", () => {
+  it("englobe un second segment que le critère STRICT laisse passer", () => {
+    // Mesuré sur la planche du gobelin : le générateur avait dessiné le sol de la
+    // première rangée en deux traits décalés de 5 px, le second à 90 % de
+    // remplissage — sous le seuil de détection. Resté en place, il tombait dans la
+    // rangée SUIVANTE, y passait pour une pose montant très haut, et faisait
+    // exploser la hauteur de case (353 px au lieu de 292).
+    const img: Rgba = white(200, 60);
+    for (let x: number = 4; x < 196; x++) ink(img, x, 20, 90);          // trait franc
+    for (let x: number = 4; x < 176; x++) ink(img, x, 26, 90);          // segment court, décalé
+    const bands: Band[] = detectGroundLines(img, BACKGROUND_MIN);
+    expect(bands.length).toBe(1);
+    expect(bands[0]!.top).toBeLessThanOrEqual(20);
+    expect(bands[0]!.bottom).toBeGreaterThanOrEqual(26);
+  });
+
+  it("ne fusionne PAS deux rangées distinctes", () => {
+    // Le trou toléré vaut quelques pixels ; deux sols de rangées voisines sont
+    // séparés par toute la hauteur d'un personnage.
+    const img: Rgba = white(200, 200);
+    for (let x: number = 4; x < 196; x++) { ink(img, x, 40, 90); ink(img, x, 150, 90); }
+    expect(detectGroundLines(img, BACKGROUND_MIN).length).toBe(2);
+  });
+});
+
+describe("sliceRowInto — découpage à nombre de cases connu", () => {
+  /** Deux blocs qui SE TOUCHENT par un pont fin, comme deux poses dont les armes
+   *  se chevauchent. Aucun seuil de trou ne peut les séparer. */
+  function joined(): Rgba {
+    const img: Rgba = { width: 120, height: 40, data: new Uint8Array(120 * 40 * 4) };
+    const paint = (x0: number, x1: number, y0: number, y1: number): void => {
+      for (let y: number = y0; y <= y1; y++) for (let x: number = x0; x <= x1; x++) img.data[(y * 120 + x) * 4 + 3] = 255;
+    };
+    paint(10, 45, 5, 30);
+    paint(70, 105, 5, 30);
+    paint(46, 69, 16, 17);   // le pont : deux lignes seulement
+    return img;
+  }
+
+  it("sépare deux poses JOINTIVES au creux du profil d'encre", () => {
+    const boxes: FrameBox[] = sliceRowInto(joined(), 2, 0, 39);
+    expect(boxes.length).toBe(2);
+    expect(boxes[0]!.x0).toBe(10);
+    expect(boxes[1]!.x1).toBe(105);
+    // La coupe tombe DANS le pont, là où il y a le moins d'encre.
+    expect(boxes[0]!.x1).toBeGreaterThanOrEqual(45);
+    expect(boxes[0]!.x1).toBeLessThanOrEqual(69);
+  });
+
+  it("rend EXACTEMENT le nombre de cases demandé", () => {
+    // Le rendu indexe par `direction * poses + pose` : une rangée plus courte
+    // décalerait silencieusement toutes les suivantes.
+    for (const n of [1, 2, 3, 4]) {
+      expect(sliceRowInto(joined(), n, 0, 39).length).toBe(n);
+    }
+  });
+
+  it("rend une liste vide sur une bande sans encre", () => {
+    const img: Rgba = { width: 60, height: 20, data: new Uint8Array(60 * 20 * 4) };
+    expect(sliceRowInto(img, 3, 0, 19)).toEqual([]);
+  });
+
+  it("ne déborde jamais de la bande verticale demandée", () => {
+    // Une pose qui empièterait sur la rangée voisine y volerait des pixels.
+    const img: Rgba = { width: 120, height: 80, data: new Uint8Array(120 * 80 * 4) };
+    for (let y: number = 0; y < 80; y++) for (let x: number = 10; x < 110; x++) img.data[(y * 120 + x) * 4 + 3] = 255;
+    for (const b of sliceRowInto(img, 2, 30, 50)) {
+      expect(b.y0).toBeGreaterThanOrEqual(30);
+      expect(b.y1).toBeLessThanOrEqual(50);
+    }
+  });
+});
+
+describe("packRows — miroir d'une rangée", () => {
+  /** Rangée de deux poses ASYMÉTRIQUES : un ergot à droite du corps. */
+  function asymmetricRow(): { img: Rgba; rows: StripRow[] } {
+    const img: Rgba = { width: 200, height: 60, data: new Uint8Array(200 * 60 * 4) };
+    const paint = (x0: number, x1: number, y0: number, y1: number): void => {
+      for (let y: number = y0; y <= y1; y++) for (let x: number = x0; x <= x1; x++) img.data[(y * 200 + x) * 4 + 3] = 255;
+    };
+    paint(20, 45, 10, 40); paint(46, 55, 20, 24);   // pose 0 + ergot à droite
+    paint(120, 145, 10, 40); paint(146, 155, 20, 24); // pose 1, identique
+    const rows: StripRow[] = [{ baseline: 41, frames: sliceRowInto(img, 2, 0, 59) }];
+    return { img, rows };
+  }
+
+  it("retourne chaque pose SANS inverser leur ordre", () => {
+    // Retourner la bande entière ferait marcher le cycle à l'envers : c'est la
+    // pose qui se retourne, pas la rangée.
+    const { img, rows } = asymmetricRow();
+    const packed: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    const cw: number = packed.cellW;
+    const sideInk = (cell: number, half: "left" | "right"): number => {
+      let n: number = 0;
+      for (let y: number = 0; y < packed.cellH; y++) {
+        const from: number = half === "left" ? 0 : Math.floor(cw / 2);
+        const to: number = half === "left" ? Math.floor(cw / 2) : cw - 1;
+        for (let x: number = from; x <= to; x++) {
+          if (packed.sheet.data[(y * packed.sheet.width + cell * cw + x) * 4 + 3] !== 0) n++;
+        }
+      }
+      return n;
+    };
+    // L'ergot est passé à GAUCHE dans les deux cases, et il y en a toujours deux.
+    expect(packed.count).toBe(2);
+    for (const cell of [0, 1]) {
+      expect(sideInk(cell, "left"), `case ${cell}`).toBeGreaterThan(sideInk(cell, "right"));
+    }
+  });
+
+  it("laisse la rangée intacte quand elle n'est pas listée", () => {
+    const { img, rows } = asymmetricRow();
+    const plain: PackedStrip = packRows(img, rows, 2);
+    const flipped: PackedStrip = packRows(img, rows, 2, new Set<number>([0]));
+    expect(plain.sheet.data).not.toEqual(flipped.sheet.data);
   });
 });

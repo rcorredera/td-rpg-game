@@ -5,6 +5,7 @@
 //   npm run sprite -- <source> <destination> --max 256
 //   npm run sprite -- <source> <destination> --keep-fragments
 //   npm run sprite -- <source> <destination> --strip     (planche de marche)
+//   npm run sprite -- <source> <destination> --strip --poses 4 --profile-left
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -28,7 +29,7 @@ import {
 import { decode, encode } from "./png";
 import {
   type Band, detectGroundLines, eraseGroundLine,
-  packRows, type PackedStrip, sliceFrames, type StripRow,
+  packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
 } from "./strip";
 
 // `node:fs` est typé localement dans `node.d.ts` (ADR-001).
@@ -64,6 +65,15 @@ if (!Number.isFinite(maxSide) || maxSide <= 0) {
 const keepFragments: boolean = flags.includes("--keep-fragments");
 /** Planche de poses : découpe le cycle de marche en cases régulières (ADR-065). */
 const asStrip: boolean = flags.includes("--strip");
+/** Force le nombre de poses par rangée quand la détection se trompe. */
+const posesIndex: number = argv.indexOf("--poses");
+const posesFlag: number = posesIndex >= 0 ? Number(argv[posesIndex + 1]) : 0;
+if (posesIndex >= 0 && (!Number.isInteger(posesFlag) || posesFlag < 1)) {
+  console.error(`--poses attend un entier positif, reçu « ${argv[posesIndex + 1]} »`);
+  process.exit(1);
+}
+/** La rangée de profil regarde à GAUCHE : la retourner pour tenir la convention. */
+const profileLeft: boolean = flags.includes("--profile-left");
 
 /** Pixels de bord adoucis — 0 sur une planche, dont les cases ne sont pas rognées. */
 let featheredPx: number = 0;
@@ -102,23 +112,34 @@ if (asStrip) {
   }
   // Une rangée va de la fin de la ligne précédente à sa propre ligne : c'est ce
   // qui la sépare de sa voisine, sans avoir à supposer une hauteur régulière.
+  const rowRange = (i: number): [number, number] => [i === 0 ? 0 : bands[i - 1]!.bottom + 1, bands[i]!.bottom];
+
+  // Combien de poses par rangée ? Le comptage par les TROUS entre poses ne suffit
+  // pas : mesuré sur la planche du gobelin, les poses n'étaient séparées que de
+  // 15 à 29 px — moins que le seuil qui rattache un fer d'épée à sa pose — et en
+  // vue de profil elles se CHEVAUCHAIENT. On retient donc le compte de la rangée
+  // la mieux séparée, puis on découpe TOUTES les rangées à ce compte, en coupant
+  // aux creux du profil d'encre.
+  const detected: number[] = bands.map((_, i) => sliceFrames(img, 30, 2, ...rowRange(i)).length);
+  const poses: number = posesFlag > 0 ? posesFlag : Math.max(...detected);
+  if (poses < 1) {
+    console.error("artprep: --strip n'a isolé aucune pose — lignes de sol mal détectées ?");
+    process.exit(1);
+  }
   const rows: StripRow[] = bands.map((b, i) => ({
     baseline: b.bottom,
-    frames: sliceFrames(img, 30, 2, i === 0 ? 0 : bands[i - 1]!.bottom + 1, b.bottom),
+    frames: sliceRowInto(img, poses, ...rowRange(i)),
   }));
-  const counts: number[] = rows.map(r => r.frames.length);
-  if (counts.some(n => n < 1)) {
-    console.error("artprep: --strip a trouvé une rangée VIDE — lignes de sol mal détectées ?");
+  if (rows.some(r => r.frames.length !== poses)) {
+    console.error(`artprep: découpage incomplet (${rows.map(r => r.frames.length).join(", ")} contre ${poses} attendues).`);
     process.exit(1);
   }
-  // Toutes les directions doivent porter le même nombre de poses : le rendu
-  // indexe ses cases par `direction * poses + pose`, une rangée plus courte
-  // décalerait silencieusement toutes les suivantes.
-  if (new Set(counts).size > 1) {
-    console.error(`artprep: rangées de tailles inégales (${counts.join(", ")} poses) — le découpage serait décalé.`);
-    process.exit(1);
-  }
-  const sheet: PackedStrip = packRows(img, rows);
+  // La convention du registre veut un profil tourné vers la DROITE (ADR-067) :
+  // la marche vers la gauche en est le miroir. Un générateur qui dessine le
+  // profil à gauche se corrige ici, pose par pose — retourner la bande entière
+  // inverserait aussi l'ORDRE des poses, et le cycle marcherait à l'envers.
+  const mirror: Set<number> = new Set<number>(profileLeft && bands.length >= 2 ? [1] : []);
+  const sheet: PackedStrip = packRows(img, rows, 2, mirror);
   packed = sheet;
   cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;
   // Chaque case est rééchantillonnée aux MÊMES dimensions exactes : un facteur

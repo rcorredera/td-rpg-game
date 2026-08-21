@@ -366,8 +366,8 @@ sa sélection dure supprimait l'anticrénelage et rendait la frange OPAQUE, pire
 
 Le nom de fichier se dérive de l'entité, plus du pack d'origine.
 
-**Faits (9/24) : `diablotin` (ex-`imp`, defId `rat` renommé + migration de sauvegarde),
-`scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord`.**
+**Faits (10/24) : `diablotin` (ex-`imp`, defId `rat` renommé + migration de sauvegarde),
+`scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord`, `goblin`.** `orc` (1 direction x 4 poses) et `goblin` (3 directions x 4 poses) sont des PLANCHES de marche.
 Restent 15 ennemis (`goblin`, `wraith`, les 3 volants, les 10 de l'acte II), le héros et
 8 sprites de tours.
 

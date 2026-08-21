@@ -45,7 +45,7 @@ const CRAFTPIX: Record<string, string> = {
   spr_ogre: "ogre.png",
   spr_dark_knight: "dark_knight.png",
   spr_diablotin: "diablotin.png",
-  spr_goblin: "goblin-knight.png",
+  spr_goblin: "goblin.png",
   spr_orc: "orc.png",
   spr_brute: "brute.png",
   spr_golem: "golem.png",

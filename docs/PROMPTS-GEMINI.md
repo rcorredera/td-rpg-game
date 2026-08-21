@@ -27,7 +27,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : petit diablotin violacé maigrichon, cornes courtes recourbées, grandes oreilles pointues, yeux jaunes luisants sans pupille, veines de lumière magenta courant sous la peau. Créature la plus faible du bestiaire : chétive, échine légèrement voûtée, mais en marche décidée.
 ```
 
-## `goblin.png` — Gobelin (taille 46)
+## `goblin.png` — Gobelin (taille 46) ✅ FAIT — planche 3 directions x 4 poses
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -642,8 +642,8 @@ La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit, 
 erreur possible. À nombre de pixels constant, six poses au lieu de huit laissent **un tiers
 de surface en plus par pose**.
 
-Traitement : `npm run sprite -- <source> <destination> --strip` — le nombre de rangées et de
-poses est déduit des lignes de sol.
+Traitement : `npm run sprite -- <source> <destination> --strip [--profile-left] [--poses N]`
+— le nombre de rangées et de poses est déduit des lignes de sol.
 
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE image organisée en TROIS RANGÉES et DEUX COLONNES, soit six cases.
@@ -668,6 +668,40 @@ Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épai
 
 Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
 ```
+
+## Le générateur donne souvent 4 colonnes au lieu de 2 — tant mieux
+
+Sur la planche du gobelin il a produit 3 rangées x 4 poses. L'outil déduit le compte, il ne
+l'impose pas ;  le force si la détection se trompe.
+
+## Si le profil regarde à GAUCHE
+
+Le générateur ignore parfois « marchant vers la droite ». Ajouter  : l'outil
+retourne la rangée POSE PAR POSE, jamais la bande entière — retourner la bande inverserait
+aussi l'ordre des poses et le cycle marcherait à l'envers.
+
+## Le générateur donne souvent 4 colonnes au lieu de 2 — tant mieux
+
+Sur la planche du gobelin il a produit **3 rangées × 4 poses**. L'outil DÉDUIT le compte, il
+ne l'impose pas ; `--poses N` le force si la détection se trompe.
+
+Il ne se fie pas aux trous entre poses pour les séparer : mesuré sur cette planche, les poses
+n'étaient distantes que de 15 à 29 px, et **en vue de profil elles se chevauchaient**. Une
+planche est une grille — l'outil coupe au creux du profil d'encre, près de la frontière
+théorique de chaque case.
+
+## Si le profil regarde à GAUCHE
+
+Le générateur ignore parfois « marchant vers la droite ». Ajouter **`--profile-left`** :
+l'outil retourne la rangée **pose par pose**, jamais la bande entière — retourner la bande
+inverserait aussi l'ORDRE des poses, et le cycle marcherait à l'envers.
+
+## Une ligne de sol dessinée en deux segments
+
+Cas rencontré : le générateur trace parfois le sol d'une rangée en deux traits décalés de
+quelques pixels. L'outil englobe le voisinage du trait détecté, sinon le second segment
+tombe dans la rangée suivante et y passe pour une pose montant très haut. Rien à faire de
+ton côté, mais si une hauteur de case paraît aberrante dans le rapport, c'est la piste.
 
 ## Ce que l'outil refuse, et pourquoi
 

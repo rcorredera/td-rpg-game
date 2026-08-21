@@ -77,7 +77,73 @@ export function detectGroundLines(img: Rgba, threshold: number): Band[] {
     else if (isLine) { current = { top: y, bottom: y }; bands.push(current); }
     else current = null;
   }
-  return bands;
+  // Les bandes rendues sont ÉLARGIES à tout le voisinage qui ressemble encore à
+  // un trait. Deux raisons, et la seconde n'est pas cosmétique :
+  //  - le nettoyage doit emporter les segments décalés que le critère strict
+  //    laisse passer ;
+  //  - la FRONTIÈRE entre deux rangées suit cette bande. Sous les pieds, la ligne
+  //    est conservée à dessein (c'est le bas de la botte) ; si la frontière
+  //    restait à la bande stricte, ces pixels-là tomberaient dans la rangée
+  //    SUIVANTE et y passeraient pour une pose montant très haut.
+  return bands
+    .map(b => widenToLineLike(img, b, threshold))
+    .filter((b, i, all) => i === 0 || b.top > all[i - 1]!.bottom);
+}
+
+/**
+ * Remplissage tolérable pour NETTOYER un trait, plus large que pour le détecter.
+ *
+ * Mesuré : une bande de torses côte à côte plafonne à 75 % de remplissage, un
+ * segment de sol un peu court en atteint 90. Le seuil se place entre les deux, et
+ * ne s'applique QU'AU VOISINAGE d'une bande déjà identifiée — jamais pour
+ * déclarer une rangée.
+ */
+export const ERASE_MIN_FILL: number = 0.82;
+
+/** Étendue et remplissage d'encre sur une ligne. */
+function rowSpanFill(img: Rgba, y: number, threshold: number): { span: number; fill: number } {
+  let n: number = 0, first: number = -1, last: number = -1;
+  for (let x: number = 0; x < img.width; x++) {
+    if (isBackground(img, x, y, threshold)) continue;
+    n++;
+    if (first < 0) first = x;
+    last = x;
+  }
+  const span: number = last - first + 1;
+  return { span, fill: span > 0 ? n / span : 0 };
+}
+
+/**
+ * Élargit une bande aux traits voisins, en TOLÉRANT un trou entre eux.
+ *
+ * Un générateur dessine parfois le sol en plusieurs segments décalés de quelques
+ * pixels, reliés par de l'anticrénelage qui, lui, ne ressemble pas à un trait.
+ * Une croissance strictement contiguë s'arrêterait sur ce trou et laisserait le
+ * second segment en place — mesuré sur la planche du gobelin : deux segments à
+ * 5 px l'un de l'autre.
+ */
+function widenToLineLike(
+  img: Rgba, band: Band, threshold: number, maxGrow: number = 12, gapTolerance: number = 8,
+): Band {
+  const lineLike = (y: number): boolean => {
+    if (y < 0 || y >= img.height) return false;
+    const { span, fill } = rowSpanFill(img, y, threshold);
+    return span >= img.width * GROUND_MIN_SPAN && fill >= ERASE_MIN_FILL;
+  };
+  let top: number = band.top, bottom: number = band.bottom;
+  for (let i: number = 0; i < maxGrow; i++) {
+    let found: number = -1;
+    for (let y: number = bottom + 1; y <= bottom + gapTolerance; y++) if (lineLike(y)) { found = y; break; }
+    if (found < 0) break;
+    bottom = found;
+  }
+  for (let i: number = 0; i < maxGrow; i++) {
+    let found: number = -1;
+    for (let y: number = top - 1; y >= top - gapTolerance; y--) if (lineLike(y)) { found = y; break; }
+    if (found < 0) break;
+    top = found;
+  }
+  return { top, bottom };
 }
 
 /** Première ligne de sol, ou `null`. Conservé pour les planches à une rangée. */
@@ -93,11 +159,25 @@ export function detectGroundLine(img: Rgba, threshold: number): Band | null {
  * la ligne est seule et part ; si c'est du dessin, on est sous une silhouette et
  * on garde tout. MUTE `img`.
  */
-export function eraseGroundLine(img: Rgba, band: Band, threshold: number, probe: number = 4): number {
-  const above: number = band.top - probe;
+export function eraseGroundLine(
+  img: Rgba, band: Band, threshold: number, probe: number = 4, bleed: number = 2,
+): number {
+  // Le trait déborde de la bande DÉTECTÉE, de deux façons : son anticrénelage,
+  // et le fait qu'un générateur le dessine parfois en plusieurs segments décalés
+  // de quelques pixels. Mesuré sur la planche du gobelin : un second segment à
+  // 90 % de remplissage, juste sous le seuil strict de détection — donc invisible
+  // à celle-ci, mais bien présent. Laissé en place, il atterrit dans la rangée
+  // SUIVANTE, y passe pour une pose très haute et fait exploser la hauteur de case.
+  //
+  // Le seuil strict sert à IDENTIFIER une rangée ; nettoyer demande d'être plus
+  // large, sur le seul voisinage immédiat de la bande.
+  const wide: Band = widenToLineLike(img, band, threshold);
+  const from: number = Math.max(0, wide.top - bleed);
+  const to: number = Math.min(img.height - 1, wide.bottom + bleed);
+  const above: number = wide.top - probe - bleed;
   if (above < 0) return 0;
   let erased: number = 0;
-  for (let y: number = band.top; y <= band.bottom; y++) {
+  for (let y: number = from; y <= to; y++) {
     for (let x: number = 0; x < img.width; x++) {
       if (isBackground(img, x, y, threshold)) continue;
       if (!isBackground(img, x, above, threshold)) continue;
@@ -186,6 +266,97 @@ export interface StripRow {
   frames: FrameBox[];
 }
 
+/** Quantité d'encre par colonne sur une bande horizontale. */
+export function columnInk(img: Rgba, yFrom: number, yTo: number): number[] {
+  const { width: w } = img;
+  const top: number = Math.max(0, yFrom);
+  const bottom: number = Math.min(img.height - 1, yTo);
+  const out: number[] = [];
+  for (let x: number = 0; x < w; x++) {
+    let n: number = 0;
+    for (let y: number = top; y <= bottom; y++) if (img.data[(y * w + x) * 4 + 3] !== 0) n++;
+    out.push(n);
+  }
+  return out;
+}
+
+/**
+ * Découpe une rangée en `count` cases en coupant aux CREUX du profil d'encre.
+ *
+ * `sliceFrames` sépare les poses par les trous entre elles — ça ne marche que si
+ * elles ne se touchent pas. Mesuré sur la planche du gobelin : 15 à 29 px
+ * d'écart entre poses, quand le seuil qui rattache un fer d'épée détaché à sa
+ * pose en vaut 30 ; et en vue de profil, les épées se CHEVAUCHENT franchement.
+ * Aucun seuil ne peut trancher.
+ *
+ * Une planche est une GRILLE : on sait combien de cases attendre. On vise donc
+ * la frontière théorique de chaque case, puis on cherche autour d'elle la
+ * colonne la MOINS encrée — là où les deux poses se touchent le moins. Robuste à
+ * un espacement irrégulier, et robuste à des poses jointives.
+ */
+export function sliceRowInto(
+  img: Rgba, count: number, yFrom: number, yTo: number, minInk: number = 2,
+): FrameBox[] {
+  const ink: number[] = columnInk(img, yFrom, yTo);
+  let x0: number = -1, x1: number = -1;
+  for (let x: number = 0; x < ink.length; x++) {
+    if (ink[x]! <= minInk) continue;
+    if (x0 < 0) x0 = x;
+    x1 = x;
+  }
+  if (x0 < 0 || count < 1) return [];
+  if (count === 1) return [boxFrom(img, x0, x1, yFrom, yTo)];
+
+  const cellW: number = (x1 - x0 + 1) / count;
+  // Fenêtre de recherche : assez large pour rattraper un espacement irrégulier,
+  // assez étroite pour ne pas couper en plein milieu d'une pose.
+  const halfWindow: number = Math.max(2, Math.round(cellW * 0.3));
+  const cuts: number[] = [];
+  for (let k: number = 1; k < count; k++) {
+    const target: number = Math.round(x0 + k * cellW);
+    let best: number = target, bestInk: number = Number.POSITIVE_INFINITY;
+    for (let x: number = target - halfWindow; x <= target + halfWindow; x++) {
+      if (x <= x0 || x >= x1) continue;
+      const v: number = ink[x]!;
+      // À encre égale, on reste au plus près de la frontière théorique : sur une
+      // zone plate, s'éloigner ferait dériver toutes les cases suivantes.
+      if (v < bestInk || (v === bestInk && Math.abs(x - target) < Math.abs(best - target))) {
+        bestInk = v;
+        best = x;
+      }
+    }
+    cuts.push(best);
+  }
+
+  const bounds: number[] = [x0, ...cuts, x1 + 1];
+  const out: FrameBox[] = [];
+  for (let i: number = 0; i < count; i++) {
+    const from: number = bounds[i]!;
+    const to: number = bounds[i + 1]! - 1;
+    if (to >= from) out.push(boxFrom(img, from, to, yFrom, yTo));
+  }
+  return out;
+}
+
+/** Boîte d'une case : bornes verticales de l'encre réelle, plus son ancre. */
+function boxFrom(img: Rgba, x0: number, x1: number, yFrom: number, yTo: number): FrameBox {
+  const { width: w } = img;
+  const top: number = Math.max(0, yFrom);
+  const bottom: number = Math.min(img.height - 1, yTo);
+  let y0: number = bottom + 1, y1: number = -1;
+  for (let y: number = top; y <= bottom; y++) {
+    for (let x: number = x0; x <= x1; x++) {
+      if (img.data[(y * w + x) * 4 + 3] === 0) continue;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+      break;
+    }
+  }
+  const box: FrameBox = { x0, y0, x1, y1, anchorX: 0 };
+  box.anchorX = frameAnchor(img, box);
+  return box;
+}
+
 export interface PackedStrip {
   sheet: Rgba;
   cellW: number;
@@ -223,9 +394,12 @@ export function packFrames(img: Rgba, boxes: readonly FrameBox[], baselineY: num
  * Rangement DIRECTION-MAJOR : `direction * poses + pose`. Le rendu n'a alors
  * qu'une multiplication à faire pour trouver sa case.
  */
-export function packRows(img: Rgba, rows: readonly StripRow[], pad: number = 2): PackedStrip {
-  const all: { box: FrameBox; baseline: number }[] = rows.flatMap(
-    r => r.frames.map(box => ({ box, baseline: r.baseline })),
+export function packRows(
+  img: Rgba, rows: readonly StripRow[], pad: number = 2,
+  mirrorRows: ReadonlySet<number> = new Set<number>(),
+): PackedStrip {
+  const all: { box: FrameBox; baseline: number; mirror: boolean }[] = rows.flatMap(
+    (r, i) => r.frames.map(box => ({ box, baseline: r.baseline, mirror: mirrorRows.has(i) })),
   );
   const above: number = Math.max(...all.map(f => f.baseline - f.box.y0));
   const below: number = Math.max(...all.map(f => Math.max(0, f.box.y1 - f.baseline)));
@@ -239,13 +413,19 @@ export function packRows(img: Rgba, rows: readonly StripRow[], pad: number = 2):
   const data: Uint8Array = new Uint8Array(sheetW * cellH * 4);
   all.forEach((f, i) => {
     const b: FrameBox = f.box;
-    const dx: number = i * cellW + anchorInCell - Math.round(b.anchorX);
     const dy: number = above - f.baseline;
+    const cellX: number = i * cellW;
     for (let y: number = b.y0; y <= b.y1; y++) {
       for (let x: number = b.x0; x <= b.x1; x++) {
         const s: number = (y * img.width + x) * 4;
         if (img.data[s + 3] === 0) continue;
-        const nx: number = x + dx, ny: number = y + dy;
+        // Le miroir se fait POSE PAR POSE, jamais sur la rangée entière : retourner
+        // la bande inverserait aussi l ordre des poses, et le cycle marcherait à
+        // l envers.
+        const local: number = f.mirror
+          ? Math.round(b.anchorX) - x
+          : x - Math.round(b.anchorX);
+        const nx: number = cellX + anchorInCell + local, ny: number = y + dy;
         if (nx < 0 || ny < 0 || nx >= sheetW || ny >= cellH) continue;
         const d: number = (ny * sheetW + nx) * 4;
         data[d] = img.data[s]!;
