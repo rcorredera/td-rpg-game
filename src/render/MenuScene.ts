@@ -18,6 +18,7 @@ import { preloadSprites } from "./assets/assets";
 import { ensureSpriteFrames } from "./assets/frames";
 import { applyAudioSettings, playMenuMusic, preloadAudio, preloadMusic, stopMenuMusic } from "./platform/audio";
 import { buildLabel } from "./platform/buildInfo";
+import { sandboxRequested } from "./platform/devFlags";
 import { ACCENT, TEXT } from "./theme/theme";
 import type { Viewport } from "./platform/viewport";
 import { layoutCursor, uiButton, uiChip, uiModal, type LayoutCursor, type UiChip, type UiModal } from "./components";
@@ -79,6 +80,19 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(v.safeLeft + 6, v.safeBottom - 6, buildLabel(), {
       fontSize: "10px", color: TEXT.dim, fontFamily: FONT_BODY,
     }).setOrigin(0, 1).setAlpha(0.5).setDepth(999);
+
+    // Bac à sable (ADR-066) : accessible par `?sandbox` dans l'URL, et non par une
+    // tuile du Campement. Une sixième tuile changerait toute la mise en page du hub
+    // pour un outil d'atelier, et un joueur n'a rien à y faire. Un drapeau d'URL
+    // reste disponible sur les BUILDS DE PREVIEW, là où un `import.meta.env.DEV`
+    // disparaîtrait — or c'est précisément sur la preview qu'on regarde le rendu.
+    if (sandboxRequested()) {
+      const sbW: number = touchSize(112), sbH: number = touchSize(30);
+      uiButton(this, v.safeRight - 10 - sbW / 2, v.safeBottom - 8 - sbH / 2, "Bac à sable",
+        { w: sbW, h: sbH, fontSize: 12 },
+        () => { this.scene.start("game", { profileSvc: this.profileSvc, sandbox: true }); },
+      ).container.setDepth(999);
+    }
     // Posées au centre : `spreadCurrencies()` les écarte ensuite d'après leur
     // largeur réelle. Les créer à des abscisses en dur « puisqu'elles sont
     // recalculées » laisse traîner deux valeurs justes par accident.

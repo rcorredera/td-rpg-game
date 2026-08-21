@@ -73,3 +73,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 063 | Détourage automatique, et la frange se juge par contraste | [`ADR-063-detourage-automatique-et-regle-de-frange.md`](ADR-063-detourage-automatique-et-regle-de-frange.md) |
 | 064 | Les pieds restent au sol : animation par écrasement, pas par translation | [`ADR-064-les-pieds-restent-au-sol.md`](ADR-064-les-pieds-restent-au-sol.md) |
 | 065 | Cycles de marche dessinés, générés en une image et calés sur une ligne de sol | [`ADR-065-cycles-de-marche-dessines.md`](ADR-065-cycles-de-marche-dessines.md) |
+| 066 | Pause qui fige tout, et bac à sable d'observation | [`ADR-066-pause-et-bac-a-sable.md`](ADR-066-pause-et-bac-a-sable.md) |

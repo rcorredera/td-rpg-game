@@ -9,6 +9,8 @@ src/
   core/      Simulation pure, déterministe. ZÉRO dépendance Phaser/DOM. Testée en Vitest.
   content/   Données d'équilibrage ET de structure (tours, ennemis, CHAPITRES — carte+vagues+lore
              par chapitre, ADR-004 —, unlocks, forge, économie). Aucune stat ailleurs.
+             `sandbox.ts` fait exception : carte d'ATELIER, délibérément hors de
+             `CONTENT.chapters` pour ne pas fausser le banc d'équilibrage (ADR-066).
   meta/      Profil de compte (monnaies, unlocks, forge, sorts, bestiaire, chapitres conquis,
              meilleurs runs), persistence (SaveAdapter). Testée en Vitest.
   render/    Scènes Phaser. Lit l'état du core, ne le mute jamais : passe par les commandes de sim.ts.

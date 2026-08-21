@@ -10,6 +10,7 @@
 
 import Phaser from "phaser";
 import { CONTENT } from "../content/index";
+import { SANDBOX_CHAPTER } from "../content/sandbox";
 import {
   castAccountSpell, castRally, castWhirlwind, computeResult, createRun, moveHero, startNextWave, tick,
 } from "../core/sim";
@@ -17,6 +18,7 @@ import type {
   ChapterDef, EnemyState, PlayableChapter, RallyLevel, RunResult, RunState,
   SimEvent, TowerState, Vec2, WhirlwindLevel,
 } from "../core/types";
+import type { ContentPack } from "../core/types";
 import type { ProfileService } from "../meta/profile";
 import { onSceneResize, preloadUi, setupCamera } from "./theme/ui";
 import { preloadIcons } from "./theme/icons";
@@ -42,6 +44,10 @@ export class GameScene extends Phaser.Scene {
   private run!: RunState;
   private profileSvc!: ProfileService;
   private chapterIdx = 0;
+  /** Pack de contenu du run : `CONTENT`, ou un dérivé pour le bac à sable. */
+  private content: ContentPack = CONTENT;
+  /** Bac à sable (ADR-066) : aucun résultat n'est archivé ni récompensé. */
+  private sandbox = false;
   private ch!: PlayableChapter;
   private gfx!: Phaser.GameObjects.Graphics;
   private groundGfx!: Phaser.GameObjects.Graphics;
@@ -55,6 +61,11 @@ export class GameScene extends Phaser.Scene {
   private spellMode = false;
   private ended = false;
   private autoWave = false;
+  /** Jeu en pause : ni simulation, ni animation, ni effets (voir `update`). */
+  private paused = false;
+  /** Horloge du champ de bataille, en ms. Avance avec `update` SAUF en pause —
+   *  c'est elle, et non `this.time.now`, qui date animations et effets. */
+  private clock = 0;
   private autoWaveAt: number | null = null;
   private confirmQuit: Phaser.GameObjects.Container | null = null;
   /** Dernier impact sur le château (flash rouge). */
@@ -82,15 +93,24 @@ export class GameScene extends Phaser.Scene {
 
   constructor() { super("game"); }
 
-  init(data: { profileSvc: ProfileService; chapterIndex?: number }) {
+  init(data: { profileSvc: ProfileService; chapterIndex?: number; sandbox?: boolean }) {
     this.profileSvc = data.profileSvc;
-    this.chapterIdx = data.chapterIndex ?? 0;
-    const ch: ChapterDef | undefined = CONTENT.chapters[this.chapterIdx];
+    // Le bac à sable (ADR-066) tourne sur un pack DÉRIVÉ dont l'unique chapitre
+    // est le sien. Il reste ainsi hors de `CONTENT.chapters`, que parcourent
+    // l'écran Histoire, le banc d'équilibrage et leurs tests : un 21e chapitre
+    // à 9999 PV de château y fausserait toutes les mesures.
+    this.sandbox = data.sandbox === true;
+    this.content = this.sandbox ? { ...CONTENT, chapters: [SANDBOX_CHAPTER] } : CONTENT;
+    this.chapterIdx = this.sandbox ? 0 : (data.chapterIndex ?? 0);
+    const ch: ChapterDef | undefined = this.content.chapters[this.chapterIdx];
     if (!ch?.playable) throw new Error(`chapitre ${this.chapterIdx} injouable`);
     this.ch = ch;
-    this.run = createRun(CONTENT, this.profileSvc.get(), this.chapterIdx);
+    this.run = createRun(this.content, this.profileSvc.get(), this.chapterIdx);
     this.ended = false; this.selectedSlot = -1; this.spellMode = false;
     this.autoWave = false; this.autoWaveAt = null; this.confirmQuit = null;
+    // Horloge et pause remises à zéro AVEC le run : `init` est le seul point de
+    // reconstruction (le resize passe par `relayout`, qui ne doit rien rejouer).
+    this.paused = false; this.clock = 0;
     this.castleHitAt = -9999;
   }
 
@@ -135,25 +155,26 @@ export class GameScene extends Phaser.Scene {
     return {
       onSpell: () => { this.spellMode = true; },
       onRally: () => {
-        if (castRally(this.run, CONTENT)) {
+        if (castRally(this.run, this.content)) {
           // Onde de portée au lancement : montre la zone d'effet du cri de ralliement
-          const sk: RallyLevel = CONTENT.hero.skills.rally.levels[this.run.skillLevels.rally - 1]!;
-          this.fxPool.addEffect({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 650, life: 650, kind: "rally" });
+          const sk: RallyLevel = this.content.hero.skills.rally.levels[this.run.skillLevels.rally - 1]!;
+          this.fxPool.addEffect({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.clock + 650, life: 650, kind: "rally" });
           playSfx(this, "heroRally");
         }
       },
       onWhirlwind: () => {
         const evs: SimEvent[] = [];
-        if (castWhirlwind(this.run, CONTENT, evs)) {
-          const sk: WhirlwindLevel = CONTENT.hero.skills.whirlwind.levels[this.run.skillLevels.whirlwind - 1]!;
-          this.fxPool.addEffect({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.time.now + 520, life: 520, kind: "whirl" });
+        if (castWhirlwind(this.run, this.content, evs)) {
+          const sk: WhirlwindLevel = this.content.hero.skills.whirlwind.levels[this.run.skillLevels.whirlwind - 1]!;
+          this.fxPool.addEffect({ pos: { ...this.run.hero.pos }, radius: sk.radius, until: this.clock + 520, life: 520, kind: "whirl" });
           playSfx(this, "heroWhirlwind");
         }
         this.consumeEvents(evs);
       },
       onSpeedToggle: () => { this.run.speed = this.run.speed === 1 ? 2 : 1; },
+      onPauseToggle: () => { this.paused = !this.paused; },
       onAutoToggle: () => { this.autoWave = !this.autoWave; this.autoWaveAt = null; },
-      onNextWave: () => { startNextWave(this.run, CONTENT); },
+      onNextWave: () => { startNextWave(this.run, this.content); },
       onQuit: () => this.openQuitConfirm(),
     };
   }
@@ -183,7 +204,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.spellMode) {
       const evs: SimEvent[] = [];
-      castAccountSpell(this.run, CONTENT, { x, y }, evs);
+      castAccountSpell(this.run, this.content, { x, y }, evs);
       this.consumeEvents(evs);
       this.spellMode = false;
       return;
@@ -225,8 +246,15 @@ export class GameScene extends Phaser.Scene {
   // ---------- Update ----------
 
   update(_t: number, dtMs: number) {
-    if (!this.ended && !this.confirmQuit) {
-      const evs: SimEvent[] = tick(this.run, CONTENT, dtMs / 1000);
+    // Horloge du CHAMP DE BATAILLE, distincte de celle de Phaser : elle porte
+    // aussi bien la simulation que les animations et les effets. En pause, tout
+    // gèle ensemble — une pause qui n'arrêterait que la sim laisserait les
+    // créatures marcher sur place et les FX se dérouler, ce qui n'est pas une
+    // pause mais un jeu cassé. C'est aussi ce qui rend une animation
+    // inspectable image par image.
+    if (!this.paused) this.clock += dtMs;
+    if (!this.ended && !this.confirmQuit && !this.paused) {
+      const evs: SimEvent[] = tick(this.run, this.content, dtMs / 1000);
       this.consumeEvents(evs);
       this.updateHeroAttackSfx();
       if (this.run.phase === "victory" || this.run.phase === "defeat") this.endRun();
@@ -244,7 +272,7 @@ export class GameScene extends Phaser.Scene {
       waveIndex: r.waveIndex, totalWaves: this.ch.waves.length,
     });
     this.hud.updateActions({
-      waveReady: r.phase === "building", autoWave: this.autoWave, speed: r.speed,
+      waveReady: r.phase === "building", paused: this.paused, autoWave: this.autoWave, speed: r.speed,
       wwReadyAt: r.hero.whirlwindReady, rallyReadyAt: r.hero.rallyReady, spellReadyAt: r.accountSpellReady,
       runTime: r.time,
     });
@@ -256,15 +284,15 @@ export class GameScene extends Phaser.Scene {
       this.autoWaveAt = null;
       return;
     }
-    if (this.autoWaveAt === null) this.autoWaveAt = this.time.now + AUTO_WAVE_DELAY_MS;
-    else if (this.time.now >= this.autoWaveAt) { startNextWave(this.run, CONTENT); this.autoWaveAt = null; }
+    if (this.autoWaveAt === null) this.autoWaveAt = this.clock + AUTO_WAVE_DELAY_MS;
+    else if (this.clock >= this.autoWaveAt) { startNextWave(this.run, this.content); this.autoWaveAt = null; }
   }
 
   /** Le héros bloque un ennemi terrestre : rejoue le son de coup d'épée à
    *  cadence fixe tant que le combat dure (ADR-042). */
   private updateHeroAttackSfx() {
     if (!this.run.hero.alive || !this.run.enemies.some(e => e.alive && e.blocked)) return;
-    const now: number = this.time.now;
+    const now: number = this.clock;
     if (now - this.heroAttackAt < GameScene.HERO_ATTACK_INTERVAL_MS) return;
     this.heroAttackAt = now;
     playSfx(this, "heroAttack");
@@ -284,16 +312,16 @@ export class GameScene extends Phaser.Scene {
         //   doublon (et sonnait, à tort, comme l'impact générique du givre).
         if (e.towerDefId) {
           playSfx(this, impactSfx(e.towerDefId));
-        } else if (e.radius >= CONTENT.accountSpell.radius * 0.9) {
+        } else if (e.radius >= this.content.accountSpell.radius * 0.9) {
           playSfx(this, "accountSpell");
-          this.fxPool.addEffect({ pos: { ...e.pos }, radius: e.radius, until: this.time.now + 620, life: 620, kind: "arrows" });
+          this.fxPool.addEffect({ pos: { ...e.pos }, radius: e.radius, until: this.clock + 620, life: 620, kind: "arrows" });
         }
       }
       if (e.type === "shot") {
         // Le projectile VOYAGE : son style dit ce qui frappe (flèche tendue,
         // rocher en cloche, éclat de givre) — cf. registre projectiles.ts.
         const style: ProjectileStyle = projectileFor(e.towerDefId);
-        const now: number = this.time.now;
+        const now: number = this.clock;
         this.fxPool.addShot({ from: e.from, to: e.to, start: now, until: now + style.flightMs, style });
         playSfx(this, shotSfx(e.towerDefId, e.specId));
         // Recul de la tour au départ du coup : l'animation de tir part de l'arme,
@@ -308,7 +336,7 @@ export class GameScene extends Phaser.Scene {
         const main: Vec2[] = this.ch.map.paths[0]!.waypoints;
         const end: Vec2 = main[main.length - 1]!;
         this.fxPool.spawnFlame(end.x - 18, end.y - 6, 0.8 + e.damage * 0.12);
-        this.castleHitAt = this.time.now;
+        this.castleHitAt = this.clock;
         playSfx(this, "castleHit");
       }
       if (e.type === "enemyDied") playSfx(this, "enemyDied");
@@ -320,8 +348,11 @@ export class GameScene extends Phaser.Scene {
   private endRun() {
     this.ended = true;
     playSfx(this, this.run.phase === "victory" ? "victory" : "defeat");
-    const result: RunResult = computeResult(this.run, CONTENT);
-    this.profileSvc.applyRunResult(result, this.chapterIdx);
+    const result: RunResult = computeResult(this.run, this.content);
+    // Le bac à sable ne rapporte RIEN : ni éclats, ni étoiles, ni découvertes de
+    // bestiaire. Il donne accès à toutes les créatures d'un coup — les archiver
+    // reviendrait à offrir la progression que le jeu fait gagner.
+    if (!this.sandbox) this.profileSvc.applyRunResult(result, this.chapterIdx);
     buildEndRunOverlay(this, result, this.ch.waves.length,
       () => this.scene.start("menu", { profileSvc: this.profileSvc }));
   }
@@ -336,58 +367,58 @@ export class GameScene extends Phaser.Scene {
     // Le sol + les chemins non-portail sont en tuiles statiques (buildTerrain).
     // Ici, seuls les chemins de Faille (portails) — dynamiques (GDD §Portails).
     // Sur `groundGfx` (sous les entités) : c'est un effet de sol, pas un overlay.
-    const portalWarn: boolean = drawPortals(this.groundGfx, this.ch, this.run, this.time.now);
+    const portalWarn: boolean = drawPortals(this.groundGfx, this.ch, this.run, this.clock);
     this.hud.showPortalWarn(portalWarn);
 
     // Château : muraille en tuiles (buildCastle). Ici, seul le flash rouge d'impact + la barre PV.
     const main: Vec2[] = this.ch.map.paths[0]!.waypoints;
     const end: Vec2 = main[main.length - 1]!;
-    const hitFlash: boolean = this.time.now - this.castleHitAt < 280;
+    const hitFlash: boolean = this.clock - this.castleHitAt < 280;
     const castlePct: number = this.run.castleHp / this.run.castleHpMax;
     drawCastleBar(g, this.castleBar, end, castlePct, hitFlash);
 
     // Slots vides
     drawSlotMarkers(g, this.slotMarkers, this.ch.map.slots,
-      i => this.run.towers.some(t => t.slotIndex === i), this.selectedSlot, this.time.now);
+      i => this.run.towers.some(t => t.slotIndex === i), this.selectedSlot, this.clock);
 
     // Tours : le skin médiéval dessine la tour ENTIÈRE (plus de composition
     // socle + emblème, qui n'existait que pour recycler des tourelles sci-fi).
     this.towerBaseLayer.sync(
       this.run.towers, t => t.slotIndex, t => towerView(t.defId, t.level, t.specId).base,
-      (s, t) => this.entities.placeTowerPart(s, t, this.ch.map.slots[t.slotIndex]!, this.time.now, -12, 84),
+      (s, t) => this.entities.placeTowerPart(s, t, this.ch.map.slots[t.slotIndex]!, this.clock, -12, 84),
     );
     this.towerEmblemLayer.sync(
       this.run.towers.filter(t => towerView(t.defId).emblem),
       t => t.slotIndex, t => towerView(t.defId).emblem!,
-      (s, t) => this.entities.placeTowerPart(s, t, this.ch.map.slots[t.slotIndex]!, this.time.now, -8, 52),
+      (s, t) => this.entities.placeTowerPart(s, t, this.ch.map.slots[t.slotIndex]!, this.clock, -8, 52),
     );
     for (const t of this.run.towers) {
-      this.entities.drawTowerOverlay(g, t, this.ch.map.slots[t.slotIndex]!, this.selectedSlot, this.run.time, this.time.now);
+      this.entities.drawTowerOverlay(g, t, this.ch.map.slots[t.slotIndex]!, this.selectedSlot, this.run.time, this.clock);
     }
 
     // Ennemis : corps en sprites (retained-mode), barres/statuts en overlay gfx.
     const aliveEnemies: EnemyState[] = this.run.enemies.filter(e => e.alive);
     this.enemyLayer.sync(
       aliveEnemies, e => e.uid, e => enemyView(e.defId),
-      (s, e) => this.entities.placeEnemy(s, e, this.time.now),
+      (s, e) => this.entities.placeEnemy(s, e, this.clock),
       s => this.fxPool.spawnFlame(s.x, s.y, 0.55),
     );
     // Profondeur = celle du sprite (100+y) moins un chouïa : l'overlay d'un ennemi
     // reste juste SOUS son propre corps, et donc aussi sous le sprite de tout
     // monstre placé devant lui (y plus grand) — un halo ne traverse plus rien.
     this.enemyOverlayLayer.sync(aliveEnemies, e => e.uid, e => 99.5 + e.pos.y,
-      (og, e) => this.entities.drawEnemyOverlay(og, e, this.run.time, this.time.now));
+      (og, e) => this.entities.drawEnemyOverlay(og, e, this.run.time, this.clock));
 
     // Héros
     const foe: EnemyState | undefined = this.run.enemies.find(e => e.alive && e.blocked);
-    this.entities.drawHero(g, this.run.hero, this.heroSprite, foe, this.time.now);
+    this.entities.drawHero(g, this.run.hero, this.heroSprite, foe, this.clock);
 
     // Tirs & FX
-    this.fxPool.draw(g, this.time.now);
+    this.fxPool.draw(g, this.clock);
 
     if (this.spellMode) {
       g.lineStyle(2, 0xe8c252, 0.8);
-      g.strokeCircle(this.input.activePointer.worldX, this.input.activePointer.worldY, CONTENT.accountSpell.radius);
+      g.strokeCircle(this.input.activePointer.worldX, this.input.activePointer.worldY, this.content.accountSpell.radius);
     }
   }
 }

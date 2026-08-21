@@ -9,7 +9,7 @@ import { CURSOR_POINT, FONT_BODY, FONT_DISPLAY, UI_TINT } from "../theme/ui";
 import { scaleFont, touchSize, viewport } from "../platform/viewport";
 import type { Viewport } from "../platform/viewport";
 import { ICON } from "../theme/icons";
-import { skinPressVisual, uiButton } from "../components";
+import { skinPressVisual, uiButton, type UiButton } from "../components";
 import {
   ensureUiSkinTextures, uiSkinActive, uiSkinInsets,
   UI_SKIN_BTN, UI_SKIN_BTN_PRESS, UI_SKIN_BTN_PRIMARY, UI_SKIN_BTN_PRIMARY_PRESS,
@@ -28,6 +28,7 @@ export interface HudCallbacks {
   onAutoToggle: () => void;
   onNextWave: () => void;
   onQuit: () => void;
+  onPauseToggle: () => void;
 }
 
 /** État courant à afficher, calculé une fois par frame par `GameScene.update`. */
@@ -41,6 +42,7 @@ export interface HudResourceState {
 
 export interface HudActionState {
   waveReady: boolean;
+  paused: boolean;
   autoWave: boolean;
   speed: number;
   wwReadyAt: number;
@@ -55,6 +57,15 @@ export class Hud {
   top = 0;
   /** Bouton « quitter » : hors du container HUD (ancré au coin haut), détruit à part. */
   quitBtn: Phaser.GameObjects.Container | null = null;
+  /**
+   * Bouton « pause » : même ancrage que « quitter », à sa droite.
+   *
+   * PAS dans la barre d'actions : elle porte déjà six boutons, et sur mobile
+   * un septième la ferait déborder ou rétrécirait les cibles sous le seuil
+   * tactile (ADR-011). Le coin haut est libre et à portée du pouce.
+   */
+  pauseBtn: Phaser.GameObjects.Container | null = null;
+  private pauseLabel: Phaser.GameObjects.Text | null = null;
 
   private texts: Partial<Record<HudKey, Phaser.GameObjects.Text>> = {};
   private plates: Partial<Record<HudKey, Phaser.GameObjects.NineSlice>> = {};
@@ -68,6 +79,9 @@ export class Hud {
     this.container?.destroy(true);
     this.quitBtn?.destroy();
     this.quitBtn = null;
+    this.pauseBtn?.destroy();
+    this.pauseBtn = null;
+    this.pauseLabel = null;
     this.texts = {}; this.plates = {}; this.icons = {};
   }
 
@@ -267,8 +281,18 @@ export class Hud {
     // lui la vraie limite de l'écran utile.
     const quitH: number = touchSize(32), quitW: number = touchSize(86);
     const quitX: number = Math.max(v.safeLeft, 0) + 10 + quitW / 2;
-    this.quitBtn = uiButton(this.scene, quitX, Math.max(v.safeTop, 0) + 8 + quitH / 2, "⟵ Camp",
+    const quitY: number = Math.max(v.safeTop, 0) + 8 + quitH / 2;
+    this.quitBtn = uiButton(this.scene, quitX, quitY, "⟵ Camp",
       { w: quitW, h: quitH, fontSize: 13 }, cb.onQuit).container.setDepth(1000);
+
+    // Pause, juste à droite de « quitter ». Libellé TEXTE et non glyphe « ⏸ » :
+    // celui-ci serait rendu par la police du SYSTÈME, donc d'un aspect variable
+    // d'un appareil à l'autre et hors de la palette (ADR-012).
+    const pauseW: number = touchSize(74);
+    const pauseBtn: UiButton = uiButton(this.scene, quitX + quitW / 2 + 8 + pauseW / 2, quitY, "Pause",
+      { w: pauseW, h: quitH, fontSize: 13 }, cb.onPauseToggle);
+    this.pauseBtn = pauseBtn.container.setDepth(1000);
+    this.pauseLabel = pauseBtn.txt;
 
     // Annonce de Faille (portails) — haut de l'écran, visible uniquement quand pertinent
     this.texts["portalWarn"] = this.scene.add.text(GAME_W / 2, v.safeTop + 10, "", {
@@ -364,6 +388,7 @@ export class Hud {
     this.plates["nextWave"]?.setAlpha(a.waveReady ? 1 : 0.35);
     this.texts["auto"]?.setText(a.autoWave ? "Auto ✓" : "Auto ✗")
       .setColor(this.hudStateColor(a.autoWave, "#27ae60"));
+    this.pauseLabel?.setText(a.paused ? "Reprise" : "Pause");
     this.texts["speed"]?.setText(`x${a.speed}`)
       .setColor(this.hudStateColor(a.speed === 2, "#e8c252"));
     this.updateSkillButton("ww", a.wwReadyAt, a.runTime);
