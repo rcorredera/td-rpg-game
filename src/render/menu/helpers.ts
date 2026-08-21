@@ -85,7 +85,10 @@ export function scrollArea(ctx: MenuCtx, top: number): UiScrollList {
 
 /** Portrait affiché à gauche d'une fiche de lore : le Bestiaire montre la
  *  créature, il ne la décrit pas seulement (ADR-016). `known: false` = silhouette. */
-export interface LorePortrait { key: string; known: boolean }
+/** Portrait d'une fiche de Bestiaire. `frame` désigne la pose à montrer quand la
+ *  créature est livrée en PLANCHE de marche (ADR-065) — sans elle, la vignette
+ *  afficherait la planche entière, soit quatre créatures écrasées dans la case. */
+export interface LorePortrait { key: string; known: boolean; frame?: number }
 
 /**
  * Fiche du Bestiaire : empile des lignes de texte et dimensionne son cadre
@@ -120,7 +123,9 @@ export function lorePage(
 
   if (portrait) {
     const size: number = Math.min(62, h - 14);
-    const img: Phaser.GameObjects.Image = ctx.scene.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key);
+    const img: Phaser.GameObjects.Image = portrait.frame === undefined
+      ? ctx.scene.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key)
+      : ctx.scene.add.image(cardLeft + pad + artW / 2 - 8, y, portrait.key, portrait.frame);
     // Proportions natives conservées (`fitSquare`, ADR-046) — cf. entities.ts.
     const { w: fitW, h: fitH } = fitSquare(img.width, img.height, size);
     img.setDisplaySize(fitW, fitH);

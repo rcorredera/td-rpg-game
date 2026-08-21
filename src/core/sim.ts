@@ -278,6 +278,27 @@ export function castAccountSpell(s: RunState, c: ContentPack, at: Vec2, events: 
   return true;
 }
 
+/**
+ * Fait apparaître UNE créature immédiatement, sur la voie demandée.
+ *
+ * Commande d'ATELIER : elle sert au bac à sable (ADR-066), où l'on veut voir une
+ * créature précise sans jouer les chapitres qui y mènent. Elle vit ici et non
+ * dans le rendu parce que celui-ci ne mute jamais `RunState` directement
+ * (ADR-001) — une exception « juste pour déboguer » serait le premier pas vers
+ * un rendu qui décide de l'état du jeu.
+ *
+ * Renvoie `false` sur une créature ou une voie inconnue, plutôt que de pousser
+ * une apparition que `spawnDueEnemies` déréférencerait dans le vide.
+ */
+export function spawnOneEnemy(s: RunState, c: ContentPack, enemyId: string, pathIndex: number): boolean {
+  const ch: ChapterDef | undefined = c.chapters[s.chapterIndex];
+  if (!ch?.playable) return false;
+  if (!c.enemies[enemyId]) return false;
+  if (!Number.isInteger(pathIndex) || pathIndex < 0 || pathIndex >= ch.map.paths.length) return false;
+  s.pendingSpawns.push({ enemyId, at: s.time, pathIndex, hpMult: 1 });
+  return true;
+}
+
 /** Lance la vague suivante. Valide uniquement en phase "building". */
 export function startNextWave(s: RunState, c: ContentPack): boolean {
   if (s.phase !== "building") return false;

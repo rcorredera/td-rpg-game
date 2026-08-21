@@ -353,11 +353,20 @@ export function feather(img: Rgba): number {
  * Renvoie une NOUVELLE image ; en deçà de `target`, renvoie l'originale.
  */
 export function downscale(img: Rgba, target: number): Rgba {
+  if (Math.max(img.width, img.height) <= target) return img;
+  const scale: number = target / Math.max(img.width, img.height);
+  return resample(img, Math.max(1, Math.round(img.width * scale)), Math.max(1, Math.round(img.height * scale)));
+}
+
+/**
+ * Rééchantillonne vers des dimensions EXACTES, par moyenne de boîte prémultipliée.
+ *
+ * Séparé de `downscale` pour les planches de poses : leurs cases doivent toutes
+ * finir à la même taille au pixel près, sinon Phaser découpe de travers. Un
+ * facteur d'échelle appliqué case par case dériverait par arrondi.
+ */
+export function resample(img: Rgba, nw: number, nh: number): Rgba {
   const { width: w, height: h, data } = img;
-  if (Math.max(w, h) <= target) return img;
-  const scale: number = target / Math.max(w, h);
-  const nw: number = Math.max(1, Math.round(w * scale));
-  const nh: number = Math.max(1, Math.round(h * scale));
   const out: Uint8Array = new Uint8Array(nw * nh * 4);
   for (let y: number = 0; y < nh; y++) {
     for (let x: number = 0; x < nw; x++) {

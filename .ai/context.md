@@ -366,8 +366,8 @@ sa sélection dure supprimait l'anticrénelage et rendait la frange OPAQUE, pire
 
 Le nom de fichier se dérive de l'entité, plus du pack d'origine.
 
-**Faits (9/24) : `diablotin` (ex-`imp`, defId `rat` renommé + migration de sauvegarde),
-`scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord`.**
+**Faits (10/24) : `diablotin` (ex-`imp`, defId `rat` renommé + migration de sauvegarde),
+`scorpion`, `orc`, `troll`, `ogre`, `brute`, `dark_knight`, `golem`, `warlord`, `goblin`.** `orc` (1 direction x 4 poses) et `goblin` (3 directions x 4 poses) sont des PLANCHES de marche.
 Restent 15 ennemis (`goblin`, `wraith`, les 3 volants, les 10 de l'acte II), le héros et
 8 sprites de tours.
 
@@ -390,6 +390,38 @@ Hors périmètre tant que rien n'est tranché : les icônes monochromes et `skin
 par `load.svg`, il faudrait basculer sur `load.image`), et le chrome d'UI 9-slice dont `uiSkin.ts`
 découpe la géométrie — une image générée librement la casserait.
 
+### Directions de marche (ADR-067)
+Le PO : « de gauche à droite c'est ok, les autres sens il tourne pas ». Cause : le rendu ne
+comparait que l'ABSCISSE, donc un segment vertical laissait l'orientation du segment
+précédent. Invisible sur un sprite de FACE (convention admise), criant sur un PROFIL.
+
+Format retenu : 3 rangées dessinées (face, profil droit, dos) x 2 poses, une ligne de sol par
+rangée. La GAUCHE est le miroir du profil — le retournement inverse l'équipement, ce qui est
+la convention universelle pour l'orientation, mais reste INTERDIT pour fabriquer le pas
+opposé d'un même cycle (l'arme sauterait de main à chaque pas). Six poses au lieu de huit
+laissent un tiers de surface en plus par pose.
+
+ (pur, 13 tests) : l'axe DOMINANT décide (sinon oscillation en diagonale),
+rien ne change sous le seuil (une unité bloquée ne pivote pas), et une planche sans rangée
+verticale GARDE son orientation plutôt que de demander une case inexistante — une case hors
+planche s'affiche vide sans lever d'erreur.
+
+Les VOLANTS restent hors de ce format : une chauve-souris de dos n'a pas de sens, et son
+animation est un battement d'ailes.
+
+### Piège d orientation d une planche (ADR-068)
+L orientation du profil se vérifie en EXTRAYANT la rangée de la planche PRODUITE, jamais à
+l oeil sur la vignette source — erreur commise DEUX FOIS (orc et gobelin). Un 
+appliqué à tort fait marcher la créature à reculons : elle regarde à gauche en avançant vers
+la droite. Le personnage doit regarder à DROITE sur la rangée de profil.
+
+### Cycle de marche calé sur la DISTANCE (ADR-068)
+Le pilotage par le temps donnait  ms, soit exactement 34,1 px de sol par
+cycle pour TOUTE créature — la vitesse s annule dans le calcul. Gobelin de 46 px et ogre de
+66 px faisaient la même enjambée, et le pied glissait. Le cycle des planches dessinées est
+maintenant indexé sur la distance parcourue (enjambée = 1,1 x taille). L animation PROCÉDURALE
+reste pilotée par le temps : pas de pied dessiné à trahir.
+
 ## Sols, chemins et décor — tranché (ADR-062)
 Question du PO : fallait-il reprendre aussi les sols, les chemins et les dalles de tour ?
 Réponse : **trois situations différentes**, et une seule se traite comme les créatures.
@@ -409,6 +441,56 @@ place rochers et buissons sur une grille jitterée en évitant routes, dalles et
 (`setTint` ne saurait pas — il multiplie). Deux nombres par biome (`count`, `bushShare`) :
 la cendre et le givre sont à 0 buisson, la forêt à 0,75. Sort `rock-*`/`bush-*` de la réserve
 d'assets ; les nuages y restent.
+
+## Animation des unités — refaite (ADR-064)
+Le PO jugeait le mouvement inutilisable (« le petit sautillement, ça passe pas du tout »), et la
+cause était structurelle : pivot à 62 % de la hauteur (au MILIEU du corps) et `dy` jusqu'à
+4,6 px qui translatait le sprite entier — les pieds décollaient. L'écrasement, lui, plafonnait
+à 6 %, six fois plus faible que la translation, donc invisible.
+
+Principe désormais : **les pieds restent au sol, c'est le corps qui travaille**. Ancrage par les
+pieds (`setOrigin(0.5, 1)`, compensé par `LEGACY_ORIGIN_Y` pour ne déplacer aucune unité),
+mouvement vertical porté par l'écrasement (jusqu'à 12 %, phasé sur le contact du pied), et
+`UnitPose.dx` nouveau : le report du poids d'un appui sur l'autre, qui est ce qui fait lire une
+démarche. Mesuré en jeu : 3,5 px d'amplitude verticale réelle sur l'orc, contre un écrasement
+auparavant imperceptible.
+
+⚠ **L'animation par frames dessinées est écartée DÉFINITIVEMENT**, et pas pour son volume :
+un générateur ne redessine pas LE MÊME personnage dans une autre pose (couleurs et proportions
+dérivent), donc un cycle de 4 frames donnerait 4 créatures qui clignotent. `Rope` (déformation
+par maillage) est écarté aussi : WebGL uniquement, or le jeu tourne en `Phaser.AUTO` avec repli
+canvas sur cible mobile.
+
+Reste : le **héros** garde son ancien bob (1,5 px) et son ancrage — son arc de lame est calé sur
+sa position, le reprendre demanderait de revoir cette géométrie.
+
+## Cycles de marche dessinés — EN COURS (ADR-065)
+L'animation procédurale corrigée (ADR-064) restait jugée « vilaine » par le PO. Il a proposé
+de demander PLUSIEURS POSES DANS UNE SEULE IMAGE — ce qui lève l'objection qui bloquait :
+un générateur ne redessine pas le même personnage d'une image à l'autre, mais il le dessine
+très bien quatre fois dans la même. Vérifié sur l'orc : même armure, même hache, même main.
+
+La planche porte une LIGNE DE SOL dessinée, et c'est elle la clé : les frames sont calées
+dessus, PAS sur leur boîte englobante — ce qui préserve l'élévation voulue du corps (contact
+bas, passage haut, 9 px mesurés) tout en supprimant la dérive (2 px de pieds, soit 0,4 px à
+la taille du jeu). L'ancrage horizontal suit le HAUT du corps, pas la boîte, qui s'élargit
+quand la jambe s'avance : 0,6 px de dispersion sur 247.
+
+`npm run sprite -- <src> <dst> --strip` fait le reste (`src/artprep/strip.ts`, pur et testé).
+**Fait : l'orc**, 4 poses. Le registre a gagné `frames` sur une entrée d'ennemi ; les deux
+régimes coexistent, tout le reste du bestiaire garde son sprite unique et son animation
+procédurale.
+
+⚠ Trois pièges déjà payés : la ligne se reconnaît à sa CONTINUITÉ (100 % de remplissage) et
+non à son étendue — une bande de torses couvre aussi 85 % de la largeur ; elle s'efface
+seulement LÀ OÙ ELLE EST LIBRE, sinon elle perce les bottes ; et une créature à planche ne
+doit PAS recevoir en plus la déformation procédurale, qui compterait le mouvement deux fois.
+
+**Deux arbitrages ouverts** : le coût (262 Ko contre 60 pour un sprite fixe — un bestiaire
+entièrement animé pèserait ~6 Mo), et le CADRAGE (la planche de l'orc est en profil, les 23
+autres sprites sont de face — choix de direction artistique à trancher avant la suite). Les
+angles sur 180° avec miroir pour les 3 autres directions sont reportés tant que le cycle
+n'est pas validé à l'échelle du bestiaire.
 
 ## Backlog conception — non scopé, en attente
 - **Deuxième héros** (Archer, Sorcier — capacités distinctes du Chevalier actuel) et **tour

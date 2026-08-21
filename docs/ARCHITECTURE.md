@@ -9,6 +9,8 @@ src/
   core/      Simulation pure, déterministe. ZÉRO dépendance Phaser/DOM. Testée en Vitest.
   content/   Données d'équilibrage ET de structure (tours, ennemis, CHAPITRES — carte+vagues+lore
              par chapitre, ADR-004 —, unlocks, forge, économie). Aucune stat ailleurs.
+             `sandbox.ts` fait exception : carte d'ATELIER, délibérément hors de
+             `CONTENT.chapters` pour ne pas fausser le banc d'équilibrage (ADR-066).
   meta/      Profil de compte (monnaies, unlocks, forge, sorts, bestiaire, chapitres conquis,
              meilleurs runs), persistence (SaveAdapter). Testée en Vitest.
   render/    Scènes Phaser. Lit l'état du core, ne le mute jamais : passe par les commandes de sim.ts.
@@ -243,6 +245,6 @@ npm test        # tests (Vitest) : core, meta, balance, et les cœurs purs de re
 npm run lint    # ESLint (typage explicite, ADR-033), câblé en CI (ADR-056)
 npm run build   # typecheck + build prod
 npm run balance # banc d'essai d'équilibrage headless (ADR-018)
-npm run sprite  # prépare un sprite livré par le PO (ADR-061) :
-                #   npm run sprite -- <source> <destination> [--max 256] [--keep-fragments]
+npm run sprite  # prépare un sprite livré par le PO (ADR-061/063/065) :
+                #   npm run sprite -- <source> <destination> [--max 256] [--keep-fragments] [--strip]
 ```

@@ -27,7 +27,7 @@ Doit rester lisible réduit à 50 px de haut : silhouette franche, détails mini
 Sujet : petit diablotin violacé maigrichon, cornes courtes recourbées, grandes oreilles pointues, yeux jaunes luisants sans pupille, veines de lumière magenta courant sous la peau. Créature la plus faible du bestiaire : chétive, échine légèrement voûtée, mais en marche décidée.
 ```
 
-## `goblin.png` — Gobelin (taille 46)
+## `goblin.png` — Gobelin (taille 46) ✅ FAIT — planche 3 directions x 4 poses
 
 ```
 Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
@@ -582,3 +582,157 @@ Sujet : [voir ci-dessous]
   `kenney-td/sheet.png`) : inutile de régénérer.
 - **`skin-medieval/*.svg`** (Bastion de jeu, dalle, catapulte ×2) : même blocage `load.svg`
   que le §8, prompts dans REFONTE-GRAPHIQUE-GEMINI.md.
+
+---
+
+# 10. Cycles de marche — planche de poses (ADR-065)
+
+Une créature ANIMÉE se demande en **une seule image** contenant toutes les poses de son
+cycle. C'est la génération unique qui garantit la cohérence : demandées séparément, les
+poses dérivent en couleur et en proportions.
+
+**Ne pas retirer la ligne de sol du prompt** : c'est elle qui aligne les pieds, et l'outil
+s'en sert comme référence commune avant de l'effacer.
+
+**Ne pas demander de poses miroir** : le miroir se calcule sans erreur, une génération peut
+rater. Attention en revanche à ne pas confondre — un miroir sert à l'ORIENTATION (marcher
+vers la gauche), jamais à fabriquer le pas opposé d'un même cycle, qui ferait changer l'arme
+de main à chaque pas.
+
+Traitement : `npm run sprite -- <source> <destination> --strip`
+
+```
+Planche de sprites : UNE image contenant QUATRE poses du MÊME personnage, alignées horizontalement, régulièrement espacées, toutes tournées dans la MÊME direction.
+
+Les quatre poses forment un cycle de marche complet, dans cet ordre :
+1. CONTACT : jambe gauche tendue en avant, talon posé ; jambe droite tendue en arrière, orteils au sol. Écart maximal entre les jambes.
+2. PASSAGE : jambe droite ramenée sous le corps et pliée, pied décollé ; jambe gauche verticale supportant tout le poids. Corps au plus haut.
+3. CONTACT INVERSE : jambe droite tendue en avant, talon posé ; jambe gauche tendue en arrière. Miroir de la pose 1 pour les JAMBES uniquement — le personnage reste tourné du même côté et tient son arme dans la MÊME main.
+4. PASSAGE INVERSE : jambe gauche ramenée sous le corps et pliée ; jambe droite verticale supportant le poids.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les quatre poses : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seules les jambes et le balancement des bras changent.
+- Échelle rigoureusement identique.
+- Une LIGNE DE SOL horizontale fine traverse toute l'image, et les pieds d'appui des quatre poses la touchent exactement.
+- Espacement régulier et LARGE entre les poses, sans chevauchement.
+- Fond BLANC UNI. Aucun cadre, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour. Proportions stylisées : tête surdimensionnée, corps compact.
+
+Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
+```
+
+## Ce que l'outil rapporte, et pourquoi le lire
+
+- **dispersion de hauteur** : mêle le rebond VOULU du corps (contact bas, passage haut) et
+  une éventuelle dérive d'échelle. L'outil ne peut pas les distinguer, l'œil oui.
+- **dispersion de ligne de base** : doit rester à quelques pixels. Au-delà, une pose a été
+  dessinée flottante et la créature tressautera.
+- **nombre de poses isolées** : s'il ne correspond pas à ce qui a été demandé, les poses se
+  chevauchent ou un morceau détaché a été pris pour une pose.
+
+---
+
+# 11. Cycles de marche à plusieurs DIRECTIONS (ADR-067)
+
+Le format retenu pour la suite du bestiaire. Une planche par créature, **trois rangées
+(face, profil droit, dos) × deux poses**, chaque rangée sur sa propre ligne de sol.
+
+La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit, calculé sans
+erreur possible. À nombre de pixels constant, six poses au lieu de huit laissent **un tiers
+de surface en plus par pose**.
+
+Traitement : `npm run sprite -- <source> <destination> --strip [--profile-left] [--poses N]`
+— le nombre de rangées et de poses est déduit des lignes de sol.
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE image organisée en TROIS RANGÉES et DEUX COLONNES, soit six cases.
+
+Chaque RANGÉE montre le même personnage vu sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la droite.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient DEUX poses d'un pas de marche, côte à côte :
+- Colonne de GAUCHE : jambe gauche en avant, jambe droite en arrière, les deux pieds au sol.
+- Colonne de DROITE : jambe droite en avant, jambe gauche en arrière, les deux pieds au sol. Les bras accompagnent le mouvement en sens inverse des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les six cases : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les six cases.
+- Une LIGNE DE SOL horizontale fine traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, et les pieds des deux poses de la rangée la touchent exactement.
+- Espacement régulier et LARGE entre les deux colonnes, sans chevauchement.
+- Fond BLANC UNI. Aucun cadre, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour. Proportions stylisées : tête surdimensionnée, corps compact.
+
+Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
+```
+
+## Le générateur donne souvent 4 colonnes au lieu de 2 — tant mieux
+
+Sur la planche du gobelin il a produit 3 rangées x 4 poses. L'outil déduit le compte, il ne
+l'impose pas ;  le force si la détection se trompe.
+
+## Si le profil regarde à GAUCHE
+
+Le générateur ignore parfois « marchant vers la droite ». Ajouter  : l'outil
+retourne la rangée POSE PAR POSE, jamais la bande entière — retourner la bande inverserait
+aussi l'ordre des poses et le cycle marcherait à l'envers.
+
+## Le générateur donne souvent 4 colonnes au lieu de 2 — tant mieux
+
+Sur la planche du gobelin il a produit **3 rangées × 4 poses**. L'outil DÉDUIT le compte, il
+ne l'impose pas ; `--poses N` le force si la détection se trompe.
+
+Il ne se fie pas aux trous entre poses pour les séparer : mesuré sur cette planche, les poses
+n'étaient distantes que de 15 à 29 px, et **en vue de profil elles se chevauchaient**. Une
+planche est une grille — l'outil coupe au creux du profil d'encre, près de la frontière
+théorique de chaque case.
+
+## Si le profil regarde à GAUCHE
+
+Le générateur ignore parfois « marchant vers la droite ». Ajouter **`--profile-left`** :
+l'outil retourne la rangée **pose par pose**, jamais la bande entière — retourner la bande
+inverserait aussi l'ORDRE des poses, et le cycle marcherait à l'envers.
+
+## Une ligne de sol dessinée en deux segments
+
+Cas rencontré : le générateur trace parfois le sol d'une rangée en deux traits décalés de
+quelques pixels. L'outil englobe le voisinage du trait détecté, sinon le second segment
+tombe dans la rangée suivante et y passe pour une pose montant très haut. Rien à faire de
+ton côté, mais si une hauteur de case paraît aberrante dans le rapport, c'est la piste.
+
+## Ce que l'outil refuse, et pourquoi
+
+- **Rangées de tailles inégales.** Le rendu indexe ses cases par `direction × poses + pose` :
+  une rangée plus courte décalerait silencieusement toutes les suivantes, et le défaut ne se
+  verrait qu'à l'écran, tard.
+- **Aucune ligne de sol.** C'est la seule référence commune ; sans elle, rien ne garantit que
+  les pieds sont à la même hauteur.
+
+## Les volants sont hors de ce format
+
+Une chauve-souris vue de dos n'a pas de sens, et son animation est un battement d'ailes, pas
+une marche. `bat`, `gargoyle` et `wyvern` restent en animation procédurale.
+
+## Deux poses par direction : une marche « à deux temps »
+
+C'est le rythme des vieux RPG — lisible, mais un peu saccadé, parce qu'il manque le temps de
+passage où le corps monte. Une troisième colonne s'ajoutera sans rien changer au pipeline.
+
+## ⚠ Vérifier l'orientation sur la planche PRODUITE, jamais sur la source
+
+Piège payé deux fois : lire le sens du profil à l'œil sur la vignette source mène à l'erreur,
+et `--profile-left` appliqué à tort fait marcher la créature **à reculons** — elle regarde à
+gauche en avançant vers la droite.
+
+Après génération, extraire les cases de la rangée de profil et les regarder agrandies. Le
+personnage doit regarder **à DROITE**. Sinon seulement, relancer avec `--profile-left`.
+
+Et les regarder **une par une**, pas d'un coup d'œil sur la rangée : le générateur dessine
+case par case et se trompe case par case. Sur la planche du gobelin, trois poses de profil
+regardaient à droite et la quatrième à gauche — la créature faisait un demi-tour d'une image
+par cycle, ce qui se lit exactement comme le va-et-vient d'ADR-068 et l'a masqué une passe de
+plus. Une case isolée se corrige avec `--mirror <rangée>:<pose>` (ADR-069) ; `--profile-left`
+ne sert que si la rangée ENTIÈRE part à l'envers.

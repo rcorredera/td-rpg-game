@@ -18,6 +18,15 @@ import { TEX } from "./assets";
 export type SheetKey = keyof typeof TEX;
 
 /** Référence vers une texture, avec teinte/échelle optionnelles. */
+/**
+ * Planche de marche : combien de DIRECTIONS y sont dessinées, et combien de
+ * poses par direction. Le total de cases vaut le produit des deux.
+ */
+export interface WalkSheet {
+  directions: number;
+  poses: number;
+}
+
 export interface SpriteRef {
   /** Clé de texture Phaser. */
   key: string;
@@ -25,6 +34,15 @@ export interface SpriteRef {
   frame?: number;
   /** Teinte multiplicative (0xRRGGBB). Absent = couleurs natives du sprite. */
   tint?: number;
+  /**
+   * Planche de marche DESSINÉE (ADR-065/067). Absente = sprite statique, animé
+   * par la transform (ADR-064).
+   *
+   * Les cases sont rangées DIRECTION-MAJOR : `direction * poses + pose`. L'ordre
+   * des directions est celui de la planche, de haut en bas — face, profil droit,
+   * dos ; la marche vers la gauche est le miroir du profil (`world/facing.ts`).
+   */
+  walk?: WalkSheet;
   /** Échelle par-dessus l'échelle de base. */
   scale?: number;
   /**
@@ -48,10 +66,10 @@ export interface TowerView {
 const ENEMIES: Record<string, SpriteRef> = {
   diablotin:   { key: "spr_diablotin", size: 38 },
   scorpion:    { key: "spr_scorpion", size: 36 },
-  goblin:      { key: "spr_goblin", size: 46 },
+  goblin:      { key: "spr_goblin", size: 46, walk: { directions: 3, poses: 4 } },
   wraith:      { key: "spr_ghost", size: 50 }, // sprite CraftPix (ADR-043)
   bat:         { key: "spr_bat", size: 52 },
-  orc:         { key: "spr_orc", size: 54 },
+  orc:         { key: "spr_orc", size: 54, walk: { directions: 1, poses: 4 } },
   troll:       { key: "spr_troll", size: 56 },
   dark_knight: { key: "spr_dark_knight", size: 58 },
   gargoyle:    { key: "spr_gargoyle", size: 60 },
@@ -128,6 +146,36 @@ const TILES: Record<TileKind, SpriteRef> = {
 };
 
 // ---- API ----------------------------------------------------------------
+
+/**
+ * Textures livrées en PLANCHE de marche, avec leur nombre de poses (ADR-065).
+ *
+ * Dérivé du registre plutôt que saisi à part : déclarer `frames` sur une entrée
+ * suffit, et il n'existe aucune seconde liste à tenir en phase — c'est
+ * exactement le genre de doublon qui se périme à la première créature ajoutée.
+ */
+export function animatedSprites(): [key: string, frames: number][] {
+  const out: [string, number][] = [];
+  for (const v of Object.values(ENEMIES)) {
+    const total: number = walkFrameCount(v.walk);
+    if (total > 1) out.push([v.key, total]);
+  }
+  return out;
+}
+
+/** Nombre total de cases d'une planche : directions × poses. 1 si absente. */
+export function walkFrameCount(walk: WalkSheet | undefined): number {
+  return walk === undefined ? 1 : Math.max(1, walk.directions) * Math.max(1, walk.poses);
+}
+
+/**
+ * Pose à montrer sur une vignette FIXE (Bestiaire) : la première du cycle, un
+ * appui au sol. `undefined` pour une créature à sprite unique, où demander une
+ * frame n'aurait pas de sens.
+ */
+export function portraitFrame(defId: string): number | undefined {
+  return walkFrameCount(ENEMIES[defId]?.walk) > 1 ? 0 : undefined;
+}
 
 export function enemyView(defId: string): SpriteRef {
   const v: SpriteRef | undefined = ENEMIES[defId];

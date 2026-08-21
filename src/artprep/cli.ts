@@ -4,6 +4,9 @@
 //   npm run sprite -- <source> <destination>
 //   npm run sprite -- <source> <destination> --max 256
 //   npm run sprite -- <source> <destination> --keep-fragments
+//   npm run sprite -- <source> <destination> --strip     (planche de marche)
+//   npm run sprite -- <source> <destination> --strip --poses 4 --profile-left
+//   npm run sprite -- <source> <destination> --strip --mirror 1:2
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -20,11 +23,15 @@
 // ============================================================
 
 import {
-  crop, downscale, dropFragments, feather, floodBackground, lightBorderCount,
+  BACKGROUND_MIN, crop, downscale, dropFragments, feather, floodBackground, lightBorderCount, resample,
   type FragmentResult, type FringeResult, type Rgba,
   stripFringe,
 } from "./image";
 import { decode, encode } from "./png";
+import {
+  type Band, detectGroundLines, eraseGroundLine,
+  type MirrorPredicate, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
+} from "./strip";
 
 // `node:fs` est typé localement dans `node.d.ts` (ADR-001).
 import { readFileSync, writeFileSync } from "node:fs";
@@ -57,21 +64,141 @@ if (!Number.isFinite(maxSide) || maxSide <= 0) {
   process.exit(1);
 }
 const keepFragments: boolean = flags.includes("--keep-fragments");
+/** Planche de poses : découpe le cycle de marche en cases régulières (ADR-065). */
+const asStrip: boolean = flags.includes("--strip");
+/** Force le nombre de poses par rangée quand la détection se trompe. */
+const posesIndex: number = argv.indexOf("--poses");
+const posesFlag: number = posesIndex >= 0 ? Number(argv[posesIndex + 1]) : 0;
+if (posesIndex >= 0 && (!Number.isInteger(posesFlag) || posesFlag < 1)) {
+  console.error(`--poses attend un entier positif, reçu « ${argv[posesIndex + 1]} »`);
+  process.exit(1);
+}
+/** La rangée de profil regarde à GAUCHE : la retourner pour tenir la convention. */
+const profileLeft: boolean = flags.includes("--profile-left");
+/**
+ * Poses ISOLÉES à retourner, en `rangée:pose` séparées par des virgules.
+ *
+ * Le générateur ne se trompe pas toujours sur une rangée entière : sur la
+ * planche du gobelin, trois poses de profil sur quatre regardaient à droite et
+ * la quatrième à gauche. `--profile-left` aurait retourné les trois saines avec
+ * elle ; il faut donc pouvoir désigner la seule fautive.
+ */
+const mirrorIndex: number = argv.indexOf("--mirror");
+const mirrorArg: string = mirrorIndex >= 0 ? (argv[mirrorIndex + 1] ?? "") : "";
+const mirrorCells: Set<string> = new Set<string>();
+if (mirrorIndex >= 0) {
+  for (const part of mirrorArg.split(",")) {
+    const m: RegExpMatchArray | null = part.trim().match(/^(\d+):(\d+)$/);
+    if (m === null) {
+      console.error(`--mirror attend des couples « rangée:pose » séparés par des virgules, reçu « ${part} »`);
+      process.exit(1);
+    }
+    mirrorCells.add(`${Number(m[1])}:${Number(m[2])}`);
+  }
+}
+
+/** Pixels de bord adoucis — 0 sur une planche, dont les cases ne sont pas rognées. */
+let featheredPx: number = 0;
 
 let img: Rgba = decode(readFileSync(src));
 const sourceSize: string = `${img.width}x${img.height}`;
 
-// Détourage d'abord : Gemini livre sur fond blanc opaque. Sur une image déjà
-// détourée, l'étape ne trouve rien et ne fait rien.
+// La ligne de sol se cherche AVANT tout : elle ne touche pas les bords de
+// l'image, donc le détourage la contournerait et elle survivrait au milieu du
+// dessin. Effacée là où elle est libre, elle laisse les pieds intacts.
+// Une planche complète porte UNE ligne par direction dessinée (ADR-067) : face,
+// profil, dos. Une planche à une seule direction n'en a qu'une, et la suite de
+// la chaîne ne fait pas la différence.
+const bands: Band[] = asStrip ? detectGroundLines(img, BACKGROUND_MIN) : [];
+let groundErased: number = 0;
+for (const b of bands) groundErased += eraseGroundLine(img, b, BACKGROUND_MIN);
+
+// Détourage : Gemini livre sur fond blanc opaque. Sur une image déjà détourée,
+// l'étape ne trouve rien et ne fait rien.
 const background: number = floodBackground(img);
 const fringe: FringeResult = stripFringe(img);
-const fragments: FragmentResult = keepFragments
+// Sur une PLANCHE, les poses sont par nature des composantes séparées : la
+// détection de fragments y verrait N-1 « membres détachés » et noierait une
+// vraie anomalie sous ses propres alertes. Le tri des miettes se fait alors par
+// le seuil d'encre de `sliceFrames`, colonne par colonne.
+const fragments: FragmentResult = keepFragments || asStrip
   ? { dropped: 0, droppedPx: 0, kept: [] }
   : dropFragments(img);
-img = crop(img);
-const feathered: number = feather(img);
-const cropped: string = `${img.width}x${img.height}`;
-img = downscale(img, maxSide);
+
+let packed: PackedStrip | null = null;
+let cropped: string;
+if (asStrip) {
+  if (bands.length === 0) {
+    console.error("artprep: --strip attend une LIGNE DE SOL traversant la planche, aucune trouvée.");
+    process.exit(1);
+  }
+  // Une rangée va de la fin de la ligne précédente à sa propre ligne : c'est ce
+  // qui la sépare de sa voisine, sans avoir à supposer une hauteur régulière.
+  const rowRange = (i: number): [number, number] => [i === 0 ? 0 : bands[i - 1]!.bottom + 1, bands[i]!.bottom];
+
+  // Combien de poses par rangée ? Le comptage par les TROUS entre poses ne suffit
+  // pas : mesuré sur la planche du gobelin, les poses n'étaient séparées que de
+  // 15 à 29 px — moins que le seuil qui rattache un fer d'épée à sa pose — et en
+  // vue de profil elles se CHEVAUCHAIENT. On retient donc le compte de la rangée
+  // la mieux séparée, puis on découpe TOUTES les rangées à ce compte, en coupant
+  // aux creux du profil d'encre.
+  const detected: number[] = bands.map((_, i) => sliceFrames(img, 30, 2, ...rowRange(i)).length);
+  const poses: number = posesFlag > 0 ? posesFlag : Math.max(...detected);
+  if (poses < 1) {
+    console.error("artprep: --strip n'a isolé aucune pose — lignes de sol mal détectées ?");
+    process.exit(1);
+  }
+  const rows: StripRow[] = bands.map((b, i) => ({
+    baseline: b.bottom,
+    frames: sliceRowInto(img, poses, ...rowRange(i)),
+  }));
+  if (rows.some(r => r.frames.length !== poses)) {
+    console.error(`artprep: découpage incomplet (${rows.map(r => r.frames.length).join(", ")} contre ${poses} attendues).`);
+    process.exit(1);
+  }
+  // La convention du registre veut un profil tourné vers la DROITE (ADR-067) :
+  // la marche vers la gauche en est le miroir. Un générateur qui dessine le
+  // profil à gauche se corrige ici, pose par pose — retourner la bande entière
+  // inverserait aussi l'ORDRE des poses, et le cycle marcherait à l'envers.
+  // Sur une planche complète, le profil est la DEUXIÈME rangée (face, profil,
+  // dos). Sur une planche à une seule rangée, cette rangée EST le profil — s'en
+  // tenir à l'indice 1 y rendait le drapeau silencieusement inopérant, et le
+  // sprite se retournait alors à l'envers en jeu.
+  // Le miroir se décide POSE PAR POSE (ADR-069) : `--profile-left` couvre toute
+  // la rangée de profil, `--mirror` désigne les cases isolées que le générateur
+  // a dessinées à l'envers au milieu d'une rangée saine.
+  const profileRow: number = bands.length >= 2 ? 1 : 0;
+  const mirror: MirrorPredicate = (row: number, pose: number): boolean =>
+    (profileLeft && row === profileRow) || mirrorCells.has(`${row}:${pose}`);
+  const sheet: PackedStrip = packRows(img, rows, 2, mirror);
+  packed = sheet;
+  cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;
+  // Chaque case est rééchantillonnée aux MÊMES dimensions exactes : un facteur
+  // d'échelle appliqué case par case dériverait par arrondi, et Phaser
+  // découperait de travers.
+  const scale: number = Math.min(1, maxSide / sheet.cellH);
+  const cw: number = Math.max(1, Math.round(sheet.cellW * scale));
+  const chh: number = Math.max(1, Math.round(sheet.cellH * scale));
+  const out: Uint8Array = new Uint8Array(cw * sheet.count * chh * 4);
+  for (let i: number = 0; i < sheet.count; i++) {
+    const cell: Rgba = { width: sheet.cellW, height: sheet.cellH, data: new Uint8Array(sheet.cellW * sheet.cellH * 4) };
+    for (let y: number = 0; y < sheet.cellH; y++) {
+      const s: number = (y * sheet.sheet.width + i * sheet.cellW) * 4;
+      cell.data.set(sheet.sheet.data.subarray(s, s + sheet.cellW * 4), y * sheet.cellW * 4);
+    }
+    const small: Rgba = resample(cell, cw, chh);
+    for (let y: number = 0; y < chh; y++) {
+      out.set(small.data.subarray(y * cw * 4, (y + 1) * cw * 4), (y * cw * sheet.count + i * cw) * 4);
+    }
+  }
+  img = { width: cw * sheet.count, height: chh, data: out };
+} else {
+  img = crop(img);
+  const feathered: number = feather(img);
+  cropped = `${img.width}x${img.height}`;
+  img = downscale(img, maxSide);
+  featheredPx = feathered;
+}
 const remaining: number = lightBorderCount(img);
 
 writeFileSync(dst, encode(img));
@@ -79,11 +206,12 @@ writeFileSync(dst, encode(img));
 const lines: string[] = [
   `${src} -> ${dst}`,
   `  source          ${sourceSize}`,
+  ...(asStrip ? [`  lignes de sol   ${bands.length} (${bands.map(b => b.bottom).join(", ")}), ${groundErased} px effacés`] : []),
   `  fond retiré     ${background} px`,
   `  frange claire   ${fringe.removed} px en ${fringe.passes} passe(s)`,
   `  fragments       ${fragments.dropped} détaché(s) supprimé(s), ${fragments.droppedPx} px`,
-  `  rognage         ${cropped}`,
-  `  anticrénelage   ${feathered} px de bord`,
+  asStrip ? `  planche         ${cropped}, ${packed?.rows} direction(s) x ${packed?.poses} pose(s) = ${packed?.count} cases de ${packed?.cellW}x${packed?.cellH}` : `  rognage         ${cropped}`,
+  `  anticrénelage   ${featheredPx} px de bord`,
   `  sortie          ${img.width}x${img.height}`,
   `  bord clair      ${remaining} px restant(s)`,
 ];

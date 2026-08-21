@@ -5,6 +5,7 @@
 
 import type { ProjectileStyle } from "../world/projectiles";
 import type { Vec2 } from "../../core/types";
+import type { Facing } from "../world/facing";
 
 /** Clés des éléments du HUD. Un type fermé plutôt que des chaînes libres : une
  *  clé mal orthographiée à un point d'accès (`hudTexts["glod"]`) ne
@@ -34,7 +35,22 @@ export interface SlotMenuEntry {
 }
 
 /** Direction du regard d'une entité : dernière abscisse connue + face (-1/1). */
-export interface FacingState { x: number; face: number }
+/**
+ * Direction de marche d'une entité : dernière position connue et orientation.
+ *
+ * La position est retenue sur les DEUX axes depuis ADR-067. N'en suivre que
+ * l'abscisse rendait les segments verticaux invisibles au rendu, et une créature
+ * dessinée de profil descendait vers le Bastion en marchant de côté.
+ */
+export interface FacingState {
+  x: number;
+  y: number;
+  facing: Facing;
+  /** Distance parcourue depuis l apparition, en unités monde. Elle pilote le
+   *  cycle de marche dessiné (ADR-068) : caler l animation sur la distance et non
+   *  sur l horloge est ce qui verrouille le pied au sol. */
+  distance: number;
+}
 
 /** Contexte de construction du HUD, calculé une fois par `Hud.build` : habillage
  *  actif et dimensions dont dépendent tous ses boutons. */
