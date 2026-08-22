@@ -1,172 +1,439 @@
-# Prompts Gemini — un bloc complet par entité
+# Prompts Gemini — un bloc autonome par entité
 
-Chaque bloc est **autonome** : copier-coller tel quel, rien à assembler.
-Les règles techniques (formats, renommage, intégration) sont dans
+**Chaque bloc de code se copie-colle tel quel, seul.** Rien à assembler, rien à compléter :
+le style, le format, les contraintes et le sujet y sont déjà réunis.
+
+Les règles d'intégration (renommage, chemins, licence) restent dans
 [REFONTE-GRAPHIQUE-GEMINI.md](REFONTE-GRAPHIQUE-GEMINI.md).
 
-Ordre conseillé : les quatre extrêmes d'abord (`diablotin`, `wyvern`, `the_gravedigger`, `hero`).
-Si la hiérarchie de taille tient sur ceux-là, le reste suit sans surprise.
-
-> ⚠ Ne jamais ajouter le mot « sticker » : Gemini rajoute alors un liseré blanc de découpe.
+> ⚠ Ne jamais ajouter le mot « sticker » au prompt : Gemini rajoute alors un liseré blanc de découpe.
 
 ---
 
-# 1. Ennemis bipèdes — acte I
+# Comment on travaille
 
-## `diablotin.png` — Diablotin de faille (taille 38) ✅ FAIT, livré et intégré
+1. Copier le bloc de la créature, le coller dans Gemini, récupérer l'image.
+2. La déposer dans `G:\Romain\Téléchargements\Monstre rework\` sous le nom de la créature.
+3. Passer la commande indiquée sous le bloc.
+4. **Lire les avertissements de l'outil, puis faire la revue ci-dessous.**
 
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+L'étape 4 n'est pas une formalité. Les trois premiers monstres ont chacun demandé
+plusieurs passes parce qu'un défaut était passé au travers.
 
-Sujet : petit diablotin violacé maigrichon, cornes courtes recourbées, grandes oreilles pointues, yeux jaunes luisants sans pupille, veines de lumière magenta courant sous la peau. Créature la plus faible du bestiaire : chétive, échine légèrement voûtée, mais en marche décidée.
-```
+## La revue, dans l'ordre
 
-## `goblin.png` — Gobelin (taille 46) ✅ FAIT — planche 3 directions x 4 poses
+| # | Contrôle | Qui le fait | Si ça cloche |
+|---|---|---|---|
+| 1 | **Le cycle bouge-t-il ?** | l'outil, automatiquement | ⚠ `MÊME image` ou `aucune alternance` → **régénérer**, rien ne se rattrape |
+| 2 | **Chaque case regarde-t-elle à droite ?** (rangée de profil) | à l'œil, case par case | `--profile-left` si toute la rangée, `--mirror <rangée>:<pose>` si une seule case |
+| 3 | **L'équipement reste-t-il dans la même main ?** | à l'œil, rangée par rangée | `--mirror` si le dessin est inversé, `--drop` si c'est l'autre flanc du personnage |
+| 4 | **Reste-t-il du blanc entre un bras et le torse ?** | l'outil recense, l'œil tranche | `--fill-holes` après avoir vérifié qu'aucune poche n'est un reflet ou un œil |
+| 5 | **Les pieds touchent-ils la ligne de sol ?** | l'outil (`écart au sol`) | régénérer si l'écart dépasse quelques pixels |
 
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Contrôles 2 et 3 : regarder la planche **PRODUITE**, jamais l'image source, et
+**case par case**. J'ai lu l'orientation à l'œil sur une vignette source et je me suis
+trompé deux fois de suite ; le générateur se trompe case par case, pas rangée par rangée.
 
-Sujet : gobelin à la peau vert-de-gris, air hargneux, silhouette trapue. Armure de bric-à-brac faite de plaques dépareillées, casque de fer cabossé trop grand pour lui enfoncé jusqu'aux oreilles. Courte épée rouillée tenue basse le long du corps, petit bouclier rond de planches clouées à l'autre bras.
-```
+## Chiffres de référence pour le contrôle 1
 
-## `orc.png` — Orc (taille 54) ✅ FAIT, livré et intégré
+Écart entre deux poses d'une même rangée, mesuré **sur les jambes seules** :
 
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : orc guerrier massif à la peau vert olive, mâchoire lourde aux défenses inférieures proéminentes, petits yeux enfoncés. Épaules très larges, cou épais. Plastron de cuir clouté sur torse nu, brassards de fer. Hache de guerre large à une main tenue basse.
-```
-
-## `brute.png` — Brute (taille 62) ✅ FAIT, livré et intégré
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : mort-vivant colossal et boursouflé, chair grisâtre verdâtre marquée de grosses sutures, mâchoire pendante, yeux laiteux. Un bras nettement hypertrophié et pendant, l'autre atrophié. Chaînes brisées aux poignets, lambeaux de tissu sale à la taille. Démarche lourde et déséquilibrée.
-```
-
-## `troll.png` — Troll (taille 56) ✅ FAIT, livré et intégré
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : troll gris-bleu voûté, peau rugueuse et verruqueuse, long nez crochu, oreilles tombantes, quelques touffes de cheveux filasse. Bras démesurés descendant presque au sol. Gourdin de bois brut traîné d'une main. Dos courbé, épaules remontées.
-```
-
-## `ogre.png` — Ogre (taille 66) ✅ FAIT, livré et intégré
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : ogre énorme et bedonnant à la peau brun-rose, ventre proéminent, une seule grosse dent supérieure dépassant de la lèvre, petits yeux stupides. Corps très large, tête petite par rapport au tronc — exception à la règle de grosse tête. Pagne de peaux de bêtes, massue cloutée posée sur l'épaule.
-```
-
-## `dark_knight.png` — Chevalier noir (taille 58) ✅ FAIT, livré et intégré
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : chevalier en armure de plates noire mate, heaume clos dont la visière étroite laisse filtrer une lueur rouge, aucune peau visible. Cape sombre déchirée en bas. Épée longue tenue pointe vers le bas le long de la jambe. Élégant, martial et menaçant — surtout pas monstrueux ni difforme.
-```
-
-## `golem.png` — Golem de fer (taille 70) ✅ FAIT, livré et intégré
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : golem construit de lourdes plaques de fer rivetées, articulations mécaniques apparentes aux épaules et aux genoux, rouille sur les arêtes. Tête cubique sans visage, traversée d'une unique fente lumineuse bleu froid. Poings surdimensionnés. Démarche pesante et rigide.
-```
-
-## `warlord.png` — Chef de guerre (taille 72) ✅ FAIT, livré et intégré
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : seigneur de guerre orc, chef de bande. Armure lourde sombre ornée de crânes et de trophées, épaulières hérissées de pointes, casque à grandes cornes recourbées, cape de fourrure épaisse sur les épaules. Énorme épée à deux mains portée sur l'épaule. Silhouette de boss : la plus imposante et la plus large des créatures humanoïdes.
-```
-
-## `wraith.png` — Spectre (taille 50)
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Pose : créature FLOTTANTE, pas de marche et pas de pieds. Corps dressé, très légèrement penché vers l'avant comme s'il glissait vers le spectateur. Bras décharnés dissymétriques, l'un tendu vers l'avant, l'autre en arrière.
-Sujet : spectre encapuchonné, longue robe déchirée bleu-gris. Capuche vide d'où ne sortent que deux points de lumière froide en guise d'yeux. Mains squelettiques translucides. Le bas du corps ne se termine pas : il s'effiloche progressivement en volutes de brume bleu pâle qui se dissipent. Aspect semi-translucide, matière fantomatique.
-```
+| planche | écart maximal | verdict |
+|---|---|---|
+| une planche qui marche vraiment | **60 à 66 %** | bon |
+| planches refusées jusqu'ici | 16 à 26 % | glisse |
+| deux poses dupliquées | 1 à 5 % | la même image |
 
 ---
 
-# 2. Ennemis bipèdes — acte II (ch. 11-20)
+# 1. Créatures qui MARCHENT — planche 3 directions × 4 poses
+
+Format retenu pour toute créature posée au sol sur deux jambes (ADR-067).
+La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit,
+calculé sans erreur possible. Six poses de moins, donc plus de pixels pour chacune.
+
+Commande, la même pour toutes :
+
+```bash
+npm run sprite -- "G:/Romain/Téléchargements/Monstre rework/<source>.png" public/assets/skin-craftpix/<defId>.png --strip --poses 4 --fill-holes
+```
+
+## `diablotin.png` — Diablotin de faille (taille 38)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : petit diablotin violacé maigrichon, cornes courtes recourbées, grandes oreilles pointues, yeux jaunes luisants sans pupille, veines de lumière magenta courant sous la peau. Créature la plus faible du bestiaire : chétive, échine légèrement voûtée, mais en marche décidée. Mains nues, aucune arme.
+```
+
+## `goblin.png` — Gobelin (taille 46)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : gobelin à la peau vert-de-gris, air hargneux, silhouette trapue. Armure de bric-à-brac faite de plaques dépareillées, casque de fer cabossé trop grand pour lui enfoncé jusqu'aux oreilles. Courte épée rouillée tenue basse dans la main DROITE, petit bouclier rond de planches clouées au bras GAUCHE.
+```
+
+## `orc.png` — Orc (taille 54)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : orc guerrier massif à la peau vert olive, mâchoire lourde aux défenses inférieures proéminentes, petits yeux enfoncés. Épaules très larges, cou épais. Plastron de cuir clouté sur torse nu, brassards de fer. Hache de guerre large à une main, tenue basse dans la main DROITE.
+```
+
+## `troll.png` — Troll (taille 56)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : troll gris-bleu voûté, peau rugueuse et verruqueuse, long nez crochu, oreilles tombantes, quelques touffes de cheveux filasse. Bras démesurés descendant presque au sol. Gourdin de bois brut traîné de la main DROITE. Dos courbé, épaules remontées.
+```
+
+## `dark_knight.png` — Chevalier noir (taille 58)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : chevalier en armure de plates noire mate, heaume clos dont la visière étroite laisse filtrer une lueur rouge, aucune peau visible. Cape sombre déchirée en bas. Épée longue tenue pointe vers le bas le long de la jambe, dans la main DROITE. Élégant, martial et menaçant, surtout pas monstrueux ni difforme.
+```
+
+## `brute.png` — Brute (taille 62)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : mort-vivant colossal et boursouflé, chair grisâtre verdâtre marquée de grosses sutures, mâchoire pendante, yeux laiteux. Le bras DROIT est nettement hypertrophié et pendant, le bras GAUCHE atrophié. Chaînes brisées aux poignets, lambeaux de tissu sale à la taille. Démarche lourde et déséquilibrée.
+```
+
+## `ogre.png` — Ogre (taille 66)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : ogre énorme et bedonnant à la peau brun-rose, ventre proéminent, une seule grosse dent supérieure dépassant de la lèvre, petits yeux stupides. Corps très large, tête petite par rapport au tronc, exception à la règle de grosse tête. Pagne de peaux de bêtes, massue cloutée posée sur l'épaule DROITE.
+```
+
+## `golem.png` — Golem de fer (taille 70)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : golem construit de lourdes plaques de fer rivetées, articulations mécaniques apparentes aux épaules et aux genoux, rouille sur les arêtes. Tête cubique sans visage, traversée d'une unique fente lumineuse bleu froid. Poings surdimensionnés, aucune arme. Démarche pesante et rigide.
+```
+
+## `warlord.png` — Chef de guerre (taille 72)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : seigneur de guerre orc, chef de bande. Armure lourde sombre ornée de crânes et de trophées, épaulières hérissées de pointes, casque à grandes cornes recourbées, cape de fourrure épaisse sur les épaules. Énorme épée à deux mains portée sur l'épaule DROITE. Silhouette de boss : la plus imposante et la plus large des créatures humanoïdes.
+```
 
 ## `frontier_raider.png` — Pillard des Frontières (taille 50)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
 
 Sujet : bandit humain encapuchonné, silhouette agile et sèche. Capuche brune rabattue, écharpe sombre masquant le bas du visage, seuls les yeux visibles. Cuir clouté brun et sangles croisées sur le torse, ceinture garnie de petites fioles. Une dague courbe dans chaque main, tenues basses.
 ```
@@ -174,221 +441,443 @@ Sujet : bandit humain encapuchonné, silhouette agile et sèche. Capuche brune r
 ## `rift_marauder.png` — Maraudeur des Failles (taille 50)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Sujet : guerrier humain corrompu par une magie de faille. Armure de plates grise fendue de longues fissures d'où s'échappe une lumière VIOLETTE intense. Un bras entièrement cristallisé en éclats violets translucides remplaçant la chair. Heaume ouvert révélant un regard vide luminescent. Épée courte dans la main valide.
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : guerrier humain corrompu par une magie de faille. Armure de plates grise fendue de longues fissures d'où s'échappe une lumière VIOLETTE intense. Le bras GAUCHE est entièrement cristallisé en éclats violets translucides remplaçant la chair. Heaume ouvert révélant un regard vide luminescent. Épée courte dans la main DROITE.
 ```
 
 ## `shade_warder.png` — Gardien des Ombres (taille 52)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Sujet : sentinelle d'ombre élancée. Corps fait de fumée noire dense, maintenu en forme humanoïde par des sangles et des pièces d'armure argentées flottant à leur place — épaulières, brassards, ceinturon. Visage sans traits, deux fentes lumineuses blanches. Fine lame courbe argentée dans une main. Volutes sombres s'échappant des épaules.
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : sentinelle d'ombre élancée. Corps fait de fumée noire dense, maintenu en forme humanoïde par des sangles et des pièces d'armure argentées flottant à leur place : épaulières, brassards, ceinturon. Visage sans traits, deux fentes lumineuses blanches. Fine lame courbe argentée dans la main DROITE. Volutes sombres s'échappant des épaules. Les deux jambes restent nettement dessinées et distinctes.
 ```
 
 ## `veiled_assassin.png` — Assassin Voilé (taille 54)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Sujet : assassin drapé de voiles gris-bleu en mouvement, écharpes flottant derrière lui. Visage entièrement masqué de bandelettes, aucun trait visible. Tenue ajustée sombre sous les voiles. Un poignard tenu en prise inversée dans chaque main, lames le long des avant-bras. Allure furtive mais avançant franchement.
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : assassin drapé de voiles gris-bleu en mouvement, écharpes flottant derrière lui. Visage entièrement masqué de bandelettes, aucun trait visible. Tenue ajustée sombre sous les voiles. Un poignard tenu en prise inversée dans chaque main, lames le long des avant-bras. Allure furtive mais avançant franchement. Les voiles ne doivent jamais masquer les jambes.
 ```
 
 ## `four_eyed_warden.png` — Gardien à Quatre Yeux (taille 58)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Sujet : aberration humanoïde trapue à la peau bleu-gris coriace et plissée. QUATRE yeux jaunes disposés en losange sur un visage sans nez, bouche large et fine. Épaulières de pierre brute sanglées, pagne de cuir. Bâton-totem de bois noueux surmonté d'un fétiche osseux, tenu verticalement d'une main. Cou inexistant, épaules massives.
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : aberration humanoïde trapue à la peau bleu-gris coriace et plissée. QUATRE yeux jaunes disposés en losange sur un visage sans nez, bouche large et fine. Épaulières de pierre brute sanglées, pagne de cuir. Bâton-totem de bois noueux surmonté d'un fétiche osseux, tenu verticalement dans la main DROITE. Cou inexistant, épaules massives.
 ```
 
 ## `corrupted_hermit.png` — Ermite Corrompu (taille 64)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Sujet : vieil ermite en haillons de toile grise, longue barbe emmêlée, dos courbé, appuyé sur un bâton de bois noueux. La moitié GAUCHE de son corps est envahie par la corruption : cristaux violets translucides poussant hors de l'épaule et du bras, racines noires courant sur la peau, oeil de ce côté remplacé par une lueur violette. L'autre moitié reste humaine et misérable. Contraste net entre les deux moitiés.
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : vieil ermite en haillons de toile grise, longue barbe emmêlée, dos courbé, appuyé sur un bâton de bois noueux tenu dans la main DROITE. La moitié GAUCHE de son corps est envahie par la corruption : cristaux violets translucides poussant hors de l'épaule et du bras, racines noires courant sur la peau, œil de ce côté remplacé par une lueur violette. L'autre moitié reste humaine et misérable. Contraste net entre les deux moitiés.
 ```
 
 ## `howling_bones.png` — Ossements Hurlants (taille 68)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques en balancier, jamais collés au torse ni tendus à l'horizontale. La créature doit avoir l'air d'avancer vers le spectateur. Attitude de progression, pas d'attaque : aucune arme brandie au-dessus de la tête, aucun saut.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : amas de plusieurs squelettes fusionnés en une seule créature humanoïde. Deux cages thoraciques imbriquées formant le tronc, os surnuméraires saillant des épaules, bras composés de plusieurs avant-bras. Plusieurs crânes : un crâne principal bouche grande ouverte en plein hurlement, deux crânes secondaires soudés aux épaules. Flamme verte pâle dans chaque orbite. Os jaunis et fêlés. Les deux jambes restent complètes et séparées.
+```
+
+## `the_gravedigger.png` — Le Roi Fangeux, BOSS (taille 82)
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : BOSS FINAL du jeu. Roi mort-vivant colossal, silhouette écrasante et beaucoup plus large que tous les autres monstres. Couronne de fer tordue et rouillée enfoncée sur un crâne boursouflé, deux yeux verts luisants et haineux. Corps de boue et de chair putréfiée mêlée de racines noires, manteau de fange dégoulinante sur les épaules. Immense pelle-hache de fossoyeur tenue dans la main DROITE. Doit dominer par la présence : le monstre le plus imposant du bestiaire.
+```
+
+---
+
+# 2. Héros
+
+Même format : il se déplace sur la carte comme les créatures.
+
+## `hero.png` — Héros du joueur
+
+```
+Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
+- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
+- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
+- Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+CONTRAINTES ABSOLUES :
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être franchement ouvert sur le fond.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut : silhouette franche, détails minimaux.
+
+Sujet : chevalier héroïque, armure de plates d'acier CLAIR et lumineux à liserés dorés : la clarté de l'armure doit le distinguer instantanément des monstres sombres qui l'entourent. Heaume à visière ouverte laissant voir un regard déterminé, plumet ou crête sur le casque. Grand bouclier armorié au bras GAUCHE, blason au griffon. Épée longue à garde dorée dans la main DROITE, pointe vers le bas. Cape bleue.
+```
+
+---
+
+# 3. Créatures SANS cycle de marche — sprite unique
+
+Volants, rampants et créatures sans jambes. Leur mouvement est produit par le
+rendu (ADR-064) : une planche de marche n'aurait rien à montrer.
+
+Commande :
+
+```bash
+npm run sprite -- "G:/Romain/Téléchargements/Monstre rework/<source>.png" public/assets/skin-craftpix/<defId>.png
+```
+
+## `wraith.png` — Spectre (taille 50)
+
+```
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue frontale, à hauteur d'œil, sujet face au spectateur — pas de profil, pas de plongée.
+Pose : de face, en progression vers le spectateur, attitude d'avancée et non d'attaque. Aucune arme brandie au-dessus de la tête, aucun saut.
+Cadrage PORTRAIT, sujet plus haut que large.
+Sujet unique, centré, cadré serré.
 Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
 Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : amas de plusieurs squelettes fusionnés en une seule créature humanoïde. Deux cages thoraciques imbriquées formant le tronc, os surnuméraires saillant des épaules, bras composés de plusieurs avant-bras. Plusieurs crânes : un crâne principal bouche grande ouverte en plein hurlement, deux crânes secondaires soudés aux épaules. Flamme verte pâle dans chaque orbite. Os jaunis et fêlés.
+Sujet : spectre encapuchonné, longue robe déchirée bleu-gris. Capuche vide d'où ne sortent que deux points de lumière froide en guise d'yeux. Mains squelettiques translucides. Le bas du corps ne se termine pas : il s'effiloche progressivement en volutes de brume bleu pâle qui se dissipent. Aspect semi-translucide, matière fantomatique.
 ```
 
 ## `bog_sprite.png` — Gelée Enragée (taille 36)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour de la créature. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue frontale, à hauteur d'œil, sujet face au spectateur — pas de profil, pas de plongée.
+Pose : de face, en progression vers le spectateur, attitude d'avancée et non d'attaque. Aucune arme brandie au-dessus de la tête, aucun saut.
+Cadrage PORTRAIT, sujet plus haut que large.
+Sujet unique, centré, cadré serré.
 Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
 Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Pose : créature SANS MEMBRES, ni jambes ni bras — pas de pose de marche. Masse dressée, sommet légèrement penché vers l'avant comme si elle se propulsait, un pseudopode levé sur le côté. Base large et coulante.
 Sujet : blob de gelée vert marécage translucide et luisant, surface bombée réfléchissant la lumière. Débris pris en suspension à l'intérieur : petits os, brindilles, bulles d'air. Deux yeux jaunes furieux flottant dans la masse, bouche fendue en rictus. Coulures visqueuses sur le pourtour.
 ```
 
----
-
-# 3. Créatures NON bipèdes — vue de 3/4 en plongée
-
-## `scorpion.png` — Scorpion des sables (taille 36) ✅ FAIT, livré et intégré
+## `scorpion.png` — Scorpion des sables (taille 36)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour de la créature. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue de 3/4 EN PLONGÉE, dos et carapace visibles, avant du corps orienté vers le bas-gauche de l'image. Surtout pas de vue de face, surtout pas de profil strict.
-Créature à corps horizontal : les membres doivent être bien séparés les uns des autres et se découper nettement sur le vide, jamais se superposer en une masse. L'appendice caractéristique doit se détacher sur le fond vide et ne jamais pointer vers le spectateur.
-Pose : en pleine progression, pattes décalées comme en pleine marche.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px : silhouette franche, détails minimaux.
-
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 EN PLONGÉE, comme vue par un joueur au-dessus du champ de bataille — surtout pas de face à hauteur d'œil, qui écraserait la silhouette. Les membres doivent être bien détachés les uns des autres.
+Cadrage carré, sujet centré.
+Sujet unique, centré, cadré serré.
+Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
+Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
 Sujet : scorpion géant de désert, carapace segmentée sable et ocre, chitine mate et craquelée. Huit pattes fines bien écartées et distinctes. Deux pinces ouvertes tendues vers l'avant-gauche. Queue segmentée enroulée en arc au-dessus du dos et rabattue vers la droite, dard sombre nettement détaché sur le vide.
 ```
 
 ## `scarlet_prickler.png` — Piqueur Écarlate (taille 36)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour de la créature. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue de 3/4 EN PLONGÉE, dos visible, avant du corps orienté vers le bas-gauche de l'image. Surtout pas de vue de face, surtout pas de profil strict.
-Créature à corps horizontal : les membres doivent être bien séparés les uns des autres et se découper nettement sur le vide, jamais se superposer en une masse. Les piquants doivent se détacher sur le fond vide et ne jamais pointer vers le spectateur.
-Pose : en pleine progression, pattes décalées comme en pleine marche.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px : silhouette franche, détails minimaux.
-
-Sujet : petite créature-oursin écarlate, corps rond bombé hérissé de longs piquants dressés rayonnant vers l'extérieur, pointes plus sombres. Six pattes fines et articulées dépassant sous le corps. Un oeil unique jaune cerclé de noir au sommet, regard agressif. Vif et hargneux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 EN PLONGÉE, comme vue par un joueur au-dessus du champ de bataille — surtout pas de face à hauteur d'œil, qui écraserait la silhouette. Les membres doivent être bien détachés les uns des autres.
+Cadrage carré, sujet centré.
+Sujet unique, centré, cadré serré.
+Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
+Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
+Sujet : petite créature-oursin écarlate, corps rond bombé hérissé de longs piquants dressés rayonnant vers l'extérieur, pointes plus sombres. Six pattes fines et articulées dépassant sous le corps. Un œil unique jaune cerclé de noir au sommet, regard agressif. Vif et hargneux.
 ```
-
-## `the_gravedigger.png` — Le Roi Fangeux, BOSS (taille 82)
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour de la créature. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px : silhouette franche, détails minimaux.
-
-Pose : masse dressée penchée vers l'avant, une main énorme levée, l'autre traînant son arme. Base très large.
-Sujet : BOSS FINAL du jeu. Roi mort-vivant colossal, silhouette écrasante et beaucoup plus large que tous les autres monstres. Couronne de fer tordue et rouillée enfoncée sur un crâne boursouflé, deux yeux verts luisants et haineux. Corps de boue et de chair putréfiée mêlée de racines noires, manteau de fange dégoulinante sur les épaules. Immense pelle-hache de fossoyeur tenue d'une main. Doit dominer par la présence : le monstre le plus imposant du bestiaire.
-```
-
----
-
-# 4. Créatures VOLANTES — cadrage paysage, ailes déployées
-
-> Contrainte technique : le battement d'ailes est simulé par une **compression horizontale du
-> sprite**. Ailes largement ouvertes et symétriques obligatoires.
 
 ## `bat.png` — Chauve-souris (taille 52)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour de la créature. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, créature EN VOL face au spectateur, à hauteur d'oeil.
-Cadrage PAYSAGE : nettement plus large que haut, environ deux fois plus large que haut.
-Pose : en plein vol, AILES LARGEMENT DÉPLOYÉES À L'HORIZONTALE, entièrement ouvertes et parfaitement symétriques de part et d'autre du corps — jamais une aile repliée, jamais de trois quarts. Pattes repliées sous le corps. Aucune pose de marche.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de large : silhouette franche, détails minimaux.
-
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face légèrement de 3/4, créature EN VOL, ailes largement DÉPLOYÉES et bien détachées du corps. Aucun appui au sol.
+Cadrage PAYSAGE, sujet plus large que haut : l'envergure prime.
+Sujet unique, centré, cadré serré.
+Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
+Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
 Sujet : chauve-souris démoniaque, corps trapu et velu brun sombre, tête surdimensionnée aux grandes oreilles pointues, gueule ouverte montrant des crocs, petits yeux rouges luisants. Ailes membraneuses brun-pourpre largement nervurées, griffes aux articulations.
 ```
 
 ## `gargoyle.png` — Gargouille (taille 60)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour de la créature. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, créature EN VOL face au spectateur, à hauteur d'oeil.
-Cadrage PAYSAGE : nettement plus large que haut.
-Pose : en plein vol, AILES LARGEMENT DÉPLOYÉES À L'HORIZONTALE, entièrement ouvertes et parfaitement symétriques de part et d'autre du corps — jamais une aile repliée, jamais de trois quarts. Pattes repliées sous le corps. Aucune pose de marche.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de large : silhouette franche, détails minimaux.
-
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face légèrement de 3/4, créature EN VOL, ailes largement DÉPLOYÉES et bien détachées du corps. Aucun appui au sol.
+Cadrage PAYSAGE, sujet plus large que haut : l'envergure prime.
+Sujet unique, centré, cadré serré.
+Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
+Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
 Sujet : gargouille de pierre grise animée, texture minérale rugueuse. Tête de démon aux cornes recourbées, gueule ouverte, yeux ambrés. Ailes de PIERRE déployées, épaisses et anguleuses, pas membraneuses. Fissures parcourant le corps et les ailes, laissant filtrer une lueur ambrée depuis l'intérieur. Griffes de pierre.
 ```
 
 ## `wyvern.png` — Vouivre (taille 78)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour de la créature. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, créature EN VOL face au spectateur, à hauteur d'oeil.
-Cadrage PAYSAGE : nettement plus large que haut.
-Pose : en plein vol, AILES LARGEMENT DÉPLOYÉES À L'HORIZONTALE, entièrement ouvertes et parfaitement symétriques de part et d'autre du corps — jamais une aile repliée, jamais de trois quarts. Pattes repliées sous le corps. Aucune pose de marche.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de large : silhouette franche, détails minimaux.
-
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face légèrement de 3/4, créature EN VOL, ailes largement DÉPLOYÉES et bien détachées du corps. Aucun appui au sol.
+Cadrage PAYSAGE, sujet plus large que haut : l'envergure prime.
+Sujet unique, centré, cadré serré.
+Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
+Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
 Sujet : vouivre, dragon BIPÈDE à deux pattes seulement, écailles vert-bronze. Cou tendu vers l'avant, gueule ouverte montrant des crocs, cornes en arrière du crâne, yeux jaunes. Deux grandes ailes membraneuses. Longue queue s'achevant en dard, enroulée sous le corps et bien détachée. Le plus imposant des volants.
 ```
 
 ---
 
-# 5. Héros
+# 4. Tours — vue de 3/4 quasi isométrique
 
-## `hero.png` — Héros du joueur
-
-```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, pas des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
-Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
-Proportions stylisées, pas réalistes : tête surdimensionnée occupant environ un tiers de la hauteur totale, corps compact et trapu.
-Pose : en pleine marche vers l'avant, vue de face. Une jambe nettement en avant, l'autre en appui derrière, pieds écartés à la largeur des épaules, assise large et stable. Buste très légèrement penché en avant, bras dissymétriques. Attitude de progression assurée, pas d'attaque.
-Cadrage PORTRAIT, sujet plus haut que large, unique, centré, cadré serré.
-Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 50 px de haut : silhouette franche, détails minimaux.
-
-Sujet : chevalier héroïque, armure de plates d'acier CLAIR et lumineux à liserés dorés — la clarté de l'armure doit le distinguer instantanément des monstres sombres qui l'entourent. Heaume à visière ouverte laissant voir un regard déterminé, plumet ou crête sur le casque. Grand bouclier armorié tenu à gauche, blason au griffon. Épée longue à garde dorée tenue à droite, pointe vers le bas. Cape bleue.
-```
-
----
-
-# 6. Tours — vue de 3/4 quasi isométrique
-
-> Base commune différente : bâtiment, pas créature. Le palier 3 doit se lire comme une
-> évolution du palier 1 — même matériau, même couleur dominante, MÊME ANGLE.
+Une tour ne bouge pas : sprite unique. Les paliers d'une même famille doivent rester
+reconnaissables entre eux — c'est l'amélioration qui doit se voir, pas un autre bâtiment.
 
 ## `tower_archer.png` — Archerie, paliers 1-2
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tourelle d'archerie médiévale modeste, deux niveaux. Soubassement de pierre grise appareillée, étage supérieur en poutres et planches de bois brun. Plateforme de tir ouverte couverte d'un petit toit de bardeaux à deux pentes. Meurtrières étroites, échelle de bois appuyée, carquois de flèches posés sur la plateforme.
 ```
@@ -396,11 +885,13 @@ Sujet : tourelle d'archerie médiévale modeste, deux niveaux. Soubassement de p
 ## `tower_archer_t3.png` — Archerie, palier 3
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tourelle d'archerie médiévale AMÉLIORÉE, version évoluée de la même tour : mêmes matériaux (pierre grise en bas, bois brun en haut), même angle, mais TROIS niveaux au lieu de deux. Créneaux de pierre, poutres sculptées et ferrures, toit de bardeaux renforcé, bannière flottant au sommet, réserves de flèches. Nettement plus haute et plus riche que la version de base, tout en restant reconnaissable comme la même tour.
 ```
@@ -408,11 +899,13 @@ Sujet : tourelle d'archerie médiévale AMÉLIORÉE, version évoluée de la mê
 ## `tower_archer_spec_longbow.png` — Spécialisation « Arc long »
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tour d'archerie de pierre et de bois surmontée d'une GRANDE ARBALÈTE DE SIÈGE À CARREAU UNIQUE montée sur pivot. Arc d'acier tendu par de gros câbles, treuil d'armement, un unique carreau massif à pointe de fer chargé et pointé. Silhouette élancée et perçante, notion de tir unique et puissant.
 ```
@@ -420,11 +913,13 @@ Sujet : tour d'archerie de pierre et de bois surmontée d'une GRANDE ARBALÈTE D
 ## `tower_archer_spec_volley.png` — Spécialisation « Volée »
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tour d'archerie de pierre et de bois surmontée d'un RÂTELIER DE PLUSIEURS ARCS MÉCANIQUES disposés EN ÉVENTAIL, chacun chargé, l'ensemble prêt à lâcher une gerbe de flèches simultanée. Sommet nettement plus LARGE que la tour de base, notion de tir groupé et de saturation.
 ```
@@ -432,11 +927,13 @@ Sujet : tour d'archerie de pierre et de bois surmontée d'un RÂTELIER DE PLUSIE
 ## `tower_frost.png` — Givre, paliers 1-2
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tour de pierre bleutée trapue, deux niveaux, sommet ouvert. Un CRISTAL DE GLACE translucide cyan flotte au-dessus de la plateforme, légèrement en lévitation. Givre blanc rampant sur les pierres et les arêtes, petites stalactites sous les corniches, brume froide bleutée à la base de la tour.
 ```
@@ -444,11 +941,13 @@ Sujet : tour de pierre bleutée trapue, deux niveaux, sommet ouvert. Un CRISTAL 
 ## `tower_frost_t3.png` — Givre, palier 3
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tour de givre AMÉLIORÉE, version évoluée de la même tour : même pierre bleutée, même angle, mais trois niveaux et un cristal de glace BEAUCOUP PLUS GRAND, entouré de plusieurs éclats de glace en orbite. Arcs de glace reliant les niveaux, longues stalactites, lueur cyan nettement plus intense. Reconnaissable comme la même tour, en plus puissante.
 ```
@@ -456,11 +955,13 @@ Sujet : tour de givre AMÉLIORÉE, version évoluée de la même tour : même pi
 ## `tower_frost_spec_frostfire.png` — Spécialisation « Givre ardent »
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tour de givre en pierre bleutée dont le cristal sommital est TRAVERSÉ D'UNE FLAMME ORANGE VIF. Autour du cristal, un tourbillon mêlant éclats de glace cyan et langues de feu orange, les deux entrelacés. Contraste chaud/froid marqué et immédiatement lisible : moitié bleu glacé, moitié orange ardent.
 ```
@@ -468,36 +969,45 @@ Sujet : tour de givre en pierre bleutée dont le cristal sommital est TRAVERSÉ 
 ## `tower_frost_spec_blizzard.png` — Spécialisation « Blizzard »
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil ou très légère contre-plongée : on voit une face avant et une face latérale, JAMAIS le toit vu du dessus.
-Cadrage PORTRAIT, bâtiment vertical, base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester lisible réduit à 60 px de haut : silhouette franche, détails minimaux.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de 3/4 en légère PLONGÉE, angle de tower defense : on voit la façade et un pan de côté, ainsi que le dessus de la plateforme.
+Cadrage PORTRAIT, bâtiment unique, centré, cadré serré, posé de façon stable — la base doit sembler reposer sur le sol.
+Fond parfaitement transparent (PNG alpha), aucun terrain, aucune ombre portée, aucun décor, aucun personnage, aucun texte.
+Doit rester lisible réduit à 60 px de haut : silhouette franche, un seul élément distinctif fort au sommet.
 
 Sujet : tour de givre en pierre bleutée surmontée d'un TOURBILLON DE NEIGE EN SPIRALE, vortex blanc et cyan tournoyant au-dessus de la plateforme, éclats de glace emportés dans la rotation, traînées de vent circulaires. Dominante blanc-cyan, effet de tempête localisée.
 ```
 
 ---
 
-# 7. Bâtiments & emblèmes du Campement
+# 5. Bâtiments & emblèmes du Campement
 
-## `castle-blue.png` — Le Bastion, emblème de la tuile Histoire (320×256)
+## `castle-blue.png` — Le Bastion, emblème de la tuile Histoire (320×256, paysage)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières), épais contour NOIR uniforme sur tout le pourtour du bâtiment. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Vue de 3/4 QUASI ISOMÉTRIQUE, à hauteur d'oeil : on voit une face avant et une face latérale, JAMAIS les toits vus du dessus.
-Base incluse mais AUCUN terrain, AUCUN sol, AUCUNE herbe sous la base — la structure s'arrête net.
-Sujet unique, centré, cadré serré, format légèrement plus large que haut. Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte, aucun cadre.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face, objet unique, centré, cadré serré.
+Format 320×256, paysage.
+Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte.
+Doit rester lisible réduit à 64 px : silhouette franche, détails minimaux.
 
 Sujet : château fort médiéval compact et trapu, symbole d'un bastion assiégé. Donjon carré central en pierre claire, deux tourelles latérales coiffées de toits coniques BLEU ardoise, courtine crénelée les reliant. Grande porte cloutée fermée d'une herse de fer. Bannières bleues flottant aux sommets. Aspect solide et rassurant, pas menaçant.
 ```
 
-## `icons/bestiary-book.png` — Grimoire du Bestiaire (~192×286, portrait)
+## `icons/bestiary-book.png` — Grimoire du Bestiaire (192×286, portrait)
 
 ```
-Art de jeu cartoon fantasy : couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour de l'objet. Le contour extérieur doit être noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe.
-Objet vu de 3/4, légèrement de dessus, posé debout. Cadrage PORTRAIT, plus haut que large.
-Objet unique, centré, cadré serré. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte lisible, aucun cadre.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face, objet unique, centré, cadré serré.
+Format 192×286, portrait.
+Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte.
+Doit rester lisible réduit à 64 px : silhouette franche, détails minimaux.
 
 Sujet : gros grimoire ancien FERMÉ. Couverture de cuir sombre usé, ferrures et cornières de laiton aux angles, fermoir métallique sur la tranche, gros médaillon gravé au centre de la couverture. Tranche des pages jaunie et dorée sur le bord, un marque-page de ruban rouge dépassant du bas. Aspect de vieux livre de savoir, précieux et lourd.
 ```
@@ -505,19 +1015,27 @@ Sujet : gros grimoire ancien FERMÉ. Couverture de cuir sombre usé, ferrures et
 ## `tiny-swords/ui/icon-06.png` — Emblème Armurerie (64×64)
 
 ```
-Icône d'objet de jeu vidéo en PIXEL ART couleur, style pack Tiny Swords : petite, très lisible, contour sombre net, ombrage simple en deux ou trois tons, couleurs vives. Vue de face, objet unique centré.
-Format carré 64x64. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester parfaitement lisible à sa taille native de 64 pixels : très peu de détails, formes larges.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face, objet unique, centré, cadré serré.
+Format 64×64.
+Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte.
+Doit rester lisible réduit à 64 px : silhouette franche, détails minimaux.
 
-Sujet : bouclier héraldique métallique traversé en diagonale par une épée, garde dorée. Bordure de métal clair, coeur du bouclier bleu, rivets visibles.
+Sujet : bouclier héraldique métallique traversé en diagonale par une épée, garde dorée. Bordure de métal clair, cœur du bouclier bleu, rivets visibles.
 ```
 
 ## `tiny-swords/ui/icon-05.png` — Emblème Chroniques (64×64)
 
 ```
-Icône d'objet de jeu vidéo en PIXEL ART couleur, style pack Tiny Swords : petite, très lisible, contour sombre net, ombrage simple en deux ou trois tons, couleurs vives. Vue de face, objet unique centré.
-Format carré 64x64. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester parfaitement lisible à sa taille native de 64 pixels : très peu de détails, formes larges.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face, objet unique, centré, cadré serré.
+Format 64×64.
+Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte.
+Doit rester lisible réduit à 64 px : silhouette franche, détails minimaux.
 
 Sujet : deux épées croisées en X, lames d'acier clair pointées vers le haut, gardes et pommeaux dorés, poignées de cuir brun.
 ```
@@ -525,253 +1043,55 @@ Sujet : deux épées croisées en X, lames d'acier clair pointées vers le haut,
 ## `tiny-swords/ui/icon-12.png` — Emblème Son (64×64)
 
 ```
-Icône d'objet de jeu vidéo en PIXEL ART couleur, style pack Tiny Swords : petite, très lisible, contour sombre net, ombrage simple en deux ou trois tons, couleurs vives. Vue de face, objet unique centré.
-Format carré 64x64. Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
-Doit rester parfaitement lisible à sa taille native de 64 pixels : très peu de détails, formes larges.
-Contrainte : la forme doit rester identifiable même affichée en semi-transparence — silhouette compacte, pas de traits fins isolés.
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Vue de face, objet unique, centré, cadré serré.
+Format 64×64.
+Fond parfaitement transparent (PNG alpha), aucune ombre portée, aucun décor, aucun texte.
+Doit rester lisible réduit à 64 px : silhouette franche, détails minimaux.
 
 Sujet : lyre dorée médiévale de face, cadre doré et cordes claires, ou à défaut une grosse note de musique dorée à hampe épaisse.
 ```
 
 ---
 
-# 8. Icônes monochromes (⚠ actuellement en SVG)
+# 6. Ce que l'outil rapporte, et pourquoi le lire
 
-> Ces fichiers sont chargés par `load.svg`. Un PNG à la place échoue au chargement : il faut
-> d'abord basculer le loader (option A dans REFONTE-GRAPHIQUE-GEMINI.md). **Ne pas générer
-> ce lot avant d'avoir tranché.**
->
-> Contrainte absolue : **blanc pur sur transparent, aucune couleur, aucun dégradé, aucun gris**
-> — la couleur est appliquée en jeu par `setTint`, qui MULTIPLIE. Tout pixel non blanc devient
-> de la boue une fois teinté.
+| ligne | ce qu'elle dit | quand s'inquiéter |
+|---|---|---|
+| `lignes de sol` | combien de rangées ont été trouvées | un nombre autre que 3 sur une planche complète |
+| `poches fermées` | zones blanches enfermées dans le dessin | > 0 sans `--fill-holes` : elles resteront blanches en jeu |
+| `frange claire` | pixels de dégradé JPEG décapés autour du trait | `plafond de passes atteint` : l'érosion mordait peut-être le dessin |
+| `planche` | directions × poses et taille de case | un compte de poses différent de celui demandé |
+| `écart au sol` | dispersion des pieds autour de leur ligne | quelques pixels passent, au-delà la créature tressautera |
+| `bord clair` | pixels clairs restants sur le pourtour | informatif : une lame ou un casque clair en produit légitimement |
 
-Base commune à coller devant chacun :
+## Les drapeaux
 
-```
-Pictogramme d'interface de jeu, style game-icons.net : GLYPHE BLANC PUR ET PLEIN sur fond parfaitement transparent. Silhouette pleine et fermée, formes larges et épaisses.
-INTERDIT : toute couleur, tout dégradé, tout gris, tout contour d'une autre couleur, toute ombre. Uniquement du blanc pur (#FFFFFF) et du transparent, rien entre les deux.
-Format carré, sujet centré occupant presque tout le cadre. Aucun cadre, aucun cercle de fond, aucun texte.
-Doit rester lisible réduit à 32 pixels.
-
-Sujet : [voir ci-dessous]
-```
-
-| Fichier | Sujet à coller |
+| drapeau | à quoi il sert |
 |---|---|
-| `icons/tornado.svg` | tornade stylisée en spirale, large en haut, pointe en bas |
-| `icons/flying-flag.svg` | bannière au vent sur une hampe verticale, plis marqués, extrémité en pointes |
-| `icons/arrow-cluster.svg` | gerbe de trois flèches divergentes vers le haut, empennes visibles |
-| `icons/ui-scroll.svg` | parchemin déroulé vu de face, rouleaux enroulés en haut et en bas |
-| `icons/ui-portal.svg` | portail ovale en anneau épais, vortex concentrique au centre |
-| `icons/ui-lock.svg` | cadenas fermé, anse épaisse en demi-cercle, corps rectangulaire massif |
-| `icons/ui-castle.svg` | donjon crénelé à trois tours, silhouette parfaitement symétrique |
-| `icons/ui-star.svg` | étoile à cinq branches entièrement pleine |
-| `icons/ui-star-empty.svg` | étoile à cinq branches en CONTOUR ÉPAIS uniquement, intérieur transparent, mêmes proportions exactes que l'étoile pleine |
-| `icons/ui-fullscreen.svg` | quatre équerres d'angle pointant vers l'EXTÉRIEUR, traits épais, symétrie parfaite |
-| `icons/ui-fullscreen-exit.svg` | quatre équerres d'angle pointant vers l'INTÉRIEUR, traits épais, symétrie parfaite |
-| `icons/ui-chevron-down.svg` | chevron simple pointant vers le bas, trait très épais, extrémités arrondies |
-| `icons/ui-shield.svg` | écu héraldique plein, pointe en bas |
+| `--strip` | traiter l'image comme une planche de poses |
+| `--poses N` | forcer le nombre de poses par rangée si la détection se trompe |
+| `--fill-holes` | boucher les poches de fond enfermées, APRÈS les avoir regardées |
+| `--profile-left` | la rangée de profil ENTIÈRE regarde à gauche |
+| `--mirror <rangée>:<pose>` | une case isolée est dessinée en miroir |
+| `--drop <pose>` | retirer une pose du cycle, dans toutes les rangées |
+| `--max N` | plafond de résolution de stockage (256 par défaut) |
 
----
+Les index de `--mirror` s'entendent **après** `--drop`.
 
-# 9. Non concerné
+## Ce que l'outil refuse
 
-- **Chrome d'UI 9-slice** (`paper-special`, `btn-big-*`, `ribbons-*`, `bar-*`) : géométrie
-  découpée par le code, à ne pas générer. Voir REFONTE-GRAPHIQUE-GEMINI.md §7.
-- **Réserve non branchée** (`decor/`, `fx/`, `buildings/tower-*`, `kenney-ui/`,
-  `kenney-td/sheet.png`) : inutile de régénérer.
-- **`skin-medieval/*.svg`** (Bastion de jeu, dalle, catapulte ×2) : même blocage `load.svg`
-  que le §8, prompts dans REFONTE-GRAPHIQUE-GEMINI.md.
+- Une planche `--strip` **sans ligne de sol** : il n'a alors aucun moyen d'aligner les poses
+  entre elles, et une pose 3 px plus basse fait tressauter la créature à chaque cycle.
+- Un découpage **incomplet** : si une rangée rend moins de poses que les autres, le rangement
+  par direction se décale et chaque direction irait puiser dans la suivante.
 
----
+## Si la ligne de sol est dessinée en deux segments
 
-# 10. Cycles de marche — planche de poses (ADR-065)
+Le générateur la trace parfois en tronçons. L'outil tolère une interruption courte et
+recolle les morceaux — mais si le rapport annonce moins de trois lignes sur une planche
+complète, c'est que le trou était trop large : régénérer en insistant sur « d'un bord à
+l'autre et sans interruption ».
 
-Une créature ANIMÉE se demande en **une seule image** contenant toutes les poses de son
-cycle. C'est la génération unique qui garantit la cohérence : demandées séparément, les
-poses dérivent en couleur et en proportions.
-
-**Ne pas retirer la ligne de sol du prompt** : c'est elle qui aligne les pieds, et l'outil
-s'en sert comme référence commune avant de l'effacer.
-
-**Ne pas demander de poses miroir** : le miroir se calcule sans erreur, une génération peut
-rater. Attention en revanche à ne pas confondre — un miroir sert à l'ORIENTATION (marcher
-vers la gauche), jamais à fabriquer le pas opposé d'un même cycle, qui ferait changer l'arme
-de main à chaque pas.
-
-Traitement : `npm run sprite -- <source> <destination> --strip`
-
-```
-Planche de sprites : UNE image contenant QUATRE poses du MÊME personnage, alignées horizontalement, régulièrement espacées, toutes tournées dans la MÊME direction.
-
-Les quatre poses forment un cycle de marche complet, dans cet ordre :
-1. CONTACT : jambe gauche tendue en avant, talon posé ; jambe droite tendue en arrière, orteils au sol. Écart maximal entre les jambes.
-2. PASSAGE : jambe droite ramenée sous le corps et pliée, pied décollé ; jambe gauche verticale supportant tout le poids. Corps au plus haut.
-3. CONTACT INVERSE : jambe droite tendue en avant, talon posé ; jambe gauche tendue en arrière. Miroir de la pose 1 pour les JAMBES uniquement — le personnage reste tourné du même côté et tient son arme dans la MÊME main.
-4. PASSAGE INVERSE : jambe gauche ramenée sous le corps et pliée ; jambe droite verticale supportant le poids.
-
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les quatre poses : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seules les jambes et le balancement des bras changent.
-- Échelle rigoureusement identique.
-- Une LIGNE DE SOL horizontale fine traverse toute l'image, et les pieds d'appui des quatre poses la touchent exactement.
-- Espacement régulier et LARGE entre les poses, sans chevauchement.
-- Fond BLANC UNI. Aucun cadre, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
-
-Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour. Proportions stylisées : tête surdimensionnée, corps compact.
-
-Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
-```
-
-## Ce que l'outil rapporte, et pourquoi le lire
-
-- **dispersion de hauteur** : mêle le rebond VOULU du corps (contact bas, passage haut) et
-  une éventuelle dérive d'échelle. L'outil ne peut pas les distinguer, l'œil oui.
-- **dispersion de ligne de base** : doit rester à quelques pixels. Au-delà, une pose a été
-  dessinée flottante et la créature tressautera.
-- **nombre de poses isolées** : s'il ne correspond pas à ce qui a été demandé, les poses se
-  chevauchent ou un morceau détaché a été pris pour une pose.
-
----
-
-# 11. Cycles de marche à plusieurs DIRECTIONS (ADR-067)
-
-Le format retenu pour la suite du bestiaire. Une planche par créature, **trois rangées
-(face, profil droit, dos) × quatre poses**, chaque rangée sur sa propre ligne de sol.
-
-La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit, calculé sans
-erreur possible. À nombre de pixels constant, six poses au lieu de huit laissent **un tiers
-de surface en plus par pose**.
-
-Traitement : `npm run sprite -- <source> <destination> --strip [--profile-left] [--poses N]`
-— le nombre de rangées et de poses est déduit des lignes de sol.
-
-```
-Planche de sprites d'un personnage de jeu vidéo : UNE image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
-
-Chaque RANGÉE montre le même personnage vu sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la droite.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
-
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
-
-Les bras accompagnent le mouvement en sens INVERSE des jambes.
-
-LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
-- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seuls l'angle de vue et la position des membres changent.
-- Échelle rigoureusement identique dans les douze cases.
-- Une LIGNE DE SOL horizontale fine traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, et les pieds posés de chaque pose la touchent exactement.
-- Espacement régulier et LARGE entre les colonnes, sans chevauchement.
-- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être clairement ouvert sur le fond.
-- Fond BLANC UNI. Aucun cadre, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
-
-Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour. Proportions stylisées : tête surdimensionnée, corps compact.
-
-Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
-```
-
-## Le générateur donne souvent 4 colonnes au lieu de 2 — tant mieux
-
-Sur la planche du gobelin il a produit **3 rangées × 4 poses**. L'outil DÉDUIT le compte, il
-ne l'impose pas ; `--poses N` le force si la détection se trompe.
-
-Il ne se fie pas aux trous entre poses pour les séparer : mesuré sur cette planche, les poses
-n'étaient distantes que de 15 à 29 px, et **en vue de profil elles se chevauchaient**. Une
-planche est une grille — l'outil coupe au creux du profil d'encre, près de la frontière
-théorique de chaque case.
-
-## Si le profil regarde à GAUCHE
-
-Le générateur ignore parfois « marchant vers la droite ». Ajouter **`--profile-left`** :
-l'outil retourne la rangée **pose par pose**, jamais la bande entière — retourner la bande
-inverserait aussi l'ORDRE des poses, et le cycle marcherait à l'envers.
-
-## Une ligne de sol dessinée en deux segments
-
-Cas rencontré : le générateur trace parfois le sol d'une rangée en deux traits décalés de
-quelques pixels. L'outil englobe le voisinage du trait détecté, sinon le second segment
-tombe dans la rangée suivante et y passe pour une pose montant très haut. Rien à faire de
-ton côté, mais si une hauteur de case paraît aberrante dans le rapport, c'est la piste.
-
-## Ce que l'outil refuse, et pourquoi
-
-- **Rangées de tailles inégales.** Le rendu indexe ses cases par `direction × poses + pose` :
-  une rangée plus courte décalerait silencieusement toutes les suivantes, et le défaut ne se
-  verrait qu'à l'écran, tard.
-- **Aucune ligne de sol.** C'est la seule référence commune ; sans elle, rien ne garantit que
-  les pieds sont à la même hauteur.
-
-## Les volants sont hors de ce format
-
-Une chauve-souris vue de dos n'a pas de sens, et son animation est un battement d'ailes, pas
-une marche. `bat`, `gargoyle` et `wyvern` restent en animation procédurale.
-
-## Deux poses par direction : une marche « à deux temps »
-
-C'est le rythme des vieux RPG — lisible, mais un peu saccadé, parce qu'il manque le temps de
-passage où le corps monte. Une troisième colonne s'ajoutera sans rien changer au pipeline.
-
-## ⚠ Vérifier l'orientation sur la planche PRODUITE, jamais sur la source
-
-Piège payé deux fois : lire le sens du profil à l'œil sur la vignette source mène à l'erreur,
-et `--profile-left` appliqué à tort fait marcher la créature **à reculons** — elle regarde à
-gauche en avançant vers la droite.
-
-Après génération, extraire les cases de la rangée de profil et les regarder agrandies. Le
-personnage doit regarder **à DROITE**. Sinon seulement, relancer avec `--profile-left`.
-
-Et les regarder **une par une**, pas d'un coup d'œil sur la rangée : le générateur dessine
-case par case et se trompe case par case. Sur la planche du gobelin, trois poses de profil
-regardaient à droite et la quatrième à gauche — la créature faisait un demi-tour d'une image
-par cycle, ce qui se lit exactement comme le va-et-vient d'ADR-068 et l'a masqué une passe de
-plus. Une case isolée se corrige avec `--mirror <rangée>:<pose>` (ADR-069) ; `--profile-left`
-ne sert que si la rangée ENTIÈRE part à l'envers.
-
-Et vérifier **l'équipement**, pas seulement l'orientation. Une case peut regarder du bon côté
-et porter l'épée dans la mauvaise main : le bouclier saute alors d'un bras à l'autre à chaque
-cycle, et c'est le CHANGEMENT qui se voit, pas la position. Les trois planches produites
-jusqu'ici avaient au moins une case fautive, jamais au même endroit. Remèdes (ADR-070) :
-
-- équipement inversé → `--mirror <rangée>:<pose>`, la symétrie remet le dessin d'aplomb ;
-- **autre flanc** du personnage → `--drop <pose>`, aucune symétrie ne le répare.
-
-Les index de `--mirror` s'entendent APRÈS `--drop`.
-
-## Le fond blanc ENFERMÉ dans le dessin
-
-Le détourage part des bords de l'image : le creux entre un bras et le torse, refermé par
-l'arme tenue devant, n'est relié à aucun bord et **reste blanc en jeu**. Idem pour
-l'échancrure d'un croissant de hache.
-
-L'outil les recense toujours et le dit dans son rapport (`poches fermées N recensée(s)`). Il
-ne les bouche que sur `--fill-holes`, parce qu'un reflet d'armure ou un œil sont, pour
-l'algorithme, exactement la même chose (ADR-071 — et ADR-050, où une passe automatique avait
-mangé les reflets). Regarder d'abord, boucher ensuite.
-
-## ⚠ Le défaut le plus coûteux : une planche impeccable où la créature ne marche pas
-
-Le générateur redessine volontiers **la même pose de jambes** en ne faisant varier que les
-bras et l'arme. La planche est alors parfaitement découpée, orientée, détourée — et la
-créature glisse au lieu de marcher. Le PO l'a vu avant nous, deux fois de suite.
-
-L'outil le mesure désormais lui-même (ADR-072) et le dit dans ses avertissements :
-
-- `les poses N et M sont la MÊME image` — deux cases dupliquées, le cycle en compte une de
-  moins qu'annoncé ;
-- `aucune alternance d'appui` — les jambes ne bougent pas assez, la créature glissera.
-
-Chiffres de référence, écart entre poses mesuré sur les jambes seules : une planche qui
-marche vraiment atteint **60 à 66 %** entre ses poses opposées ; les planches refusées
-plafonnaient à **16 à 26 %**, et deux poses du gobelin ne différaient que de **1 %**.
-
-**Un avertissement de cycle veut dire : régénérer, pas rattraper.** Aucun réglage de l'outil
-ne fabrique une pose que le dessin ne contient pas.

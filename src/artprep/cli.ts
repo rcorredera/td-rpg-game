@@ -267,6 +267,10 @@ const lines: string[] = [
   `  frange claire   ${fringe.removed} px en ${fringe.passes} passe(s)`,
   `  fragments       ${fragments.dropped} détaché(s) supprimé(s), ${fragments.droppedPx} px`,
   asStrip ? `  planche         ${cropped}, ${packed?.rows} direction(s) x ${packed?.poses} pose(s) = ${packed?.count} cases de ${packed?.cellW}x${packed?.cellH}` : `  rognage         ${cropped}`,
+  // Dispersion des pieds autour de leur ligne de sol. Calculée depuis toujours
+  // par `packRows`, elle n'était jamais montrée : une pose 3 px plus basse fait
+  // tressauter la créature à chaque cycle, et rien ne le disait avant le jeu.
+  ...(asStrip ? [`  écart au sol    ${packed?.baselineSpread} px entre la pose la plus haute et la plus basse`] : []),
   `  anticrénelage   ${featheredPx} px de bord`,
   `  sortie          ${img.width}x${img.height}`,
   `  bord clair      ${remaining} px restant(s)`,
