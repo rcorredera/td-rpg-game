@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  BACKGROUND_MIN, components, crop, downscale, dropFragments, feather, floodBackground, FRINGE_LUMA,
-  isFringe,
+  BACKGROUND_MIN, components, crop, downscale, dropFragments, feather, fillHoles, findHoles, floodBackground, FRINGE_LUMA,
+  type Hole, isFringe,
   type FragmentResult, type FringeResult,
   isBorder, lightBorderCount, luma, opaqueBox, type Rgba, stripFringe,
 } from "./image";
@@ -391,5 +391,74 @@ describe("isFringe — halo blanc uniforme", () => {
     expect(alphaAt(img, 1, 0)).toBe(0);
     expect(alphaAt(img, 2, 0)).toBe(0);
     expect(alphaAt(img, 3, 0)).toBe(255); // le trait noir survit
+  });
+});
+
+describe("findHoles / fillHoles", () => {
+  /** Un anneau de trait noir sur fond blanc : le creux au centre est enfermé. */
+  function ring(): Rgba {
+    const img: Rgba = { width: 40, height: 40, data: new Uint8Array(40 * 40 * 4).fill(255) };
+    const set = (x: number, y: number, v: number): void => {
+      const i: number = (y * 40 + x) * 4;
+      img.data[i] = v; img.data[i + 1] = v; img.data[i + 2] = v; img.data[i + 3] = 255;
+    };
+    for (let y: number = 10; y <= 30; y++) for (let x: number = 10; x <= 30; x++) set(x, y, 20);
+    for (let y: number = 15; y <= 25; y++) for (let x: number = 15; x <= 25; x++) set(x, y, 255);
+    return img;
+  }
+
+  it("compte le fond EXTÉRIEUR tant qu'il n'a pas été retiré", () => {
+    // D'où l'ordre imposé : sans remplissage préalable, le fond de l'image est
+    // lui aussi une composante claire, et le bouchage l'emporterait avec le reste
+    // — sans effet visible ici, mais le compte rendu à l'opérateur serait faux.
+    expect(findHoles(ring()).length).toBe(2);
+  });
+
+  it("recense le creux enfermé une fois le fond retiré", () => {
+    const img: Rgba = ring();
+    floodBackground(img);
+    const holes: Hole[] = findHoles(img);
+    expect(holes.length).toBe(1);
+    expect(holes[0]!.size).toBe(11 * 11);
+    expect(holes[0]!.x0).toBe(15);
+    expect(holes[0]!.y1).toBe(25);
+  });
+
+  it("NE MUTE PAS l'image : recenser n'est pas boucher", () => {
+    // Le piège d'ADR-050 — la passe des poches enfermées mangeait les reflets.
+    // Le recensement doit pouvoir s'exécuter à chaque fois sans rien casser.
+    const img: Rgba = ring();
+    floodBackground(img);
+    const before: Uint8Array = img.data.slice();
+    findHoles(img);
+    expect(img.data).toEqual(before);
+  });
+
+  it("bouche le creux et RIEN d'autre", () => {
+    const img: Rgba = ring();
+    floodBackground(img);
+    const px: number = fillHoles(img, findHoles(img));
+    expect(px).toBe(11 * 11);
+    expect(img.data[(20 * 40 + 20) * 4 + 3]).toBe(0);   // le creux
+    expect(img.data[(12 * 40 + 20) * 4 + 3]).toBe(255); // le trait reste
+  });
+
+  it("ne touche pas aux poches qu'on ne lui donne PAS", () => {
+    // Boucher par boîte englobante emporterait la voisine : deux creux d'un même
+    // fer de hache se chevauchent en boîte sans se toucher en pixels.
+    const img: Rgba = ring();
+    // Deuxième creux, dans la même bande horizontale que le premier.
+    for (let y: number = 18; y <= 22; y++) {
+      for (let x: number = 27; x <= 29; x++) {
+        const i: number = (y * 40 + x) * 4;
+        img.data[i] = 255; img.data[i + 1] = 255; img.data[i + 2] = 255; img.data[i + 3] = 255;
+      }
+    }
+    floodBackground(img);
+    const holes: Hole[] = findHoles(img).sort((a, b) => b.size - a.size);
+    expect(holes.length).toBe(2);
+    fillHoles(img, [holes[0]!]);
+    expect(img.data[(20 * 40 + 20) * 4 + 3]).toBe(0);   // le grand, bouché
+    expect(img.data[(20 * 40 + 28) * 4 + 3]).toBe(255); // le petit, intact
   });
 });
