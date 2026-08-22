@@ -3,6 +3,9 @@
 **Chaque bloc de code se copie-colle tel quel, seul.** Rien à assembler, rien à compléter :
 le style, le format, les contraintes et le sujet y sont déjà réunis.
 
+> Généré par `tools/prompts/build.cjs` — **ne pas éditer à la main**, la prochaine
+> exécution écraserait la correction.
+
 Les règles d'intégration (renommage, chemins, licence) restent dans
 [REFONTE-GRAPHIQUE-GEMINI.md](REFONTE-GRAPHIQUE-GEMINI.md).
 
@@ -25,13 +28,13 @@ plusieurs passes parce qu'un défaut était passé au travers.
 | # | Contrôle | Qui le fait | Si ça cloche |
 |---|---|---|---|
 | 1 | **Le cycle bouge-t-il ?** | l'outil, automatiquement | ⚠ `MÊME image` ou `aucune alternance` → **régénérer**, rien ne se rattrape |
-| 2 | **Chaque case regarde-t-elle à droite ?** (rangée de profil) | à l'œil, case par case | `--profile-left` si toute la rangée, `--mirror <rangée>:<pose>` si une seule case |
-| 3 | **L'équipement reste-t-il dans la même main ?** | à l'œil, rangée par rangée | `--mirror` si le dessin est inversé, `--drop` si c'est l'autre flanc du personnage |
-| 4 | **Reste-t-il du blanc entre un bras et le torse ?** | l'outil recense, l'œil tranche | `--fill-holes` après avoir vérifié qu'aucune poche n'est un reflet ou un œil |
+| 2 | **Chaque case regarde-t-elle à droite ?** (rangée de profil) | à l'oeil, case par case | `--profile-left` si toute la rangée, `--mirror <rangée>:<pose>` si une seule case |
+| 3 | **L'équipement reste-t-il dans la même main ?** | à l'oeil, rangée par rangée | `--mirror` si le dessin est inversé, `--drop` si c'est l'autre flanc du personnage |
+| 4 | **Reste-t-il du blanc entre un bras et le torse ?** | l'outil recense, l'oeil tranche | `--fill-holes` après avoir vérifié qu'aucune poche n'est un reflet ou un oeil |
 | 5 | **Les pieds touchent-ils la ligne de sol ?** | l'outil (`écart au sol`) | régénérer si l'écart dépasse quelques pixels |
 
 Contrôles 2 et 3 : regarder la planche **PRODUITE**, jamais l'image source, et
-**case par case**. J'ai lu l'orientation à l'œil sur une vignette source et je me suis
+**case par case**. J'ai lu l'orientation à l'oeil sur une vignette source et je me suis
 trompé deux fois de suite ; le générateur se trompe case par case, pas rangée par rangée.
 
 ## Chiffres de référence pour le contrôle 1
@@ -63,25 +66,42 @@ npm run sprite -- "G:/Romain/Téléchargements/Monstre rework/<source>.png" publ
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -101,25 +121,42 @@ Sujet : petit diablotin violacé maigrichon, cornes courtes recourbées, grandes
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -139,25 +176,42 @@ Sujet : gobelin à la peau vert-de-gris, air hargneux, silhouette trapue. Armure
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -177,25 +231,42 @@ Sujet : orc guerrier massif à la peau vert olive, mâchoire lourde aux défense
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -215,25 +286,42 @@ Sujet : troll gris-bleu voûté, peau rugueuse et verruqueuse, long nez crochu, 
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -253,25 +341,42 @@ Sujet : chevalier en armure de plates noire mate, heaume clos dont la visière �
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -291,25 +396,42 @@ Sujet : mort-vivant colossal et boursouflé, chair grisâtre verdâtre marquée 
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -329,25 +451,42 @@ Sujet : ogre énorme et bedonnant à la peau brun-rose, ventre proéminent, une 
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -367,25 +506,42 @@ Sujet : golem construit de lourdes plaques de fer rivetées, articulations méca
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -405,25 +561,42 @@ Sujet : seigneur de guerre orc, chef de bande. Armure lourde sombre ornée de cr
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -443,25 +616,42 @@ Sujet : bandit humain encapuchonné, silhouette agile et sèche. Capuche brune r
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -481,25 +671,42 @@ Sujet : guerrier humain corrompu par une magie de faille. Armure de plates grise
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -519,25 +726,42 @@ Sujet : sentinelle d'ombre élancée. Corps fait de fumée noire dense, maintenu
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -557,25 +781,42 @@ Sujet : assassin drapé de voiles gris-bleu en mouvement, écharpes flottant der
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -595,25 +836,42 @@ Sujet : aberration humanoïde trapue à la peau bleu-gris coriace et plissée. Q
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -633,25 +891,42 @@ Sujet : vieil ermite en haillons de toile grise, longue barbe emmêlée, dos cou
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -671,25 +946,42 @@ Sujet : amas de plusieurs squelettes fusionnés en une seule créature humanoïd
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -715,25 +1007,42 @@ Même format : il se déplace sur la carte comme les créatures.
 ```
 Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
-Chaque RANGÉE montre le même personnage sous un angle différent :
-- Rangée du HAUT : vu de FACE, marchant vers le spectateur.
-- Rangée du MILIEU : vu de PROFIL, marchant vers la DROITE de l'image.
-- Rangée du BAS : vu de DOS, s'éloignant du spectateur.
+RÈGLE ABSOLUE 1 — LE PERSONNAGE NE CHANGE JAMAIS :
+- Exactement les mêmes couleurs dans les douze cases, teinte pour teinte. Aucune variation de saturation, de luminosité ou de nuance, même très légère.
+- Exactement les mêmes proportions, la même taille, le même équipement, les mêmes détails. Rien n'apparaît ni ne disparaît d'une case à l'autre.
+- Même éclairage partout, venant de la même direction.
+- Même style de trait et même épaisseur de contour dans les douze cases.
 
-Chaque rangée contient QUATRE poses successives d'un même pas de marche, dans cet ordre de gauche à droite :
-1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
-3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds posés au sol, écart maximal entre les talons.
-4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+RÈGLE ABSOLUE 2 — LE PERSONNAGE NE TOURNE PAS :
+- À l'intérieur d'une rangée, l'angle de vue est rigoureusement identique d'une case à l'autre. Le personnage ne pivote pas, ne se tourne pas de trois-quarts, ne montre jamais l'autre côté de son corps.
+- Aucun saut, aucun accroupissement, aucune génuflexion, aucune torsion du buste, aucune pose d'attaque, aucune pose de repos.
+- Le sommet de la tête reste à la même hauteur dans les quatre cases d'une rangée : le personnage AVANCE, il ne monte ni ne descend.
+
+Chaque RANGÉE montre le même personnage sous un angle différent :
+- Rangée du HAUT : de FACE, marchant droit vers le spectateur.
+- Rangée du MILIEU : de PROFIL STRICT, marchant vers la DROITE de l'image. On voit exactement un seul côté du corps, jamais l'autre.
+- Rangée du BAS : de DOS, s'éloignant droit du spectateur.
+
+Les trois rangées montrent LE MÊME cycle de marche, avec la MÊME amplitude de jambes. La rangée du BAS n'est pas une pose debout : c'est la même marche, vue de derrière.
+
+Chaque rangée contient QUATRE poses successives d'un même pas, de gauche à droite :
+1. CONTACT : cuisse GAUCHE en avant, environ 30 degrés devant la verticale ; cuisse DROITE en arrière, environ 25 degrés derrière. Les deux pieds posés au sol. Bras DROIT porté en avant, coude à demi plié, main à hauteur de hanche ; bras GAUCHE en arrière, presque tendu.
+2. PASSAGE : la jambe DROITE remonte et croise la gauche, genou droit plié à environ 60 degrés, pied droit nettement décollé du sol. Les deux jambes presque jointes. Les deux bras passent près du corps, à la verticale.
+3. CONTACT INVERSE : l'exact inverse de la pose 1. Cuisse DROITE en avant à 30 degrés, cuisse GAUCHE en arrière à 25 degrés, les deux pieds au sol. Bras GAUCHE porté en avant, bras DROIT en arrière.
+4. PASSAGE INVERSE : l'exact inverse de la pose 2. La jambe GAUCHE remonte et croise la droite, genou gauche plié, pied gauche nettement décollé.
+
+BALANCIER DES BRAS — aucun bras immobile :
+- Le bras porté en avant est TOUJOURS celui du côté OPPOSÉ à la jambe portée en avant. C'est la règle du balancier, sans aucune exception dans les douze cases.
+- Aux poses de CONTACT, l'écart entre les deux mains est maximal.
+- Si le personnage tient une arme, le bras armé balance comme l'autre. L'arme ne change jamais de main et garde la même orientation.
+- Un bras qui reste collé au corps sur les quatre poses est un ÉCHEC.
 
 LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
-- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
-- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Aux poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Aux poses de PASSAGE, les deux jambes se touchent presque.
 - Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
-- Les bras accompagnent le mouvement en sens INVERSE des jambes.
 
-CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement. L'arme reste dans la MÊME main d'un bout à l'autre de la planche. Seuls l'angle de vue et la position des membres changent.
+CADRE :
 - Échelle rigoureusement identique dans les douze cases.
 - Une LIGNE DE SOL horizontale fine, grise, traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, d'un bord à l'autre et sans interruption. Les pieds posés de chaque pose la touchent exactement.
 - Espacement régulier et LARGE entre les colonnes. Aucun chevauchement entre deux poses, y compris les armes.
@@ -767,7 +1076,7 @@ npm run sprite -- "G:/Romain/Téléchargements/Monstre rework/<source>.png" publ
 Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
 Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
 Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
-Vue frontale, à hauteur d'œil, sujet face au spectateur — pas de profil, pas de plongée.
+Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
 Pose : de face, en progression vers le spectateur, attitude d'avancée et non d'attaque. Aucune arme brandie au-dessus de la tête, aucun saut.
 Cadrage PORTRAIT, sujet plus haut que large.
 Sujet unique, centré, cadré serré.
@@ -782,7 +1091,7 @@ Sujet : spectre encapuchonné, longue robe déchirée bleu-gris. Capuche vide d'
 Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
 Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
 Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
-Vue frontale, à hauteur d'œil, sujet face au spectateur — pas de profil, pas de plongée.
+Vue frontale, à hauteur d'oeil, sujet face au spectateur — pas de profil, pas de plongée.
 Pose : de face, en progression vers le spectateur, attitude d'avancée et non d'attaque. Aucune arme brandie au-dessus de la tête, aucun saut.
 Cadrage PORTRAIT, sujet plus haut que large.
 Sujet unique, centré, cadré serré.
@@ -797,7 +1106,7 @@ Sujet : blob de gelée vert marécage translucide et luisant, surface bombée r�
 Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
 Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
 Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
-Vue de 3/4 EN PLONGÉE, comme vue par un joueur au-dessus du champ de bataille — surtout pas de face à hauteur d'œil, qui écraserait la silhouette. Les membres doivent être bien détachés les uns des autres.
+Vue de 3/4 EN PLONGÉE, comme vue par un joueur au-dessus du champ de bataille — surtout pas de face à hauteur d'oeil, qui écraserait la silhouette. Les membres doivent être bien détachés les uns des autres.
 Cadrage carré, sujet centré.
 Sujet unique, centré, cadré serré.
 Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.
@@ -811,7 +1120,7 @@ Sujet : scorpion géant de désert, carapace segmentée sable et ocre, chitine m
 Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
 Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
 Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
-Vue de 3/4 EN PLONGÉE, comme vue par un joueur au-dessus du champ de bataille — surtout pas de face à hauteur d'œil, qui écraserait la silhouette. Les membres doivent être bien détachés les uns des autres.
+Vue de 3/4 EN PLONGÉE, comme vue par un joueur au-dessus du champ de bataille — surtout pas de face à hauteur d'oeil, qui écraserait la silhouette. Les membres doivent être bien détachés les uns des autres.
 Cadrage carré, sujet centré.
 Sujet unique, centré, cadré serré.
 Fond parfaitement transparent (PNG alpha), aucun sol, aucune ombre portée, aucun décor, aucun texte, aucun cadre.

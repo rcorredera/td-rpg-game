@@ -20,6 +20,10 @@ src/
   artprep/   Préparation des sprites livrés par le PO (ADR-061) : décapage de la frange de
              détourage, rognage, anticrénelage, réduction. `npm run sprite`. Même statut que
              balance/ : outil d'atelier, hors du jeu et hors du bundle.
+tools/prompts/  Génère `docs/PROMPTS-GEMINI.md`. Chaque bloc du document doit être autonome,
+                donc le préambule y est répété dans les dix-huit blocs de créature : une
+                correction manuelle en oublierait toujours un. Hors de `src/`, hors du bundle.
+                Ne jamais éditer le .md à la main — voir le README du dossier.
 public/assets/  Assets du jeu — voir README.md du dossier (licences + provenance de chaque
                 fichier). Skin médiéval maison (ADR-016) + pack Tiny Swords pour l'UI, bestiaire
                 CraftPix (ADR-043/044) en cours de refonte IA (ADR-061), 20 SFX et une piste de
