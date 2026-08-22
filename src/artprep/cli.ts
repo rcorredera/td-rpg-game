@@ -8,6 +8,7 @@
 //   npm run sprite -- <source> <destination> --strip --poses 4 --profile-left
 //   npm run sprite -- <source> <destination> --strip --mirror 1:2
 //   npm run sprite -- <source> <destination> --strip --drop 2
+//   npm run sprite -- <source> <destination> --strip --fill-holes
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -24,7 +25,8 @@
 // ============================================================
 
 import {
-  BACKGROUND_MIN, crop, downscale, dropFragments, feather, floodBackground, lightBorderCount, resample,
+  BACKGROUND_MIN, crop, downscale, dropFragments, feather, fillHoles, findHoles, floodBackground,
+  type Hole, lightBorderCount, resample,
   type FragmentResult, type FringeResult, type Rgba,
   stripFringe,
 } from "./image";
@@ -65,6 +67,14 @@ if (!Number.isFinite(maxSide) || maxSide <= 0) {
   process.exit(1);
 }
 const keepFragments: boolean = flags.includes("--keep-fragments");
+/**
+ * Boucher les poches de fond enfermées dans le dessin (ADR-071).
+ *
+ * Sur demande, jamais d'office : l'algorithme ne distingue pas une aisselle
+ * d'un reflet d'armure ou d'un œil. Le rapport recense les poches dans tous les
+ * cas — regarder la carte, puis décider.
+ */
+const fillHolesFlag: boolean = flags.includes("--fill-holes");
 /** Planche de poses : découpe le cycle de marche en cases régulières (ADR-065). */
 const asStrip: boolean = flags.includes("--strip");
 /** Force le nombre de poses par rangée quand la détection se trompe. */
@@ -136,6 +146,16 @@ for (const b of bands) groundErased += eraseGroundLine(img, b, BACKGROUND_MIN);
 // Détourage : Gemini livre sur fond blanc opaque. Sur une image déjà détourée,
 // l'étape ne trouve rien et ne fait rien.
 const background: number = floodBackground(img);
+// Poches de fond ENFERMÉES : le creux entre un bras et le torse quand la
+// créature tient son arme devant elle, l'échancrure d'un croissant de hache.
+// Le remplissage part des bords et ne les atteint jamais (ADR-071).
+// Toujours RECENSÉES, bouchées seulement sur demande : les mêmes composantes
+// portent aussi les reflets et les yeux, et les boucher d'office est le piège
+// déjà payé en ADR-050.
+const holes: Hole[] = findHoles(img);
+const holesPx: number = fillHolesFlag ? fillHoles(img, holes) : 0;
+// Le décapage vient APRÈS : ouvrir une poche découvre le dégradé JPEG qui la
+// bordait, et sans cette passe il resterait un liseré clair dans chaque aisselle.
 const fringe: FringeResult = stripFringe(img);
 // Sur une PLANCHE, les poses sont par nature des composantes séparées : la
 // détection de fragments y verrait N-1 « membres détachés » et noierait une
@@ -235,6 +255,7 @@ const lines: string[] = [
   `  source          ${sourceSize}`,
   ...(asStrip ? [`  lignes de sol   ${bands.length} (${bands.map(b => b.bottom).join(", ")}), ${groundErased} px effacés`] : []),
   `  fond retiré     ${background} px`,
+  `  poches fermées  ${holes.length} recensée(s)${fillHolesFlag ? `, ${holesPx} px bouchés` : " (--fill-holes pour les boucher)"}`,
   `  frange claire   ${fringe.removed} px en ${fringe.passes} passe(s)`,
   `  fragments       ${fragments.dropped} détaché(s) supprimé(s), ${fragments.droppedPx} px`,
   asStrip ? `  planche         ${cropped}, ${packed?.rows} direction(s) x ${packed?.poses} pose(s) = ${packed?.count} cases de ${packed?.cellW}x${packed?.cellH}` : `  rognage         ${cropped}`,
@@ -250,6 +271,18 @@ if (fringe.saturated) {
 }
 for (const k of fragments.kept) {
   console.warn(`  ⚠ fragment détaché de ${k.size} px CONSERVÉ (au-dessus du seuil de miette) — membre légitime ou doublon ?`);
+}
+// La plus grosse poche mérite un œil : sur les planches vues jusqu'ici, une
+// aisselle plafonne à ~400 px pour une image de 1024. Bien au-delà, c'est
+// probablement une surface claire DESSINÉE — un crâne, une aile pâle — et la
+// boucher ferait un trou.
+const biggest: number = holes.reduce((m, h) => Math.max(m, h.size), 0);
+if (fillHolesFlag && biggest > 2000) {
+  console.warn(`  ⚠ poche de ${biggest} px bouchée : anormalement grande, vérifier qu'il n'y a pas de trou dans le dessin.`);
+}
+if (!fillHolesFlag && holes.length > 0) {
+  console.warn(`  ⚠ ${holes.length} poche(s) de fond enfermée(s) — creux entre un bras et le torse, échancrure d'arme.`);
+  console.warn("    Elles restent BLANCHES en jeu. Les regarder, puis relancer avec --fill-holes si c'est bien du fond.");
 }
 if (remaining > 0) {
   console.warn(`  ⚠ ${remaining} px de bord encore clairs : le contour du sprite n'est pas noir partout.`);

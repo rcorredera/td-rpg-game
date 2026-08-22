@@ -746,3 +746,14 @@ jusqu'ici avaient au moins une case fautive, jamais au même endroit. Remèdes (
 - **autre flanc** du personnage → `--drop <pose>`, aucune symétrie ne le répare.
 
 Les index de `--mirror` s'entendent APRÈS `--drop`.
+
+## Le fond blanc ENFERMÉ dans le dessin
+
+Le détourage part des bords de l'image : le creux entre un bras et le torse, refermé par
+l'arme tenue devant, n'est relié à aucun bord et **reste blanc en jeu**. Idem pour
+l'échancrure d'un croissant de hache.
+
+L'outil les recense toujours et le dit dans son rapport (`poches fermées N recensée(s)`). Il
+ne les bouche que sur `--fill-holes`, parce qu'un reflet d'armure ou un œil sont, pour
+l'algorithme, exactement la même chose (ADR-071 — et ADR-050, où une passe automatique avait
+mangé les reflets). Regarder d'abord, boucher ensuite.

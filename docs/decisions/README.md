@@ -78,3 +78,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 068 | Le cycle de marche se cale sur le sol, et une planche s'oriente en la regardant | [`ADR-068-cycle-cale-sur-le-sol.md`](ADR-068-cycle-cale-sur-le-sol.md) |
 | 069 | Le miroir d'une planche se décide pose par pose | [`ADR-069-miroir-pose-par-pose.md`](ADR-069-miroir-pose-par-pose.md) |
 | 070 | L'équipement ne change pas de main : retirer la pose, ou la retourner | [`ADR-070-coherence-de-l-equipement.md`](ADR-070-coherence-de-l-equipement.md) |
+| 071 | Les poches de fond enfermées se recensent toujours, se bouchent sur demande | [`ADR-071-poches-de-fond-enfermees.md`](ADR-071-poches-de-fond-enfermees.md) |
