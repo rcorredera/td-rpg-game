@@ -30,6 +30,7 @@ import {
   type FragmentResult, type FringeResult, type Rgba,
   stripFringe,
 } from "./image";
+import { cycleReport, cycleWarnings } from "./cycle";
 import { decode, encode } from "./png";
 import {
   type Band, detectGroundLines, dropPoses, eraseGroundLine,
@@ -127,6 +128,9 @@ if (mirrorIndex >= 0) {
   }
 }
 
+/** Rangées dont le cycle ne bouge pas assez (ADR-072). */
+let cycleAlerts: string[] = [];
+
 /** Pixels de bord adoucis — 0 sur une planche, dont les cases ne sont pas rognées. */
 let featheredPx: number = 0;
 
@@ -219,6 +223,10 @@ if (asStrip) {
     (profileLeft && row === profileRow) || mirrorCells.has(`${row}:${pose}`);
   const sheet: PackedStrip = packRows(img, rows, 2, mirror);
   packed = sheet;
+  // Le cycle BOUGE-t-il ? Mesuré sur la planche empaquetée, avant réduction :
+  // une planche peut être parfaitement découpée et ne contenir aucune marche
+  // (ADR-072). Ce contrôle-là, l'œil l'a raté deux fois.
+  cycleAlerts = cycleWarnings(cycleReport(sheet.sheet, sheet.cellW, sheet.rows, sheet.poses));
   cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;
   // Chaque case est rééchantillonnée aux MÊMES dimensions exactes : un facteur
   // d'échelle appliqué case par case dériverait par arrondi, et Phaser
@@ -283,6 +291,11 @@ if (fillHolesFlag && biggest > 2000) {
 if (!fillHolesFlag && holes.length > 0) {
   console.warn(`  ⚠ ${holes.length} poche(s) de fond enfermée(s) — creux entre un bras et le torse, échancrure d'arme.`);
   console.warn("    Elles restent BLANCHES en jeu. Les regarder, puis relancer avec --fill-holes si c'est bien du fond.");
+}
+// Le défaut le plus coûteux : une planche impeccable où la créature ne marche
+// pas. Il survit à toutes les autres vérifications, et se voit seulement en jeu.
+for (const w of cycleAlerts) {
+  console.warn(`  ⚠ ${w}`);
 }
 if (remaining > 0) {
   console.warn(`  ⚠ ${remaining} px de bord encore clairs : le contour du sprite n'est pas noir partout.`);

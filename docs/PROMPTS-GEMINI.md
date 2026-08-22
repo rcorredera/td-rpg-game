@@ -636,7 +636,7 @@ Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce docum
 # 11. Cycles de marche à plusieurs DIRECTIONS (ADR-067)
 
 Le format retenu pour la suite du bestiaire. Une planche par créature, **trois rangées
-(face, profil droit, dos) × deux poses**, chaque rangée sur sa propre ligne de sol.
+(face, profil droit, dos) × quatre poses**, chaque rangée sur sa propre ligne de sol.
 
 La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit, calculé sans
 erreur possible. À nombre de pixels constant, six poses au lieu de huit laissent **un tiers
@@ -646,39 +646,38 @@ Traitement : `npm run sprite -- <source> <destination> --strip [--profile-left] 
 — le nombre de rangées et de poses est déduit des lignes de sol.
 
 ```
-Planche de sprites d'un personnage de jeu vidéo : UNE image organisée en TROIS RANGÉES et DEUX COLONNES, soit six cases.
+Planche de sprites d'un personnage de jeu vidéo : UNE image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.
 
 Chaque RANGÉE montre le même personnage vu sous un angle différent :
 - Rangée du HAUT : vu de FACE, marchant vers le spectateur.
 - Rangée du MILIEU : vu de PROFIL, marchant vers la droite.
 - Rangée du BAS : vu de DOS, s'éloignant du spectateur.
 
-Chaque rangée contient DEUX poses d'un pas de marche, côte à côte :
-- Colonne de GAUCHE : jambe gauche en avant, jambe droite en arrière, les deux pieds au sol.
-- Colonne de DROITE : jambe droite en avant, jambe gauche en arrière, les deux pieds au sol. Les bras accompagnent le mouvement en sens inverse des jambes.
+Chaque rangée contient QUATRE poses successives d'un même pas de marche, de gauche à droite :
+1. CONTACT : jambe gauche loin DEVANT, jambe droite loin DERRIÈRE, les deux pieds au sol, écart maximal entre les talons.
+2. PASSAGE : la jambe droite remonte et croise la gauche, genou droit plié, pied droit décollé du sol, les deux jambes presque jointes.
+3. CONTACT INVERSE : jambe droite loin DEVANT, jambe gauche loin DERRIÈRE, les deux pieds au sol, écart maximal entre les talons.
+4. PASSAGE INVERSE : la jambe gauche remonte et croise la droite, genou gauche plié, pied gauche décollé, les deux jambes presque jointes.
+
+Les bras accompagnent le mouvement en sens INVERSE des jambes.
+
+LES JAMBES SONT LE SUJET PRINCIPAL DE CETTE PLANCHE :
+- Dans les poses de CONTACT, la distance entre les deux talons vaut environ la MOITIÉ de la hauteur totale du personnage. C'est une grande enjambée, pas un pas timide.
+- Dans les poses de PASSAGE, les deux jambes se touchent presque.
+- Les quatre poses d'une même rangée doivent être NETTEMENT différentes au niveau des jambes. Ne jamais redessiner deux fois la même position de jambes. Faire varier les bras sans faire varier les jambes est un ÉCHEC.
 
 CONTRAINTES ABSOLUES :
-- Personnage strictement identique dans les six cases : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seuls l'angle de vue et la position des membres changent.
-- Échelle rigoureusement identique dans les six cases.
-- Une LIGNE DE SOL horizontale fine traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, et les pieds des deux poses de la rangée la touchent exactement.
-- Espacement régulier et LARGE entre les deux colonnes, sans chevauchement.
+- Personnage strictement identique dans les douze cases : mêmes couleurs, mêmes proportions, même équipement, arme dans la MÊME main. Seuls l'angle de vue et la position des membres changent.
+- Échelle rigoureusement identique dans les douze cases.
+- Une LIGNE DE SOL horizontale fine traverse toute la largeur de l'image SOUS CHAQUE RANGÉE, et les pieds posés de chaque pose la touchent exactement.
+- Espacement régulier et LARGE entre les colonnes, sans chevauchement.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse : si le bras s'écarte du corps, le vide entre les deux doit être clairement ouvert sur le fond.
 - Fond BLANC UNI. Aucun cadre, aucune séparation verticale, aucun numéro, aucun texte, aucune ombre portée.
 
 Style : art de jeu cartoon fantasy, couleurs saturées avec modelé peint, épais contour NOIR uniforme sur tout le pourtour. Proportions stylisées : tête surdimensionnée, corps compact.
 
 Sujet : [reprendre le sujet de la fiche de la créature, plus haut dans ce document]
 ```
-
-## Le générateur donne souvent 4 colonnes au lieu de 2 — tant mieux
-
-Sur la planche du gobelin il a produit 3 rangées x 4 poses. L'outil déduit le compte, il ne
-l'impose pas ;  le force si la détection se trompe.
-
-## Si le profil regarde à GAUCHE
-
-Le générateur ignore parfois « marchant vers la droite ». Ajouter  : l'outil
-retourne la rangée POSE PAR POSE, jamais la bande entière — retourner la bande inverserait
-aussi l'ordre des poses et le cycle marcherait à l'envers.
 
 ## Le générateur donne souvent 4 colonnes au lieu de 2 — tant mieux
 
@@ -757,3 +756,22 @@ L'outil les recense toujours et le dit dans son rapport (`poches fermées N rece
 ne les bouche que sur `--fill-holes`, parce qu'un reflet d'armure ou un œil sont, pour
 l'algorithme, exactement la même chose (ADR-071 — et ADR-050, où une passe automatique avait
 mangé les reflets). Regarder d'abord, boucher ensuite.
+
+## ⚠ Le défaut le plus coûteux : une planche impeccable où la créature ne marche pas
+
+Le générateur redessine volontiers **la même pose de jambes** en ne faisant varier que les
+bras et l'arme. La planche est alors parfaitement découpée, orientée, détourée — et la
+créature glisse au lieu de marcher. Le PO l'a vu avant nous, deux fois de suite.
+
+L'outil le mesure désormais lui-même (ADR-072) et le dit dans ses avertissements :
+
+- `les poses N et M sont la MÊME image` — deux cases dupliquées, le cycle en compte une de
+  moins qu'annoncé ;
+- `aucune alternance d'appui` — les jambes ne bougent pas assez, la créature glissera.
+
+Chiffres de référence, écart entre poses mesuré sur les jambes seules : une planche qui
+marche vraiment atteint **60 à 66 %** entre ses poses opposées ; les planches refusées
+plafonnaient à **16 à 26 %**, et deux poses du gobelin ne différaient que de **1 %**.
+
+**Un avertissement de cycle veut dire : régénérer, pas rattraper.** Aucun réglage de l'outil
+ne fabrique une pose que le dessin ne contient pas.
