@@ -81,3 +81,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 071 | Les poches de fond enfermées se recensent toujours, se bouchent sur demande | [`ADR-071-poches-de-fond-enfermees.md`](ADR-071-poches-de-fond-enfermees.md) |
 | 072 | Une planche doit prouver qu'elle marche | [`ADR-072-le-cycle-doit-bouger.md`](ADR-072-le-cycle-doit-bouger.md) |
 | 073 | Un gabarit de poses dessiné, plutôt qu'un prompt qui les décrit | [`ADR-073-gabarit-de-poses.md`](ADR-073-gabarit-de-poses.md) |
+| 074 | Une direction à la fois, recollées par l'outil | [`ADR-074-une-direction-a-la-fois.md`](ADR-074-une-direction-a-la-fois.md) |

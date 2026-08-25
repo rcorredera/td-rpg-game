@@ -9,6 +9,7 @@
 //   npm run sprite -- <source> <destination> --strip --mirror 1:2
 //   npm run sprite -- <source> <destination> --strip --drop 2
 //   npm run sprite -- <source> <destination> --strip --fill-holes
+//   npm run sprite -- <face> <profil> <dos> <destination> --strip   (une image par direction)
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -26,7 +27,7 @@
 
 import {
   BACKGROUND_MIN, crop, downscale, dropFragments, feather, fillHoles, findHoles, floodBackground,
-  type Hole, lightBorderCount, resample,
+  type Hole, lightBorderCount, resample, stack,
   type FragmentResult, type FringeResult, type Rgba,
   stripFringe,
 } from "./image";
@@ -52,14 +53,40 @@ const DEFAULT_MAX_SIDE: number = 256;
 
 const argv: string[] = process.argv.slice(2);
 const flags: string[] = argv.filter((a) => a.startsWith("--"));
-const positional: string[] = argv.filter((a) => !a.startsWith("--"));
-const src: string | undefined = positional[0];
-const dst: string | undefined = positional[1];
 
-if (src === undefined || dst === undefined) {
-  console.error("usage : npm run sprite -- <source> <destination> [--max 256] [--keep-fragments]");
+/**
+ * Options qui CONSOMMENT l'argument suivant.
+ *
+ * Sans cette liste, `--max 256` déposait « 256 » parmi les chemins. Tant que la
+ * destination était le DEUXIÈME positionnel, le défaut restait invisible ; il
+ * devient bloquant dès qu'on accepte plusieurs sources et que la destination est
+ * le dernier (ADR-074).
+ */
+const VALUED: readonly string[] = ["--max", "--poses", "--mirror", "--drop"];
+
+const positional: string[] = [];
+for (let i: number = 0; i < argv.length; i++) {
+  const a: string = argv[i]!;
+  if (a.startsWith("--")) {
+    if (VALUED.includes(a)) i++;
+    continue;
+  }
+  positional.push(a);
+}
+// Une source, ou PLUSIEURS à empiler — une par direction. La destination est
+// toujours le dernier chemin, ce qui laisse le nombre de sources libre.
+const sources: string[] = positional.slice(0, -1);
+const dst: string | undefined = positional[positional.length - 1];
+
+if (sources.length === 0 || dst === undefined) {
+  console.error("usage : npm run sprite -- <source...> <destination> [--max 256] [--keep-fragments]");
   process.exit(1);
 }
+if (sources.length > 1 && !flags.includes("--strip")) {
+  console.error("artprep: plusieurs sources n'ont de sens qu'avec --strip, une rangée par image.");
+  process.exit(1);
+}
+const src: string = sources.join(" + ");
 
 const maxIndex: number = argv.indexOf("--max");
 const maxSide: number = maxIndex >= 0 ? Number(argv[maxIndex + 1]) : DEFAULT_MAX_SIDE;
@@ -134,7 +161,7 @@ let cycleAlerts: string[] = [];
 /** Pixels de bord adoucis — 0 sur une planche, dont les cases ne sont pas rognées. */
 let featheredPx: number = 0;
 
-let img: Rgba = decode(readFileSync(src));
+let img: Rgba = stack(sources.map(f => decode(readFileSync(f))));
 const sourceSize: string = `${img.width}x${img.height}`;
 
 // La ligne de sol se cherche AVANT tout : elle ne touche pas les bords de
@@ -271,6 +298,10 @@ const lines: string[] = [
   // par `packRows`, elle n'était jamais montrée : une pose 3 px plus basse fait
   // tressauter la créature à chaque cycle, et rien ne le disait avant le jeu.
   ...(asStrip ? [`  écart au sol    ${packed?.baselineSpread} px entre la pose la plus haute et la plus basse`] : []),
+  // Écart de TAILLE entre les poses. Sur une planche d'un bloc il est faible par
+  // construction ; sur trois images générées séparément, c'est le premier signe
+  // que le personnage a changé d'échelle d'une direction à l'autre (ADR-074).
+  ...(asStrip ? [`  écart de taille ${packed?.heightSpread} px entre la pose la plus grande et la plus petite`] : []),
   `  anticrénelage   ${featheredPx} px de bord`,
   `  sortie          ${img.width}x${img.height}`,
   `  bord clair      ${remaining} px restant(s)`,
@@ -295,6 +326,15 @@ if (fillHolesFlag && biggest > 2000) {
 if (!fillHolesFlag && holes.length > 0) {
   console.warn(`  ⚠ ${holes.length} poche(s) de fond enfermée(s) — creux entre un bras et le torse, échancrure d'arme.`);
   console.warn("    Elles restent BLANCHES en jeu. Les regarder, puis relancer avec --fill-holes si c'est bien du fond.");
+}
+// Une créature qui change de taille selon la direction qu'elle prend. Le risque
+// propre à la génération image par image (ADR-074) : chaque rangée est correcte
+// isolément, et c'est leur RAPPORT qui cloche. Le seuil vaut un douzième de la
+// hauteur de case — en deçà, l'écart se confond avec le jeu des poses.
+const sizeSpread: number = packed?.heightSpread ?? 0;
+if (packed !== null && sizeSpread > packed.cellH / 12) {
+  console.warn(`  ⚠ ${sizeSpread} px d'écart de taille entre poses (${(sizeSpread / packed.cellH * 100).toFixed(0)} % de la case)`);
+  console.warn(`    ${sources.length > 1 ? "Les sources n'ont pas la même échelle : régénérer en imposant la taille du personnage." : "Poses dessinées à des échelles différentes dans la source."}`);
 }
 // Le défaut le plus coûteux : une planche impeccable où la créature ne marche
 // pas. Il survit à toutes les autres vérifications, et se voit seulement en jeu.

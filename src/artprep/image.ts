@@ -166,6 +166,34 @@ export function floodBackground(img: Rgba, threshold: number = BACKGROUND_MIN): 
   return removed;
 }
 
+/**
+ * Empile plusieurs images en une seule, alignées à gauche, fond blanc.
+ *
+ * Le générateur tient les quatre poses d'une rangée mais décroche sur douze
+ * cases (ADR-074) : on lui en demande une direction à la fois, et c'est ici que
+ * les morceaux se recollent. Chaque source portant sa propre ligne de sol, la
+ * pile en compte une par rangée — exactement ce qu'attend la suite de la chaîne,
+ * qui ne fait donc aucune différence avec une planche générée d'un bloc.
+ *
+ * Les largeurs sont complétées en BLANC et non en transparent : le détourage
+ * part des bords et prendrait un remplissage transparent pour du dessin déjà
+ * découpé, laissant une frange le long du raccord.
+ */
+export function stack(parts: readonly Rgba[]): Rgba {
+  const width: number = Math.max(...parts.map(p => p.width));
+  const height: number = parts.reduce((h, p) => h + p.height, 0);
+  const out: Rgba = { width, height, data: new Uint8Array(width * height * 4).fill(255) };
+  let y0: number = 0;
+  for (const p of parts) {
+    for (let y: number = 0; y < p.height; y++) {
+      const src: number = y * p.width * 4;
+      out.data.set(p.data.subarray(src, src + p.width * 4), ((y0 + y) * width) * 4);
+    }
+    y0 += p.height;
+  }
+  return out;
+}
+
 /** Une poche de fond ENFERMÉE dans le dessin : sa taille, sa boîte, sa graine. */
 export interface Hole {
   size: number;

@@ -3,7 +3,7 @@ import {
   BACKGROUND_MIN, components, crop, downscale, dropFragments, feather, fillHoles, findHoles, floodBackground, FRINGE_LUMA,
   type Hole, isFringe,
   type FragmentResult, type FringeResult,
-  isBorder, lightBorderCount, luma, opaqueBox, type Rgba, stripFringe,
+  isBorder, lightBorderCount, luma, opaqueBox, type Rgba, stack, stripFringe,
 } from "./image";
 
 /** Image vide de `w`×`h`, entièrement transparente. */
@@ -460,5 +460,36 @@ describe("findHoles / fillHoles", () => {
     fillHoles(img, [holes[0]!]);
     expect(img.data[(20 * 40 + 20) * 4 + 3]).toBe(0);   // le grand, bouché
     expect(img.data[(20 * 40 + 28) * 4 + 3]).toBe(255); // le petit, intact
+  });
+});
+
+describe("stack", () => {
+  function solid(w: number, h: number, v: number): Rgba {
+    const img: Rgba = { width: w, height: h, data: new Uint8Array(w * h * 4).fill(255) };
+    for (let i: number = 0; i < w * h; i++) { img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; }
+    return img;
+  }
+
+  it("empile les images dans l'ordre reçu", () => {
+    const out: Rgba = stack([solid(4, 2, 10), solid(4, 3, 20)]);
+    expect(out.width).toBe(4);
+    expect(out.height).toBe(5);
+    expect(out.data[0]).toBe(10);
+    expect(out.data[(2 * 4) * 4]).toBe(20);
+  });
+
+  it("aligne à gauche et complète en BLANC", () => {
+    // Un remplissage transparent serait pris pour du dessin déjà découpé par le
+    // détourage, qui laisserait une frange le long du raccord.
+    const out: Rgba = stack([solid(2, 1, 10), solid(5, 1, 20)]);
+    expect(out.width).toBe(5);
+    expect(out.data[(0 * 5 + 0) * 4]).toBe(10);       // la source étroite
+    expect(out.data[(0 * 5 + 4) * 4]).toBe(255);      // le complément
+    expect(out.data[(0 * 5 + 4) * 4 + 3]).toBe(255);  // opaque, pas transparent
+  });
+
+  it("rend l'image seule inchangée", () => {
+    const one: Rgba = solid(3, 3, 42);
+    expect(stack([one])).toEqual(one);
   });
 });

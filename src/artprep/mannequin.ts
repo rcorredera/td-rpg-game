@@ -142,12 +142,16 @@ export function drawPose(img: Rgba, j: Joints, view: View, ox: number, oy: numbe
  * planche que celle demandée au générateur, ce qui permet de la passer dans la
  * chaîne pour vérifier qu'elle s'y découpe bien.
  */
-export function mannequinSheet(): Rgba {
+export function mannequinSheet(only?: View): Rgba {
+  // Une seule direction à la fois, sur demande : le générateur tient les quatre
+  // poses d'une rangée mais décroche sur douze cases — mesuré, il rend alors un
+  // profil à deux poses dupliquées et un dos immobile (ADR-074).
+  const rows: readonly View[] = only === undefined ? VIEWS : [only];
   const width: number = CELL_W * POSES;
-  const height: number = CELL_H * VIEWS.length;
+  const height: number = CELL_H * rows.length;
   const img: Rgba = { width, height, data: new Uint8Array(width * height * 4).fill(255) };
 
-  VIEWS.forEach((view, row) => {
+  rows.forEach((view, row) => {
     const baseline: number = (row + 1) * CELL_H - GROUND_PAD;
     for (let pose: number = 0; pose < POSES; pose++) {
       drawPose(img, walkPose(pose), view, pose * CELL_W + CELL_W / 2, baseline);
