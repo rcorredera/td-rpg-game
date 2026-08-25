@@ -3,6 +3,7 @@
 //
 //   npm run mannequin -- <destination>
 //   npm run mannequin -- <destination> --view front | side | back
+//   npm run mannequin -- <destination> --pieces   (planche de pièces détachées)
 //
 // Le fichier produit se donne à Gemini EN MÊME TEMPS que le prompt : il montre
 // les poses au lieu de les décrire. Aucun nom d'asset n'est écrit ici avec son
@@ -13,7 +14,7 @@
 // ============================================================
 
 import { type Rgba } from "./image";
-import { CELL_H, CELL_W, mannequinSheet } from "./mannequin";
+import { CELL_H, CELL_W, mannequinSheet, piecesSheet } from "./mannequin";
 import { encode } from "./png";
 import { POSES, type View, VIEWS } from "./pose";
 
@@ -38,14 +39,15 @@ if (dst === undefined) {
   process.exit(1);
 }
 
-const sheet: Rgba = mannequinSheet(only);
+const pieces: boolean = argv.includes("--pieces");
+const sheet: Rgba = pieces ? piecesSheet() : mannequinSheet(only);
 writeFileSync(dst, encode(sheet));
 
 console.log([
   `mannequin -> ${dst}`,
   `  planche         ${sheet.width}x${sheet.height}`,
-  `  grille          ${only ? 1 : VIEWS.length} vue(s) x ${POSES} pose(s), cases de ${CELL_W}x${CELL_H}`,
-  `  vues            ${only ?? VIEWS.join(", ")}`,
+  pieces ? `  grille          pièces détachées, cases de ${CELL_W}x${CELL_H}` : `  grille          ${only ? 1 : VIEWS.length} vue(s) x ${POSES} pose(s), cases de ${CELL_W}x${CELL_H}`,
+  pieces ? `  pièces          tête x3, torse x3, bras, avant-bras, cuisse, jambe` : `  vues            ${only ?? VIEWS.join(", ")}`,
   "",
   "  À joindre au prompt comme image de référence : il montre les poses",
   "  au lieu de les décrire. Le membre le plus éloigné est assombri.",

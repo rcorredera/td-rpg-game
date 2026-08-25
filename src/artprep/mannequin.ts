@@ -10,8 +10,8 @@
 
 import { type Rgba } from "./image";
 import {
-  FOOT_R, HEAD_R, type Joints, POSES, project, type Projected,
-  type Vec3, type View, VIEWS, walkPose,
+  FOOT_R, FOREARM, HEAD_R, HIP_Y, type Joints, NECK_Y, NOSE, POSES, project,
+  type Projected, SHIN, THIGH, UPPER_ARM, type Vec3, type View, VIEWS, walkPose,
 } from "./pose";
 
 /** Une case de la planche. Assez grande pour que le générateur lise la pose. */
@@ -158,6 +158,81 @@ export function mannequinSheet(only?: View): Rgba {
     }
     // Ligne de sol : continue d'un bord à l'autre, comme l'exige `--strip`.
     for (let x: number = 0; x < width; x++) put(img, x, baseline, [120, 120, 128]);
+  });
+  return img;
+}
+
+
+/**
+ * Grossissement des pièces sur leur planche.
+ *
+ * Les proportions RELATIVES sont conservées — une tête reste deux fois plus
+ * large qu'une cuisse. C'est ce qui permet au générateur de dessiner des pièces
+ * qui iront ensemble ; les mettre chacune à la taille de sa case donnerait un
+ * personnage aux membres dépareillés une fois assemblé.
+ */
+const PIECE_SCALE: number = 2;
+
+/** Segment vertical centré dans sa case. Une pièce se range à PLAT, jamais dans
+ *  une pose : c'est le moteur qui l'inclinera (piste des pièces détachées, non tranchée). */
+function upright(img: Rgba, cx: number, cy: number, len: number, r: number): void {
+  const half: number = len / 2;
+  const a: Projected = { x: cx, y: cy - half, depth: 0 };
+  const b: Projected = { x: cx, y: cy + half, depth: 0 };
+  capsule(img, a, b, r + OUTLINE, INK);
+  capsule(img, a, b, r, NEAR);
+}
+
+/** Tête vue sous un angle : un disque, plus le nez qui donne l'orientation. */
+function headPiece(img: Rgba, cx: number, cy: number, view: View): void {
+  const r: number = HEAD_R * PIECE_SCALE;
+  const c: Projected = { x: cx, y: cy, depth: 0 };
+  capsule(img, c, c, r + OUTLINE, INK);
+  capsule(img, c, c, r, NEAR);
+  if (view === "back") return;                       // de dos, le nez est caché
+  const reach: number = NOSE * PIECE_SCALE;
+  const tip: Projected = view === "side"
+    ? { x: cx + reach, y: cy - r * 0.25, depth: 0 }   // de profil, il dépasse
+    : { x: cx, y: cy - r * 0.25, depth: 0 };          // de face, il reste au centre
+  capsule(img, { x: cx, y: cy - r * 0.25, depth: 0 }, tip, 9 * PIECE_SCALE * 0.6, INK);
+}
+
+/**
+ * Planche de PIÈCES DÉTACHÉES : ce qu'il faut dessiner pour qu'un moteur
+ * assemble lui-même toutes les poses (piste des pièces détachées, non tranchée).
+ *
+ * Trois têtes et trois torses — un par direction, les seules pièces dont
+ * l'aspect change avec l'angle —, puis quatre membres réutilisés partout. Le
+ * générateur n'a plus rien à savoir du mouvement : il dessine des objets à plat,
+ * ce qu'il réussit. Le cycle vient de `pose.ts`, qui est testé.
+ *
+ * Les deux côtés du corps ne sont pas demandés : le rendu réutilise la même
+ * pièce à gauche et à droite en assombrissant celle qui s'éloigne. Cela divise
+ * par deux ce qu'il faut dessiner et supprime le risque qu'un bras gauche et un
+ * bras droit ne se ressemblent pas.
+ */
+export function piecesSheet(): Rgba {
+  const cols: number = 4;
+  const rows: number = 3;
+  const width: number = CELL_W * cols;
+  const height: number = CELL_H * rows;
+  const img: Rgba = { width, height, data: new Uint8Array(width * height * 4).fill(255) };
+  const cx = (col: number): number => col * CELL_W + CELL_W / 2;
+  const cy = (row: number): number => row * CELL_H + CELL_H / 2;
+
+  VIEWS.forEach((view, col) => {
+    headPiece(img, cx(col), cy(0), view);
+    upright(img, cx(col), cy(1), (NECK_Y - HIP_Y) * PIECE_SCALE, TORSO_R * PIECE_SCALE);
+  });
+
+  const limbs: readonly [number, number][] = [
+    [UPPER_ARM, LIMB_R - 2],
+    [FOREARM, LIMB_R - 3],
+    [THIGH, LIMB_R],
+    [SHIN, LIMB_R],
+  ];
+  limbs.forEach(([len, r], col) => {
+    upright(img, cx(col), cy(2), len * PIECE_SCALE, r * PIECE_SCALE);
   });
   return img;
 }
