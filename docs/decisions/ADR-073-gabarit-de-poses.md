@@ -73,6 +73,39 @@ Le test du balancier a relevé qu'aux poses de passage, mes bras accompagnaient 
 jambe du même côté au lieu de la contrer. Défaut invisible sur une image fixe,
 qui aurait donné un balancier juste aux contacts et faux entre les deux.
 
+### Le gabarit est invocable dans le bac à sable
+
+Une créature , greffée sur le pack du bac à sable et absente du jeu.
+L'intérêt n'est pas de la regarder mais de s'en servir de TÉMOIN : sa planche
+étant correcte par construction, ce qu'on juge en l'invoquant est le RENDU —
+orientation selon la direction prise, cycle calé sur la distance, ancrage par les
+pieds. Si le gabarit se déplace mal, la faute est au moteur, pas à l'asset.
+
+Cela a demandé de corriger un couplage :  lisait le
+ global alors qu'il rend un run donné, et se serait planté sur une
+créature qui n'existe que dans le pack du bac à sable. Il reçoit désormais le
+pack en cours.
+
+Le gabarit n'entre ni dans le Bestiaire ni dans le compte des créatures à
+découvrir : il n'appartient pas à .
+
+### Le gabarit est invocable dans le bac à sable
+
+Une créature `mannequin`, greffée sur le pack du bac à sable et absente du jeu.
+L'intérêt n'est pas de la regarder mais de s'en servir de TÉMOIN : sa planche
+étant correcte par construction, ce qu'on juge en l'invoquant est le RENDU —
+orientation selon la direction prise, cycle calé sur la distance, ancrage par les
+pieds. Si le gabarit se déplace mal, la faute est au moteur, pas à l'asset.
+
+Cela a demandé de corriger un couplage : `BattlefieldEntities` lisait le
+`CONTENT` global alors qu'il rend un run donné, et se serait planté sur une
+créature qui n'existe que dans le pack du bac à sable. Il reçoit désormais le
+pack en cours — un module qui rend un run n'a pas à consulter le catalogue du
+jeu entier.
+
+Le gabarit n'entre ni dans le Bestiaire ni dans le compte des créatures à
+découvrir : il n'appartient pas à `CONTENT.enemies`. Poids de l'asset : 13 Ko.
+
 ### Reste
 
 - Le gabarit est produit par `npm run mannequin -- <destination>`, à joindre au

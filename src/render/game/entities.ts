@@ -7,7 +7,7 @@
 import type Phaser from "phaser";
 import { CONTENT } from "../../content/index";
 import { specOf } from "../../core/sim";
-import type { EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2 } from "../../core/types";
+import type { ContentPack, EnemyDef, EnemyState, HeroState, TowerDef, TowerLevelStats, TowerSpecDef, TowerState, Vec2 } from "../../core/types";
 import { flyPose, idlePose, STILL, walkFrameByDistance, walkPose } from "../assets/animation";
 import type { UnitPose } from "../assets/animation";
 import { ENEMY_SIZE_FALLBACK, enemyView, fitSquare, walkFrameCount } from "../assets/sprites";
@@ -39,6 +39,16 @@ const LEGACY_ORIGIN_Y: number = 0.62;
  *  et recul des tours au tir (par slotIndex). Persiste tout le run — reconstruit
  *  seulement par `GameScene.init` (nouveau run), jamais par `relayout`. */
 export class BattlefieldEntities {
+  /**
+   * Pack de contenu du run EN COURS, et non le `CONTENT` global.
+   *
+   * Le bac à sable joue un pack dérivé qui porte une créature absente du jeu —
+   * le gabarit de poses (ADR-073). Lire le global ici la rendrait introuvable et
+   * le rendu planterait sur une définition manquante. Plus largement, un module
+   * qui rend un run donné n'a pas à consulter le catalogue du jeu entier.
+   */
+  constructor(private readonly content: ContentPack = CONTENT) {}
+
   private facing = new Map<number, FacingState>();
   private towerRecoil = new Map<number, number>();
   /** Sommet RÉEL du sprite affiché cette frame (unités monde), par uid. Les
@@ -195,12 +205,12 @@ export class BattlefieldEntities {
   }
 
   isBoss(e: EnemyState): boolean {
-    return e.maxHp > CONTENT.enemies[e.defId]!.hp * 1.8;
+    return e.maxHp > (this.content.enemies[e.defId]?.hp ?? Infinity) * 1.8;
   }
 
   /** Position/scale/flip/teinte du sprite d'ennemi (appelé chaque frame par SpriteLayer). */
   placeEnemy(s: Phaser.GameObjects.Sprite, e: EnemyState, now: number): void {
-    const def: EnemyDef = CONTENT.enemies[e.defId]!;
+    const def: EnemyDef = this.content.enemies[e.defId]!;
     // Animation procédurale (ADR-017) : marche, vol ou respiration selon l'état.
     // Le déphasage par uid évite qu'une horde entière bouge au même rythme.
     const phase: number = (e.uid % 17) / 17;

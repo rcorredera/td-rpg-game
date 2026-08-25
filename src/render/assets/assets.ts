@@ -46,6 +46,8 @@ const CRAFTPIX: Record<string, string> = {
   spr_dark_knight: "dark_knight.png",
   spr_diablotin: "diablotin.png",
   spr_goblin: "goblin.png",
+  // Gabarit de poses du bac à sable (ADR-073) : 13 Ko, jamais affiché en jeu.
+  spr_mannequin: "mannequin.png",
   spr_orc: "orc.png",
   spr_brute: "brute.png",
   spr_golem: "golem.png",

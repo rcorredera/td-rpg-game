@@ -20,7 +20,7 @@
 // pendant qu'on observe.
 // ============================================================
 
-import type { ChapterDef, WaveDef } from "../core/types";
+import type { ChapterDef, ContentPack, EnemyDef, WaveDef } from "../core/types";
 import { ENEMIES } from "./enemies";
 
 /** Identifiant du chapitre bac à sable, cité par le Campement. */
@@ -75,3 +75,40 @@ export const SANDBOX_CHAPTER: ChapterDef = {
   },
   waves: paradeWaves(),
 };
+
+/**
+ * Le GABARIT DE POSES, invocable comme une créature (ADR-073).
+ *
+ * Une planche dont la justesse ne dépend d'aucun jugement : le cycle y est
+ * correct par construction, l'alternance des appuis garantie, l'orientation
+ * exacte. Ce qu'on regarde en l'invoquant n'est donc plus l'asset mais le RENDU
+ * — orientation selon la direction, cycle calé sur la distance, ancrage par les
+ * pieds. Si le gabarit se déplace mal, la faute est au moteur.
+ *
+ * Il n'appartient PAS à `CONTENT.enemies` : le bac à sable le greffe sur un pack
+ * dérivé. Un mannequin gris n'a rien à faire dans le Bestiaire, ni dans le
+ * compte des créatures à découvrir.
+ *
+ * Valeurs volontairement inoffensives — il ne s'agit pas d'équilibrer quoi que
+ * ce soit, seulement de le faire marcher assez longtemps pour l'observer.
+ */
+export const MANNEQUIN: EnemyDef = {
+  id: "mannequin",
+  name: "Gabarit",
+  lore: "Le patron des cycles de marche. Ne figure dans aucune vague.",
+  hp: 400,
+  speed: 42,
+  flying: false,
+  goldReward: 0,
+  damageToCastle: 0,
+  meleeDps: 0,
+};
+
+/** Pack du bac à sable : le contenu du jeu, plus le gabarit, moins l'Histoire. */
+export function sandboxPack(base: ContentPack): ContentPack {
+  return {
+    ...base,
+    chapters: [SANDBOX_CHAPTER],
+    enemies: { ...base.enemies, [MANNEQUIN.id]: MANNEQUIN },
+  };
+}
