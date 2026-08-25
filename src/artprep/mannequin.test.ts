@@ -19,7 +19,7 @@ function darkIn(img: Rgba, col: number, row: number): number {
   let n: number = 0;
   for (let y: number = row * CELL_H; y < (row + 1) * CELL_H && y < img.height; y++) {
     for (let x: number = col * CELL_W; x < (col + 1) * CELL_W && x < img.width; x++) {
-      if (img.data[(y * img.width + x) * 4] < 60) n++;
+      if (img.data[(y * img.width + x) * 4]! < 60) n++;
     }
   }
   return n;
@@ -30,7 +30,7 @@ function drawnIn(img: Rgba, col: number, row: number): number {
   let n: number = 0;
   for (let y: number = row * CELL_H; y < (row + 1) * CELL_H && y < img.height; y++) {
     for (let x: number = col * CELL_W; x < (col + 1) * CELL_W && x < img.width; x++) {
-      if (img.data[(y * img.width + x) * 4] < 240) n++;
+      if (img.data[(y * img.width + x) * 4]! < 240) n++;
     }
   }
   return n;
@@ -106,7 +106,7 @@ describe("piecesSheet", () => {
     let maxX: number = 0;
     for (let y: number = 2 * CELL_H; y < 3 * CELL_H; y++) {
       for (let x: number = col * CELL_W; x < (col + 1) * CELL_W; x++) {
-        if (sheet.data[(y * sheet.width + x) * 4] < 240) {
+        if (sheet.data[(y * sheet.width + x) * 4]! < 240) {
           minX = Math.min(minX, x - col * CELL_W);
           maxX = Math.max(maxX, x - col * CELL_W);
         }
