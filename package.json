@@ -10,7 +10,8 @@
     "test": "vitest run",
     "lint": "eslint .",
     "balance": "vite-node src/balance/cli.ts",
-    "sprite": "vite-node src/artprep/cli.ts"
+    "sprite": "vite-node src/artprep/cli.ts",
+    "mannequin": "vite-node src/artprep/mannequin.cli.ts"
   },
   "dependencies": {
     "phaser": "^3.80.1"

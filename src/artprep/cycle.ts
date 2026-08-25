@@ -42,6 +42,28 @@ export const DUPLICATE_POSE_MAX: number = 0.08;
  */
 export const FLAT_CYCLE_MAX: number = 0.4;
 
+/**
+ * Même seuil, pour une rangée vue de FACE ou de DOS.
+ *
+ * Bien plus bas, et ce n'est pas une indulgence : vues de face, les jambes se
+ * déplacent en PROFONDEUR, et leur mouvement ne change presque pas la
+ * silhouette. Seuls le raccourci et l'ombre le portent.
+ *
+ * Mesuré sur le gabarit de référence (ADR-073), dont le cycle est correct par
+ * construction : 23 % de face et 24 % de dos, contre plus de 40 % de profil.
+ * Appliquer le seuil du profil aux vues frontales revenait à exiger l'impossible
+ * — l'outil refusait sa propre référence.
+ */
+export const FLAT_FRONTAL_MAX: number = 0.18;
+
+/**
+ * Rangée du PROFIL dans une planche : la deuxième, ou l'unique s'il n'y en a
+ * qu'une (même convention que `facingCell`, ADR-067).
+ */
+export function profileRow(rows: number): number {
+  return rows >= 2 ? 1 : 0;
+}
+
 /** Écart entre deux poses d'une même rangée, ramené à leur encre commune. */
 export interface PosePair {
   a: number;
@@ -94,7 +116,14 @@ export function cycleReport(
     for (let a: number = 0; a < poses; a++) {
       for (let b: number = a + 1; b < poses; b++) {
         const diff: number = legDissimilarity(sheet, cellW, r * poses + a, r * poses + b, legTopRatio);
-        if (diff < closest.diff) closest = { a, b, diff };
+        // La paire la plus ressemblante ne se cherche que parmi les poses
+        // VOISINES dans le cycle, bouclage compris. Vu de profil, les deux poses
+        // de CONTACT d'une marche saine ont la même silhouette au pixel près —
+        // seules l'occlusion et l'ombre disent quelle jambe est devant. Les
+        // comparer entre elles ferait déclarer « doublon » tout cycle correct,
+        // et le gabarit de référence a été le premier à le prouver (ADR-073).
+        const adjacent: boolean = b - a === 1 || (a === 0 && b === poses - 1);
+        if (adjacent && diff < closest.diff) closest = { a, b, diff };
         if (diff > widest.diff) widest = { a, b, diff };
       }
     }
@@ -113,9 +142,12 @@ export function cycleWarnings(
   report: readonly RowCycle[],
   duplicateMax: number = DUPLICATE_POSE_MAX,
   flatMax: number = FLAT_CYCLE_MAX,
+  frontalMax: number = FLAT_FRONTAL_MAX,
 ): string[] {
   const out: string[] = [];
+  const profile: number = profileRow(report.length);
   for (const r of report) {
+    const limit: number = r.row === profile ? flatMax : frontalMax;
     // Une rangée d'une seule pose n'a pas de paire : `widest.diff` vaut 0 sans
     // que rien ne cloche. Le diagnostic ne s'applique qu'à un vrai cycle.
     if (r.closest.a === r.closest.b) continue;
@@ -123,7 +155,7 @@ export function cycleWarnings(
       out.push(`rangée ${r.row} : les poses ${r.closest.a} et ${r.closest.b} sont la MÊME image `
         + `(${(r.closest.diff * 100).toFixed(0)} % d'écart aux jambes) — le cycle en compte une de moins qu'annoncé.`);
     }
-    if (r.widest.diff < flatMax) {
+    if (r.widest.diff < limit) {
       out.push(`rangée ${r.row} : aucune alternance d'appui (au mieux ${(r.widest.diff * 100).toFixed(0)} % `
         + `d'écart aux jambes) — la créature glissera au lieu de marcher.`);
     }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { type Rgba } from "./image";
 import {
   cycleReport, cycleWarnings, DUPLICATE_POSE_MAX, FLAT_CYCLE_MAX,
-  legDissimilarity, type RowCycle,
+  FLAT_FRONTAL_MAX, legDissimilarity, profileRow, type RowCycle,
 } from "./cycle";
 
 const CELL: number = 20;
@@ -100,5 +100,58 @@ describe("cycleWarnings", () => {
 
   it("place les seuils dans le bon ordre", () => {
     expect(DUPLICATE_POSE_MAX).toBeLessThan(FLAT_CYCLE_MAX);
+  });
+});
+
+describe("cycleReport — les paires voisines", () => {
+  /** Cycle vu de PROFIL : les deux contacts ont la MÊME silhouette, seules
+   *  l'occlusion et l'ombre disent quelle jambe est devant. C'est le cas normal
+   *  d'une marche, et le gabarit de référence l'a mis en évidence (ADR-073). */
+  const PROFILE: Rgba = sheet([[3, 16], [9, 11], [3, 16], [9, 11]]);
+
+  it("NE COMPARE PAS deux poses opposées du cycle", () => {
+    // Poses 0 et 2 identiques : sans la restriction aux voisines, toute marche
+    // de profil serait déclarée « doublon » et l'outil refuserait sa référence.
+    const w: string[] = cycleWarnings(cycleReport(PROFILE, CELL, 1, 4));
+    expect(w.some(s => s.includes("MÊME image"))).toBe(false);
+  });
+
+  it("dénonce toujours deux poses VOISINES identiques", () => {
+    const w: string[] = cycleWarnings(cycleReport(sheet([[3, 16], [3, 16], [9, 11], [4, 15]]), CELL, 1, 4));
+    expect(w.some(s => s.includes("MÊME image"))).toBe(true);
+  });
+
+  it("boucle : la dernière pose est voisine de la première", () => {
+    // Un cycle se referme. Sans le bouclage, un doublon entre la première et la
+    // dernière case passerait, et c'est exactement celui du gobelin.
+    const w: string[] = cycleWarnings(cycleReport(sheet([[3, 16], [9, 11], [4, 15], [3, 16]]), CELL, 1, 4));
+    expect(w.some(s => s.includes("MÊME image"))).toBe(true);
+  });
+});
+
+describe("cycleWarnings — seuil par vue", () => {
+  it("est plus EXIGEANT sur la rangée de profil que sur les frontales", () => {
+    // De face, les jambes bougent en profondeur : la silhouette varie peu, et le
+    // seuil du profil y exigerait l'impossible.
+    expect(FLAT_FRONTAL_MAX).toBeLessThan(FLAT_CYCLE_MAX);
+  });
+
+  it("applique le seuil du profil à la DEUXIÈME rangée", () => {
+    expect(profileRow(3)).toBe(1);
+    expect(profileRow(1)).toBe(0);
+  });
+
+  it("dénonce la rangée de PROFIL là où il laisse passer les frontales", () => {
+    // Amplitude modérée, la même dans les trois rangées : suffisante de face et
+    // de dos, où les jambes bougent en profondeur, insuffisante de profil, où
+    // rien ne masque le mouvement. Une seule des trois doit être dénoncée.
+    const modest: RowCycle[] = [0, 1, 2].map(row => ({
+      row,
+      closest: { a: 0, b: 1, diff: 0.2 },
+      widest: { a: 0, b: 2, diff: 0.25 },
+    }));
+    const w: string[] = cycleWarnings(modest);
+    expect(w.length).toBe(1);
+    expect(w[0]).toContain("rangée 1");
   });
 });

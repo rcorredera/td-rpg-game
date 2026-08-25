@@ -80,3 +80,4 @@ Cet index est généré depuis les titres des fichiers : à chaque nouvel ADR, a
 | 070 | L'équipement ne change pas de main : retirer la pose, ou la retourner | [`ADR-070-coherence-de-l-equipement.md`](ADR-070-coherence-de-l-equipement.md) |
 | 071 | Les poches de fond enfermées se recensent toujours, se bouchent sur demande | [`ADR-071-poches-de-fond-enfermees.md`](ADR-071-poches-de-fond-enfermees.md) |
 | 072 | Une planche doit prouver qu'elle marche | [`ADR-072-le-cycle-doit-bouger.md`](ADR-072-le-cycle-doit-bouger.md) |
+| 073 | Un gabarit de poses dessiné, plutôt qu'un prompt qui les décrit | [`ADR-073-gabarit-de-poses.md`](ADR-073-gabarit-de-poses.md) |
