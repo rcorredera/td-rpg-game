@@ -327,15 +327,18 @@ if (!fillHolesFlag && holes.length > 0) {
   console.warn(`  ⚠ ${holes.length} poche(s) de fond enfermée(s) — creux entre un bras et le torse, échancrure d'arme.`);
   console.warn("    Elles restent BLANCHES en jeu. Les regarder, puis relancer avec --fill-holes si c'est bien du fond.");
 }
-// Une créature qui change de taille selon la direction qu'elle prend. Le risque
-// propre à la génération image par image (ADR-074) : chaque rangée est correcte
-// isolément, et c'est leur RAPPORT qui cloche. Le seuil vaut un douzième de la
-// hauteur de case — en deçà, l'écart se confond avec le jeu des poses.
-const sizeSpread: number = packed?.heightSpread ?? 0;
-if (packed !== null && sizeSpread > packed.cellH / 12) {
-  console.warn(`  ⚠ ${sizeSpread} px d'écart de taille entre poses (${(sizeSpread / packed.cellH * 100).toFixed(0)} % de la case)`);
-  console.warn(`    ${sources.length > 1 ? "Les sources n'ont pas la même échelle : régénérer en imposant la taille du personnage." : "Poses dessinées à des échelles différentes dans la source."}`);
-}
+// L'écart de taille est RAPPORTÉ mais n'alerte PAS.
+//
+// Un seuil avait été posé à un douzième de la case. Le gabarit de référence, dont
+// les trois vues ont pourtant des hauteurs identiques au pixel près en amont
+// (mesuré : 238, 245, 238, 245 dans chacune), le déclenchait avec 57 px. L'écart
+// naît donc quelque part dans le découpage ou l'empaquetage, et la cause n'est
+// pas établie.
+//
+// Un détecteur dont on ne sait pas expliquer les déclenchements est pire
+// qu'absent : il apprend à ignorer les avertissements. La mesure reste au
+// rapport, où elle sert à comparer deux tirages ; l'alerte reviendra quand on
+// saura ce qu'elle mesure vraiment.
 // Le défaut le plus coûteux : une planche impeccable où la créature ne marche
 // pas. Il survit à toutes les autres vérifications, et se voit seulement en jeu.
 for (const w of cycleAlerts) {
