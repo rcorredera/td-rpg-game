@@ -103,9 +103,9 @@ interface Side {
  * relève pas sur une image fixe.
  */
 const LEFT: readonly Side[] = [
-  { thigh: 30, knee: 4, arm: -25, elbow: 12, lift: false },   // contact, jambe gauche devant
+  { thigh: 30, knee: 4, arm: -34, elbow: 14, lift: false },   // contact, jambe gauche devant
   { thigh: -10, knee: 14, arm: 6, elbow: 16, lift: false },   // appui, la gauche pousse
-  { thigh: -25, knee: 10, arm: 25, elbow: 12, lift: false },  // contact inverse, gauche derrière
+  { thigh: -25, knee: 10, arm: 34, elbow: 14, lift: false },  // contact inverse, gauche derrière
   { thigh: 6, knee: 60, arm: -6, elbow: 16, lift: true },     // passage, la gauche remonte
 ];
 

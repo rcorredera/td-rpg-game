@@ -23,6 +23,15 @@ export const GROUND_PAD: number = 14;
 /** Épaisseur des membres, en pixels de rayon. */
 const LIMB_R: number = 13;
 const TORSO_R: number = 30;
+/**
+ * Demi-épaisseur du torse vu de PROFIL.
+ *
+ * Un tronc est large de face et mince de profil ; une capsule unique ne peut pas
+ * faire les deux. Au rayon de face, le torse avalait le bras arrière et on ne
+ * voyait plus qu un bras balancer — le PO a lu ça comme « les bras ne bougent
+ * pas bien », et il avait raison : le mouvement existait, le torse le cachait.
+ */
+const TORSO_R_SIDE: number = 22;
 const OUTLINE: number = 4;
 /** Rayon du nez. Assez fin pour rester un REPÈRE : plus épais, il se lisait de
  *  face comme un œil unique au milieu du visage, et le générateur pouvait le
@@ -81,14 +90,12 @@ export interface Bone {
   b: Projected;
   r: number;
   depth: number;
-  /** Dessiner une rotule à l extrémité `a` : le point où ce membre plie. */
-  joint?: boolean;
 }
 
-function bone(from: Vec3, to: Vec3, view: View, r: number, ox: number, oy: number, joint: boolean = false): Bone {
+function bone(from: Vec3, to: Vec3, view: View, r: number, ox: number, oy: number): Bone {
   const a: Projected = place(project(from, view), ox, oy);
   const b: Projected = place(project(to, view), ox, oy);
-  return { a, b, r, depth: (a.depth + b.depth) / 2, joint };
+  return { a, b, r, depth: (a.depth + b.depth) / 2 };
 }
 
 /** Passe du repère du squelette (y vers le haut, sol à 0) à celui de l'image. */
@@ -116,13 +123,6 @@ export function paintBones(img: Rgba, bones: readonly Bone[]): void {
     const fill: readonly [number, number, number] = b.depth < -0.5 ? FAR : NEAR;
     capsule(img, b.a, b.b, b.r + OUTLINE, INK);
     capsule(img, b.a, b.b, b.r, fill);
-    // Rotule à l'extrémité proximale : c'est elle qui montre OÙ le membre plie.
-    // Sans elle, une cuisse et son tibia forment un trait continu dont l'angle
-    // se devine plutôt qu'il ne se voit.
-    if (b.joint) {
-      capsule(img, b.a, b.a, b.r * 0.62 + 2, INK);
-      capsule(img, b.a, b.a, b.r * 0.62, fill);
-    }
   }
 }
 
@@ -135,21 +135,17 @@ export function paintBones(img: Rgba, bones: readonly Bone[]): void {
  * fausses une pose sur deux.
  */
 export function drawPose(img: Rgba, j: Joints, view: View, ox: number, oy: number): void {
-  // `joint` sur le segment DISTAL de chaque membre : la rotule se dessine à son
-  // extrémité proximale, c'est-à-dire au genou et au coude. La marquer sur le
-  // segment proximal la placerait à la hanche et à l'épaule, où rien ne plie de
-  // façon lisible.
   const bones: Bone[] = [
     bone(j.hip[0], j.knee[0], view, LIMB_R, ox, oy),
-    bone(j.knee[0], j.foot[0], view, LIMB_R, ox, oy, true),
-    bone(j.foot[0], j.toe[0], view, FOOT_R, ox, oy, true),
+    bone(j.knee[0], j.foot[0], view, LIMB_R, ox, oy),
+    bone(j.foot[0], j.toe[0], view, FOOT_R, ox, oy),
     bone(j.hip[1], j.knee[1], view, LIMB_R, ox, oy),
-    bone(j.knee[1], j.foot[1], view, LIMB_R, ox, oy, true),
-    bone(j.foot[1], j.toe[1], view, FOOT_R, ox, oy, true),
+    bone(j.knee[1], j.foot[1], view, LIMB_R, ox, oy),
+    bone(j.foot[1], j.toe[1], view, FOOT_R, ox, oy),
     bone(j.shoulder[0], j.elbow[0], view, LIMB_R - 2, ox, oy),
-    bone(j.elbow[0], j.hand[0], view, LIMB_R - 3, ox, oy, true),
+    bone(j.elbow[0], j.hand[0], view, LIMB_R - 3, ox, oy),
     bone(j.shoulder[1], j.elbow[1], view, LIMB_R - 2, ox, oy),
-    bone(j.elbow[1], j.hand[1], view, LIMB_R - 3, ox, oy, true),
+    bone(j.elbow[1], j.hand[1], view, LIMB_R - 3, ox, oy),
   ];
   // Mains : une boule au bout de l'avant-bras. Sans elle, le bras s'arrête net
   // et le générateur n'a aucune raison d'y dessiner une main — or c'est là que
@@ -158,7 +154,7 @@ export function drawPose(img: Rgba, j: Joints, view: View, ox: number, oy: numbe
     const h: Bone = bone(j.hand[i]!, j.hand[i]!, view, LIMB_R - 2, ox, oy);
     return h;
   });
-  const torso: Bone = bone(j.pelvis, j.neck, view, TORSO_R, ox, oy);
+  const torso: Bone = bone(j.pelvis, j.neck, view, view === "side" ? TORSO_R_SIDE : TORSO_R, ox, oy);
   const head: Bone = bone(j.head, j.head, view, HEAD_R, ox, oy);
   // Le nez part du centre de la tête : sa moitié arrière est donc toujours
   // enfouie dans le crâne, et seule la pointe dépasse — de face au centre du

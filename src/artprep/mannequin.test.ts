@@ -162,12 +162,4 @@ describe("paintBones — le contour survit au voisin", () => {
     expect(inkBetween(img, 50, 35, 45)).toBe(0);
   });
 
-  it("dessine une rotule là où le membre plie", () => {
-    const plain: Rgba = blank(120, 100);
-    const jointed: Rgba = blank(120, 100);
-    const b: Bone = { a: { x: 60, y: 20, depth: 0 }, b: { x: 60, y: 80, depth: 0 }, r: 14, depth: 0 };
-    paintBones(plain, [b]);
-    paintBones(jointed, [{ ...b, joint: true }]);
-    expect(inkBetween(jointed, 20, 50, 70)).toBeGreaterThan(inkBetween(plain, 20, 50, 70));
-  });
 });
