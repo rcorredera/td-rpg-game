@@ -3,7 +3,7 @@ import {
   BACKGROUND_MIN, components, crop, downscale, dropFragments, feather, fillHoles, findHoles, floodBackground, FRINGE_LUMA,
   type Hole, isFringe,
   type FragmentResult, type FringeResult,
-  isBorder, lightBorderCount, luma, opaqueBox, type Rgba, stack, stripFringe,
+  alignWidths, isBorder, lightBorderCount, luma, opaqueBox, type Rgba, stack, stripFringe,
 } from "./image";
 
 /** Image vide de `w`×`h`, entièrement transparente. */
@@ -491,5 +491,54 @@ describe("stack", () => {
   it("rend l'image seule inchangée", () => {
     const one: Rgba = solid(3, 3, 42);
     expect(stack([one])).toEqual(one);
+  });
+});
+
+describe("alignWidths", () => {
+  function band(w: number, h: number): Rgba {
+    const img: Rgba = { width: w, height: h, data: new Uint8Array(w * h * 4).fill(255) };
+    return img;
+  }
+
+  it("ramène tout le monde à la largeur de la plus large", () => {
+    const out: Rgba[] = alignWidths([band(100, 50), band(80, 40), band(60, 30)]);
+    for (const p of out) expect(p.width).toBe(100);
+  });
+
+  it("préserve le RATIO de chaque source", () => {
+    // Étirer une source en largeur seule déformerait le personnage, et la
+    // planche ferait changer sa carrure d'une direction à l'autre.
+    const out: Rgba[] = alignWidths([band(100, 50), band(80, 40)]);
+    expect(out[1]!.height).toBe(50);
+  });
+
+  it("ne touche à rien quand les largeurs sont déjà égales", () => {
+    const a: Rgba = band(64, 32);
+    const b: Rgba = band(64, 48);
+    const out: Rgba[] = alignWidths([a, b]);
+    expect(out[0]).toBe(a);
+    expect(out[1]).toBe(b);
+  });
+
+  it("laisse la ligne de sol COUVRIR toute la largeur empilée", () => {
+    // Le défaut réel : `stack` complète en blanc sans prolonger la ligne de sol.
+    // Une source plus étroite tombait alors sous le seuil de continuité et sa
+    // ligne cessait d'être reconnue — deux rangées fusionnaient en silence.
+    const wide: Rgba = band(120, 20);
+    const narrow: Rgba = band(60, 20);
+    const paint = (img: Rgba, y: number): void => {
+      for (let x: number = 0; x < img.width; x++) {
+        const i: number = (y * img.width + x) * 4;
+        img.data[i] = 90; img.data[i + 1] = 90; img.data[i + 2] = 90;
+      }
+    };
+    paint(wide, 19);
+    paint(narrow, 19);
+    const piled: Rgba = stack(alignWidths([wide, narrow]));
+    let dark: number = 0;
+    for (let x: number = 0; x < piled.width; x++) {
+      if (piled.data[((piled.height - 1) * piled.width + x) * 4]! < 200) dark++;
+    }
+    expect(dark).toBe(piled.width);
   });
 });

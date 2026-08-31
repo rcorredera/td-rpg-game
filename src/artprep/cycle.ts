@@ -59,9 +59,33 @@ export const FLAT_FRONTAL_MAX: number = 0.18;
 /**
  * Rangée du PROFIL dans une planche : la deuxième, ou l'unique s'il n'y en a
  * qu'une (même convention que `facingCell`, ADR-067).
+ *
+ * Ce défaut vaut pour une planche entière. Quand les rangées sont générées
+ * SÉPARÉMENT (ADR-074), il devient faux une fois sur trois : une rangée de face
+ * livrée seule est alors jugée au seuil du profil. Mesuré sur le gabarit, dont
+ * la justesse ne dépend d'aucun jugement : sa rangée de face passe dans la
+ * planche à trois rangées et se fait REFUSER à 28 % quand on la traite seule.
+ * D'où `viewsOf`, qui laisse l'appelant dire ce qu'il traite.
  */
 export function profileRow(rows: number): number {
   return rows >= 2 ? 1 : 0;
+}
+
+/** Ce qu'une rangée montre, du seul point de vue du seuil à lui appliquer. */
+export type RowView = "profile" | "frontal";
+
+/**
+ * Vues d'une planche, dans l'ordre des rangées.
+ *
+ * `declared` vient de l'opérateur : une lettre par rangée, `s` pour le profil,
+ * autre chose pour une vue frontale. Absent, on retombe sur la convention de
+ * planche entière — correcte à trois rangées, arbitraire à une seule, et c'est
+ * précisément pour cela qu'on peut la contredire.
+ */
+export function viewsOf(rows: number, declared?: readonly RowView[]): RowView[] {
+  if (declared !== undefined && declared.length === rows) return [...declared];
+  const profile: number = profileRow(rows);
+  return Array.from({ length: rows }, (_, r) => (r === profile ? "profile" : "frontal"));
 }
 
 /** Écart entre deux poses d'une même rangée, ramené à leur encre commune. */
@@ -140,14 +164,15 @@ export function cycleReport(
  */
 export function cycleWarnings(
   report: readonly RowCycle[],
+  views?: readonly RowView[],
   duplicateMax: number = DUPLICATE_POSE_MAX,
   flatMax: number = FLAT_CYCLE_MAX,
   frontalMax: number = FLAT_FRONTAL_MAX,
 ): string[] {
   const out: string[] = [];
-  const profile: number = profileRow(report.length);
+  const rowViews: RowView[] = viewsOf(report.length, views);
   for (const r of report) {
-    const limit: number = r.row === profile ? flatMax : frontalMax;
+    const limit: number = rowViews[r.row] === "profile" ? flatMax : frontalMax;
     // Une rangée d'une seule pose n'a pas de paire : `widest.diff` vaut 0 sans
     // que rien ne cloche. Le diagnostic ne s'applique qu'à un vrai cycle.
     if (r.closest.a === r.closest.b) continue;

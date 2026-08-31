@@ -9,7 +9,8 @@
 //   npm run sprite -- <source> <destination> --strip --mirror 1:2
 //   npm run sprite -- <source> <destination> --strip --drop 2
 //   npm run sprite -- <source> <destination> --strip --fill-holes
-//   npm run sprite -- <face> <profil> <dos> <destination> --strip   (une image par direction)
+//   npm run sprite -- <face> <profil> <dos> <destination> --strip --views fsb
+//   npm run sprite -- <face> <destination> --strip --views f   (une rangée seule)
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -27,11 +28,11 @@
 
 import {
   BACKGROUND_MIN, crop, downscale, dropFragments, feather, fillHoles, findHoles, floodBackground,
-  type Hole, lightBorderCount, resample, stack,
+  alignWidths, type Hole, lightBorderCount, resample, stack,
   type FragmentResult, type FringeResult, type Rgba,
   stripFringe,
 } from "./image";
-import { cycleReport, cycleWarnings } from "./cycle";
+import { cycleReport, cycleWarnings, type RowView } from "./cycle";
 import { decode, encode } from "./png";
 import {
   type Band, detectGroundLines, dropPoses, eraseGroundLine,
@@ -62,7 +63,7 @@ const flags: string[] = argv.filter((a) => a.startsWith("--"));
  * devient bloquant dès qu'on accepte plusieurs sources et que la destination est
  * le dernier (ADR-074).
  */
-const VALUED: readonly string[] = ["--max", "--poses", "--mirror", "--drop"];
+const VALUED: readonly string[] = ["--max", "--poses", "--mirror", "--drop", "--views"];
 
 const positional: string[] = [];
 for (let i: number = 0; i < argv.length; i++) {
@@ -155,13 +156,33 @@ if (mirrorIndex >= 0) {
   }
 }
 
+/**
+ * Ce que montre chaque rangée, une lettre par rangée : `f` face, `s` profil,
+ * `b` dos. Exemple : `--views fsb`, ou `--views f` pour une face livrée seule.
+ *
+ * Indispensable dès qu'on génère les directions séparément (ADR-074) : le juge
+ * de cycle applique au profil un seuil deux fois plus exigeant qu'aux vues
+ * frontales, et sans cette déclaration il traite toute planche d'une seule
+ * rangée comme un profil. Le gabarit de face, correct par construction, s'y
+ * faisait refuser à 28 %.
+ */
+const viewsIndex: number = argv.indexOf("--views");
+const viewsArg: string = viewsIndex >= 0 ? (argv[viewsIndex + 1] ?? "") : "";
+if (viewsIndex >= 0 && !/^[fsb]+$/.test(viewsArg)) {
+  console.error(`--views attend une suite de f (face), s (profil) ou b (dos), reçu « ${viewsArg} »`);
+  process.exit(1);
+}
+const declaredViews: RowView[] | undefined = viewsIndex >= 0
+  ? [...viewsArg].map(c => (c === "s" ? "profile" : "frontal"))
+  : undefined;
+
 /** Rangées dont le cycle ne bouge pas assez (ADR-072). */
 let cycleAlerts: string[] = [];
 
 /** Pixels de bord adoucis — 0 sur une planche, dont les cases ne sont pas rognées. */
 let featheredPx: number = 0;
 
-let img: Rgba = stack(sources.map(f => decode(readFileSync(f))));
+let img: Rgba = stack(alignWidths(sources.map(f => decode(readFileSync(f)))));
 const sourceSize: string = `${img.width}x${img.height}`;
 
 // La ligne de sol se cherche AVANT tout : elle ne touche pas les bords de
@@ -253,7 +274,7 @@ if (asStrip) {
   // Le cycle BOUGE-t-il ? Mesuré sur la planche empaquetée, avant réduction :
   // une planche peut être parfaitement découpée et ne contenir aucune marche
   // (ADR-072). Ce contrôle-là, l'œil l'a raté deux fois.
-  cycleAlerts = cycleWarnings(cycleReport(sheet.sheet, sheet.cellW, sheet.rows, sheet.poses));
+  cycleAlerts = cycleWarnings(cycleReport(sheet.sheet, sheet.cellW, sheet.rows, sheet.poses), declaredViews);
   cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;
   // Chaque case est rééchantillonnée aux MÊMES dimensions exactes : un facteur
   // d'échelle appliqué case par case dériverait par arrondi, et Phaser

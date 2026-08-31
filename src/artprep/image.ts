@@ -167,6 +167,28 @@ export function floodBackground(img: Rgba, threshold: number = BACKGROUND_MIN): 
 }
 
 /**
+ * Ramène toutes les images à la largeur de la plus large, à ratio constant.
+ *
+ * À faire AVANT `stack`, sans exception. Le complément blanc de `stack` ne
+ * prolonge pas la ligne de sol : une source plus étroite voit donc sa ligne
+ * couvrir moins de 85 % de la largeur empilée, et `detectGroundLines` cesse de
+ * la reconnaître. Mesuré sur trois gabarits dont un ramené de 1024 à 820 px de
+ * large : deux lignes détectées au lieu de trois, deux rangées fusionnées en
+ * une case de 520 px de haut, et AUCUNE erreur — la planche sortait fausse en
+ * silence. C'est le mode d'échec le plus dangereux du lot.
+ *
+ * Le redimensionnement porte sur l'image entière, donc il préserve la place du
+ * personnage dans son cadre. Il ne corrige pas un cadrage différent d'une source
+ * à l'autre : ça, seul le rapport peut le signaler.
+ */
+export function alignWidths(parts: readonly Rgba[]): Rgba[] {
+  const width: number = Math.max(...parts.map(p => p.width));
+  return parts.map(p => p.width === width
+    ? p
+    : resample(p, width, Math.max(1, Math.round(p.height * width / p.width))));
+}
+
+/**
  * Empile plusieurs images en une seule, alignées à gauche, fond blanc.
  *
  * Le générateur tient les quatre poses d'une rangée mais décroche sur douze

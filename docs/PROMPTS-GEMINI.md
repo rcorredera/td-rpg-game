@@ -67,6 +67,37 @@ npm run mannequin -- gabarit-poses.png
 
 Joindre l'image au prompt, en demandant d'habiller le gabarit sans changer les poses.
 
+## Une direction à la fois (ADR-074)
+
+Le générateur tient quatre cases et décroche sur douze : mesuré, une planche 3x4 rend un
+profil à deux poses dupliquées et un dos immobile. On demande donc UNE rangée par image,
+avec le gabarit de la direction correspondante.
+
+```bash
+npm run mannequin -- gabarit-face.png --view front
+npm run mannequin -- gabarit-profil.png --view side
+npm run mannequin -- gabarit-dos.png --view back
+```
+
+Commencer par le PROFIL : c'est le seul format qui ait jamais réussi. Joindre ensuite
+l'image obtenue aux deux générations suivantes, pour que le personnage ne dérive pas.
+
+Puis recoller les trois images, dans l'ordre face, profil, dos :
+
+```bash
+npm run sprite -- face.png profil.png dos.png public/assets/skin-craftpix/<defId>.png --strip --poses 4 --views fsb --fill-holes
+```
+
+**`--views` n'est pas optionnel.** Le juge de cycle applique au profil un seuil deux fois plus
+exigeant qu'aux vues frontales ; sans cette déclaration il prend toute planche d'une seule
+rangée pour un profil, et refuse une rangée de face pourtant correcte.
+
+Pour traiter une rangée seule, en cours de mise au point :
+
+```bash
+npm run sprite -- face.png sortie.png --strip --poses 4 --views f
+```
+
 Commande de traitement, la même pour toutes :
 
 ```bash

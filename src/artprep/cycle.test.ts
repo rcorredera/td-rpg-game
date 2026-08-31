@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { type Rgba } from "./image";
 import {
   cycleReport, cycleWarnings, DUPLICATE_POSE_MAX, FLAT_CYCLE_MAX,
-  FLAT_FRONTAL_MAX, legDissimilarity, profileRow, type RowCycle,
+  FLAT_FRONTAL_MAX, legDissimilarity, profileRow, type RowCycle, viewsOf,
 } from "./cycle";
 
 const CELL: number = 20;
@@ -153,5 +153,52 @@ describe("cycleWarnings — seuil par vue", () => {
     const w: string[] = cycleWarnings(modest);
     expect(w.length).toBe(1);
     expect(w[0]).toContain("rangée 1");
+  });
+});
+
+describe("viewsOf — quelle rangée est le profil", () => {
+  it("suit la convention de planche quand rien n'est déclaré", () => {
+    expect(viewsOf(3)).toEqual(["frontal", "profile", "frontal"]);
+  });
+
+  it("traite une rangée SEULE comme un profil, faute de mieux", () => {
+    // Convention héritée des planches entières. C'est le défaut que `declared`
+    // existe pour corriger : à une rangée, elle est arbitraire.
+    expect(viewsOf(1)).toEqual(["profile"]);
+  });
+
+  it("obéit à la déclaration de l'opérateur", () => {
+    expect(viewsOf(1, ["frontal"])).toEqual(["frontal"]);
+    expect(viewsOf(2, ["profile", "frontal"])).toEqual(["profile", "frontal"]);
+  });
+
+  it("IGNORE une déclaration qui ne compte pas le bon nombre de rangées", () => {
+    // Mieux vaut une convention connue qu'un décalage silencieux entre ce que
+    // l'opérateur croit avoir déclaré et ce que le juge applique.
+    expect(viewsOf(3, ["frontal"])).toEqual(["frontal", "profile", "frontal"]);
+  });
+});
+
+describe("cycleWarnings — la vue déclarée choisit le seuil", () => {
+  /** Amplitude correcte pour une vue frontale, insuffisante de profil. */
+  const MODEST: RowCycle[] = [{
+    row: 0,
+    closest: { a: 0, b: 1, diff: 0.2 },
+    widest: { a: 0, b: 2, diff: 0.28 },
+  }];
+
+  it("REFUSE une rangée unique non déclarée, jugée comme un profil", () => {
+    expect(cycleWarnings(MODEST).some(s => s.includes("alternance"))).toBe(true);
+  });
+
+  it("l'ACCEPTE une fois déclarée frontale", () => {
+    // Le défaut mesuré sur le gabarit : sa rangée de face passe dans la planche
+    // à trois rangées et se faisait refuser à 28 % quand on la traitait seule,
+    // ce que la génération direction par direction impose de faire.
+    expect(cycleWarnings(MODEST, ["frontal"])).toEqual([]);
+  });
+
+  it("garde le seuil exigeant sur une rangée déclarée profil", () => {
+    expect(cycleWarnings(MODEST, ["profile"]).some(s => s.includes("alternance"))).toBe(true);
   });
 });
