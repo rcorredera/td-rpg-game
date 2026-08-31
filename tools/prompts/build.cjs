@@ -9,6 +9,87 @@ const STYLE = [
   "Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.",
 ];
 
+
+/**
+ * Prompt d'UNE rangée, adossé au gabarit joint (ADR-073/074).
+ *
+ * C'est le format en vigueur, et le seul qui ait jamais produit une rangée de
+ * face correcte. Il tenait dans la conversation sans être versionné nulle part :
+ * l'essai le plus prometteur des six n'était donc pas reproductible.
+ *
+ * Il ne DÉCRIT plus les poses, il pointe vers elles. Les angles chiffrés, le
+ * balancier détaillé et les interdictions de rotation ont disparu — l'image le
+ * dit sans ambiguïté, et le prompt fait moins de la moitié de l'ancien.
+ */
+const VIEW_TEXT = {
+  front: {
+    label: "FACE",
+    gabarit: "gabarit-face",
+    lecture: "Le personnage est vu de FACE, marchant vers le spectateur.",
+    tenue: "Le personnage reste de FACE dans les quatre cases : épaules parallèles au bord de l'image, il ne pivote jamais.",
+  },
+  side: {
+    label: "PROFIL",
+    gabarit: "gabarit-profil",
+    lecture: "Le personnage est vu de PROFIL, marchant vers la DROITE de l'image.",
+    tenue: "Le personnage reste de PROFIL STRICT dans les quatre cases : on voit un seul côté du corps, jamais l'autre, et il ne pivote jamais.",
+  },
+  back: {
+    label: "DOS",
+    gabarit: "gabarit-dos",
+    lecture: "Le personnage est vu de DOS, s'éloignant du spectateur.",
+    tenue: "Le personnage reste de DOS dans les quatre cases : épaules parallèles au bord de l'image, il ne pivote jamais.",
+  },
+};
+
+const ROW_PROMPT = (view, subject, chained) => {
+  const v = VIEW_TEXT[view];
+  return [
+    chained
+      ? "Tu reçois DEUX images."
+      : "Tu reçois une IMAGE DE RÉFÉRENCE : un mannequin gris articulé, sans visage ni vêtement, en UNE RANGÉE de QUATRE CASES.",
+    "",
+    ...(chained ? [
+      "IMAGE 1 — le personnage DÉJÀ dessiné, en quatre poses de marche. C'est LE personnage de référence : ses couleurs, ses proportions, ses détails et son équipement font foi.",
+      "",
+      "IMAGE 2 — un mannequin gris articulé en une rangée de quatre cases. C'est le GABARIT DE POSES.",
+      "",
+    ] : []),
+    "Le gabarit ne montre pas le personnage à dessiner, il montre les POSITIONS que son corps doit prendre.",
+    "",
+    "Comment le lire :",
+    "- " + v.lecture,
+    "- Les quatre cases sont quatre instants successifs d'un même pas de marche.",
+    "- Le GRIS FONCÉ marque le bras ou la jambe le plus ÉLOIGNÉ du spectateur. Ce n'est pas une couleur du personnage : c'est une indication de profondeur, à rendre par une ombre légère.",
+    "- Le TRAIT NOIR sur la tête marque le NEZ, donc l'orientation du visage. C'est un repère, pas un trait à recopier.",
+    "- La LIGNE GRISE horizontale est le sol.",
+    "",
+    chained
+      ? "TA TÂCHE : dessiner LE MÊME personnage que l'image 1, dans les poses de l'image 2."
+      : "TA TÂCHE : redessiner ces quatre cases en habillant le gabarit avec le personnage décrit plus bas.",
+    "",
+    "RÈGLES ABSOLUES :",
+    ...(chained ? [
+      "- Le personnage doit être RECONNAISSABLE comme celui de l'image 1 : couleurs identiques teinte pour teinte, mêmes proportions, mêmes détails, même équipement. C'est la contrainte la plus importante.",
+      "- Sa TAILLE à l'écran doit être exactement la même que dans l'image 1, du sol au sommet de la tête.",
+      "- Même style de trait et même épaisseur de contour que l'image 1.",
+    ] : []),
+    "- Reproduire EXACTEMENT la pose de chaque case : même angle de chaque membre, même jambe devant, même bras en avant, même pied levé.",
+    "- Garder la même grille : une rangée, quatre cases, même position, même échelle.",
+    "- Garder la ligne de sol, fine et grise, traversant toute la largeur sans interruption. Les pieds posés la touchent exactement.",
+    "- Le personnage est strictement IDENTIQUE dans les quatre cases : mêmes couleurs, mêmes proportions, même équipement, même éclairage. Seule la position des membres change.",
+    "- " + v.tenue,
+    "- Aucun aplat de fond blanc enfermé entre un bras et le torse.",
+    "- Fond BLANC UNI. Aucun cadre, aucune grille, aucun numéro, aucun texte, aucune ombre portée.",
+    "- Le personnage peut être plus large ou plus massif que le mannequin. Ce sont les POSES qui comptent, pas les proportions du gabarit.",
+    "",
+    STYLE.join("\n"),
+    "Chaque case doit rester lisible réduite à 50 px de haut.",
+    "",
+    ...(chained ? [] : ["Sujet : " + subject]),
+  ].filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
+};
+
 const SHEET = (subject) => [
   "Planche de sprites d'un personnage de jeu vidéo : UNE seule image organisée en TROIS RANGÉES et QUATRE COLONNES, soit douze cases.",
   "",
@@ -151,7 +232,56 @@ p("# Prompts Gemini — un bloc autonome par entité",
   "",
   "---",
   "",
-  "# 1. Créatures qui MARCHENT — planche 3 directions × 4 poses",
+  "# 1. Créatures qui MARCHENT — une direction à la fois",
+  "",
+  "**Format en vigueur** (ADR-073/074). Le prompt ne décrit plus les poses : il pointe vers un",
+  "gabarit joint. C'est le seul format qui ait produit une rangée de face correcte.",
+  "",
+  "Le corps du prompt est le MÊME pour toutes les créatures. Seule la dernière ligne change :",
+  "recopier le `Sujet :` de la créature, dans la liste plus bas.",
+  "",
+  "**Ordre de travail** — commencer par le PROFIL, le seul format qui ait jamais réussi, puis",
+  "chaîner : joindre l'image obtenue aux deux générations suivantes, pour que le personnage ne",
+  "dérive pas.",
+  "",
+  "## Prompt 1 — le PROFIL (à faire en premier)",
+  "",
+  "Joindre le gabarit de profil.",
+  "",
+  "\`\`\`",
+  ROW_PROMPT("side", "[recopier ici la ligne Sujet de la créature]", false),
+  "\`\`\`",
+  "",
+  "## Prompt 2 — la FACE, puis le DOS",
+  "",
+  "Joindre DEUX images : le gabarit de la direction voulue **et la rangée de profil déjà",
+  "validée**. C'est le chaînage : le générateur a le personnage sous les yeux, pas seulement",
+  "sa description.",
+  "",
+  "\`\`\`",
+  ROW_PROMPT("front", "", true),
+  "\`\`\`",
+  "",
+  "Pour le DOS, remplacer dans le texte ci-dessus les deux mentions de la vue :",
+  "« vu de FACE, marchant vers le spectateur » devient « vu de DOS, s'éloignant du",
+  "spectateur », et « reste de FACE dans les quatre cases » devient « reste de DOS dans les",
+  "quatre cases ».",
+  "",
+  "## Les sujets, un par créature",
+  "",
+  "| créature | `Sujet :` à recopier |",
+  "|---|---|",
+  ...D.WALKERS.map(([file, title, size, subject]) =>
+    "| **" + title + "** (`" + file.replace(".png", "") + "`, taille " + size + ") | " + subject + " |"),
+  "| **" + D.HERO[1] + "** (`" + D.HERO[0].replace(".png", "") + "`) | " + D.HERO[3] + " |",
+  "",
+  "---",
+  "",
+  "# 1 bis. Format ABANDONNÉ — la planche 3 × 4 d'un seul bloc",
+  "",
+  "Conservé pour mémoire, et parce qu'il documente ce qui a été essayé. **Ne pas l'utiliser** :",
+  "cinq planches sur cinq ont échoué dans ce format, le générateur décrochant sur le profil et",
+  "le dos. Les blocs ci-dessous sont ceux de cette tentative.",
   "",
   "Format retenu pour toute créature posée au sol sur deux jambes (ADR-067).",
   "La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit,",

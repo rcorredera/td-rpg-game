@@ -64,6 +64,9 @@ export const SHIN: number = 46;
 export const UPPER_ARM: number = 36;
 export const FOREARM: number = 34;
 export const FOOT: number = 22;
+/** Main : une pièce à part, sinon elle serait dessinée au bout de l'avant-bras
+ *  et le moteur ne pourrait plus la placer. */
+export const HAND: number = 18;
 /** Demi-épaisseur du pied : ce qui sépare la cheville du sol. */
 export const FOOT_R: number = 9;
 /** Longueur du nez, en avant du centre de la tête. */
@@ -91,13 +94,13 @@ interface Side {
 
 /**
  * Le cycle, décrit côté GAUCHE. Le côté droit est le même décalé de deux poses :
+ * c'est la définition d'une marche, et l'écrire ainsi rend l'alternance
+ * impossible à rater — le défaut qui a coulé les cinq planches précédentes.
  *
  * `arm` porte TOUJOURS le signe opposé à `thigh` : le bras d'un côté contre la
  * jambe du MÊME côté. Les avoir mis en phase aux poses de passage donnait un
  * balancier juste aux contacts et faux entre les deux — un défaut que l'œil ne
  * relève pas sur une image fixe.
- * c'est la définition d'une marche, et l'écrire ainsi rend l'alternance
- * impossible à rater — le défaut qui a coulé les cinq planches précédentes.
  */
 const LEFT: readonly Side[] = [
   { thigh: 30, knee: 4, arm: -25, elbow: 12, lift: false },   // contact, jambe gauche devant

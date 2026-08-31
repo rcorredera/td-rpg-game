@@ -65,15 +65,15 @@ describe("mannequinSheet", () => {
 describe("piecesSheet", () => {
   const sheet: Rgba = piecesSheet();
 
-  it("range dix pièces dans une grille de douze cases", () => {
+  it("range douze pièces dans une grille de seize cases", () => {
     expect(sheet.width).toBe(CELL_W * 4);
-    expect(sheet.height).toBe(CELL_H * 3);
+    expect(sheet.height).toBe(CELL_H * 4);
     // Les deux dernières cases des deux premières rangées restent vides : il n'y
     // a que trois vues, et une grille régulière se découpe plus sûrement qu'une
     // disposition compacte.
     expect(drawnIn(sheet, 3, 0)).toBe(0);
     expect(drawnIn(sheet, 3, 1)).toBe(0);
-    for (const [c, r] of [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2], [3, 2]] as [number, number][]) {
+    for (const [c, r] of [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2], [3, 2], [0, 3], [1, 3]] as [number, number][]) {
       expect(drawnIn(sheet, c, r)).toBeGreaterThan(200);
     }
   });
@@ -94,7 +94,7 @@ describe("piecesSheet", () => {
     // Mettre chaque pièce à la taille de sa case donnerait un personnage aux
     // membres dépareillés une fois assemblé.
     const arm: number = drawnIn(sheet, 0, 2);
-    const thigh: number = drawnIn(sheet, 2, 2);
+    const thigh: number = drawnIn(sheet, 3, 2);
     expect(thigh).toBeGreaterThan(arm);
   });
 

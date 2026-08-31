@@ -10,7 +10,7 @@
 
 import { type Rgba } from "./image";
 import {
-  FOOT_R, FOREARM, HEAD_R, HIP_Y, type Joints, NECK_Y, NOSE, POSES, project,
+  FOOT, FOOT_R, FOREARM, HAND, HEAD_R, HIP_Y, type Joints, NECK_Y, NOSE, POSES, project,
   type Projected, SHIN, THIGH, UPPER_ARM, type Vec3, type View, VIEWS, walkPose,
 } from "./pose";
 
@@ -213,7 +213,7 @@ function headPiece(img: Rgba, cx: number, cy: number, view: View): void {
  */
 export function piecesSheet(): Rgba {
   const cols: number = 4;
-  const rows: number = 3;
+  const rows: number = 4;
   const width: number = CELL_W * cols;
   const height: number = CELL_H * rows;
   const img: Rgba = { width, height, data: new Uint8Array(width * height * 4).fill(255) };
@@ -225,14 +225,21 @@ export function piecesSheet(): Rgba {
     upright(img, cx(col), cy(1), (NECK_Y - HIP_Y) * PIECE_SCALE, TORSO_R * PIECE_SCALE);
   });
 
+  // Six membres, pas quatre : `drawPose` peint aussi les PIEDS, et une main se
+  // distingue d'un avant-bras. Les omettre imposerait un second tour de
+  // génération au PO pour les pièces manquantes, après coup.
   const limbs: readonly [number, number][] = [
     [UPPER_ARM, LIMB_R - 2],
     [FOREARM, LIMB_R - 3],
+    [HAND, LIMB_R - 3],
     [THIGH, LIMB_R],
     [SHIN, LIMB_R],
+    [FOOT, FOOT_R],
   ];
-  limbs.forEach(([len, r], col) => {
-    upright(img, cx(col), cy(2), len * PIECE_SCALE, r * PIECE_SCALE);
+  limbs.forEach(([len, r], i) => {
+    const col: number = i % cols;
+    const row: number = 2 + Math.floor(i / cols);
+    upright(img, cx(col), cy(row), len * PIECE_SCALE, r * PIECE_SCALE);
   });
   return img;
 }

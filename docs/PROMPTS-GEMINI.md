@@ -49,7 +49,133 @@ trompé deux fois de suite ; le générateur se trompe case par case, pas rangé
 
 ---
 
-# 1. Créatures qui MARCHENT — planche 3 directions × 4 poses
+# 1. Créatures qui MARCHENT — une direction à la fois
+
+**Format en vigueur** (ADR-073/074). Le prompt ne décrit plus les poses : il pointe vers un
+gabarit joint. C'est le seul format qui ait produit une rangée de face correcte.
+
+Le corps du prompt est le MÊME pour toutes les créatures. Seule la dernière ligne change :
+recopier le `Sujet :` de la créature, dans la liste plus bas.
+
+**Ordre de travail** — commencer par le PROFIL, le seul format qui ait jamais réussi, puis
+chaîner : joindre l'image obtenue aux deux générations suivantes, pour que le personnage ne
+dérive pas.
+
+## Prompt 1 — le PROFIL (à faire en premier)
+
+Joindre le gabarit de profil.
+
+```
+Tu reçois une IMAGE DE RÉFÉRENCE : un mannequin gris articulé, sans visage ni vêtement, en UNE RANGÉE de QUATRE CASES.
+
+Le gabarit ne montre pas le personnage à dessiner, il montre les POSITIONS que son corps doit prendre.
+
+Comment le lire :
+- Le personnage est vu de PROFIL, marchant vers la DROITE de l'image.
+- Les quatre cases sont quatre instants successifs d'un même pas de marche.
+- Le GRIS FONCÉ marque le bras ou la jambe le plus ÉLOIGNÉ du spectateur. Ce n'est pas une couleur du personnage : c'est une indication de profondeur, à rendre par une ombre légère.
+- Le TRAIT NOIR sur la tête marque le NEZ, donc l'orientation du visage. C'est un repère, pas un trait à recopier.
+- La LIGNE GRISE horizontale est le sol.
+
+TA TÂCHE : redessiner ces quatre cases en habillant le gabarit avec le personnage décrit plus bas.
+
+RÈGLES ABSOLUES :
+- Reproduire EXACTEMENT la pose de chaque case : même angle de chaque membre, même jambe devant, même bras en avant, même pied levé.
+- Garder la même grille : une rangée, quatre cases, même position, même échelle.
+- Garder la ligne de sol, fine et grise, traversant toute la largeur sans interruption. Les pieds posés la touchent exactement.
+- Le personnage est strictement IDENTIQUE dans les quatre cases : mêmes couleurs, mêmes proportions, même équipement, même éclairage. Seule la position des membres change.
+- Le personnage reste de PROFIL STRICT dans les quatre cases : on voit un seul côté du corps, jamais l'autre, et il ne pivote jamais.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucun numéro, aucun texte, aucune ombre portée.
+- Le personnage peut être plus large ou plus massif que le mannequin. Ce sont les POSES qui comptent, pas les proportions du gabarit.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut.
+
+Sujet : [recopier ici la ligne Sujet de la créature]
+```
+
+## Prompt 2 — la FACE, puis le DOS
+
+Joindre DEUX images : le gabarit de la direction voulue **et la rangée de profil déjà
+validée**. C'est le chaînage : le générateur a le personnage sous les yeux, pas seulement
+sa description.
+
+```
+Tu reçois DEUX images.
+
+IMAGE 1 — le personnage DÉJÀ dessiné, en quatre poses de marche. C'est LE personnage de référence : ses couleurs, ses proportions, ses détails et son équipement font foi.
+
+IMAGE 2 — un mannequin gris articulé en une rangée de quatre cases. C'est le GABARIT DE POSES.
+
+Le gabarit ne montre pas le personnage à dessiner, il montre les POSITIONS que son corps doit prendre.
+
+Comment le lire :
+- Le personnage est vu de FACE, marchant vers le spectateur.
+- Les quatre cases sont quatre instants successifs d'un même pas de marche.
+- Le GRIS FONCÉ marque le bras ou la jambe le plus ÉLOIGNÉ du spectateur. Ce n'est pas une couleur du personnage : c'est une indication de profondeur, à rendre par une ombre légère.
+- Le TRAIT NOIR sur la tête marque le NEZ, donc l'orientation du visage. C'est un repère, pas un trait à recopier.
+- La LIGNE GRISE horizontale est le sol.
+
+TA TÂCHE : dessiner LE MÊME personnage que l'image 1, dans les poses de l'image 2.
+
+RÈGLES ABSOLUES :
+- Le personnage doit être RECONNAISSABLE comme celui de l'image 1 : couleurs identiques teinte pour teinte, mêmes proportions, mêmes détails, même équipement. C'est la contrainte la plus importante.
+- Sa TAILLE à l'écran doit être exactement la même que dans l'image 1, du sol au sommet de la tête.
+- Même style de trait et même épaisseur de contour que l'image 1.
+- Reproduire EXACTEMENT la pose de chaque case : même angle de chaque membre, même jambe devant, même bras en avant, même pied levé.
+- Garder la même grille : une rangée, quatre cases, même position, même échelle.
+- Garder la ligne de sol, fine et grise, traversant toute la largeur sans interruption. Les pieds posés la touchent exactement.
+- Le personnage est strictement IDENTIQUE dans les quatre cases : mêmes couleurs, mêmes proportions, même équipement, même éclairage. Seule la position des membres change.
+- Le personnage reste de FACE dans les quatre cases : épaules parallèles au bord de l'image, il ne pivote jamais.
+- Aucun aplat de fond blanc enfermé entre un bras et le torse.
+- Fond BLANC UNI. Aucun cadre, aucune grille, aucun numéro, aucun texte, aucune ombre portée.
+- Le personnage peut être plus large ou plus massif que le mannequin. Ce sont les POSES qui comptent, pas les proportions du gabarit.
+
+Art de jeu vidéo cartoon fantasy : couleurs saturées avec modelé peint à l'intérieur des formes (volumes, ombres et lumières, jamais des aplats plats), épais contour NOIR uniforme sur tout le pourtour du personnage.
+Le contour extérieur est noir et rien d'autre : aucun liseré blanc, aucun halo, aucune bordure de découpe autour de la silhouette.
+Proportions stylisées, pas réalistes : tête surdimensionnée, corps compact.
+Chaque case doit rester lisible réduite à 50 px de haut.
+
+```
+
+Pour le DOS, remplacer dans le texte ci-dessus les deux mentions de la vue :
+« vu de FACE, marchant vers le spectateur » devient « vu de DOS, s'éloignant du
+spectateur », et « reste de FACE dans les quatre cases » devient « reste de DOS dans les
+quatre cases ».
+
+## Les sujets, un par créature
+
+| créature | `Sujet :` à recopier |
+|---|---|
+| **Diablotin de faille** (`diablotin`, taille 38) | petit diablotin violacé maigrichon, cornes courtes recourbées, grandes oreilles pointues, yeux jaunes luisants sans pupille, veines de lumière magenta courant sous la peau. Créature la plus faible du bestiaire : chétive, échine légèrement voûtée, mais en marche décidée. Mains nues, aucune arme. |
+| **Gobelin** (`goblin`, taille 46) | gobelin à la peau vert-de-gris, air hargneux, silhouette trapue. Armure de bric-à-brac faite de plaques dépareillées, casque de fer cabossé trop grand pour lui enfoncé jusqu'aux oreilles. Courte épée rouillée tenue basse dans la main DROITE, petit bouclier rond de planches clouées au bras GAUCHE. |
+| **Orc** (`orc`, taille 54) | orc guerrier massif à la peau vert olive, mâchoire lourde aux défenses inférieures proéminentes, petits yeux enfoncés. Épaules très larges, cou épais. Plastron de cuir clouté sur torse nu, brassards de fer. Hache de guerre large à une main, tenue basse dans la main DROITE. |
+| **Troll** (`troll`, taille 56) | troll gris-bleu voûté, peau rugueuse et verruqueuse, long nez crochu, oreilles tombantes, quelques touffes de cheveux filasse. Bras démesurés descendant presque au sol. Gourdin de bois brut traîné de la main DROITE. Dos courbé, épaules remontées. |
+| **Chevalier noir** (`dark_knight`, taille 58) | chevalier en armure de plates noire mate, heaume clos dont la visière étroite laisse filtrer une lueur rouge, aucune peau visible. Cape sombre déchirée en bas. Épée longue tenue pointe vers le bas le long de la jambe, dans la main DROITE. Élégant, martial et menaçant, surtout pas monstrueux ni difforme. |
+| **Brute** (`brute`, taille 62) | mort-vivant colossal et boursouflé, chair grisâtre verdâtre marquée de grosses sutures, mâchoire pendante, yeux laiteux. Le bras DROIT est nettement hypertrophié et pendant, le bras GAUCHE atrophié. Chaînes brisées aux poignets, lambeaux de tissu sale à la taille. Démarche lourde et déséquilibrée. |
+| **Ogre** (`ogre`, taille 66) | ogre énorme et bedonnant à la peau brun-rose, ventre proéminent, une seule grosse dent supérieure dépassant de la lèvre, petits yeux stupides. Corps très large, tête petite par rapport au tronc, exception à la règle de grosse tête. Pagne de peaux de bêtes, massue cloutée posée sur l'épaule DROITE. |
+| **Golem de fer** (`golem`, taille 70) | golem construit de lourdes plaques de fer rivetées, articulations mécaniques apparentes aux épaules et aux genoux, rouille sur les arêtes. Tête cubique sans visage, traversée d'une unique fente lumineuse bleu froid. Poings surdimensionnés, aucune arme. Démarche pesante et rigide. |
+| **Chef de guerre** (`warlord`, taille 72) | seigneur de guerre orc, chef de bande. Armure lourde sombre ornée de crânes et de trophées, épaulières hérissées de pointes, casque à grandes cornes recourbées, cape de fourrure épaisse sur les épaules. Énorme épée à deux mains portée sur l'épaule DROITE. Silhouette de boss : la plus imposante et la plus large des créatures humanoïdes. |
+| **Pillard des Frontières** (`frontier_raider`, taille 50) | bandit humain encapuchonné, silhouette agile et sèche. Capuche brune rabattue, écharpe sombre masquant le bas du visage, seuls les yeux visibles. Cuir clouté brun et sangles croisées sur le torse, ceinture garnie de petites fioles. Une dague courbe dans chaque main, tenues basses. |
+| **Maraudeur des Failles** (`rift_marauder`, taille 50) | guerrier humain corrompu par une magie de faille. Armure de plates grise fendue de longues fissures d'où s'échappe une lumière VIOLETTE intense. Le bras GAUCHE est entièrement cristallisé en éclats violets translucides remplaçant la chair. Heaume ouvert révélant un regard vide luminescent. Épée courte dans la main DROITE. |
+| **Gardien des Ombres** (`shade_warder`, taille 52) | sentinelle d'ombre élancée. Corps fait de fumée noire dense, maintenu en forme humanoïde par des sangles et des pièces d'armure argentées flottant à leur place : épaulières, brassards, ceinturon. Visage sans traits, deux fentes lumineuses blanches. Fine lame courbe argentée dans la main DROITE. Volutes sombres s'échappant des épaules. Les deux jambes restent nettement dessinées et distinctes. |
+| **Assassin Voilé** (`veiled_assassin`, taille 54) | assassin drapé de voiles gris-bleu en mouvement, écharpes flottant derrière lui. Visage entièrement masqué de bandelettes, aucun trait visible. Tenue ajustée sombre sous les voiles. Un poignard tenu en prise inversée dans chaque main, lames le long des avant-bras. Allure furtive mais avançant franchement. Les voiles ne doivent jamais masquer les jambes. |
+| **Gardien à Quatre Yeux** (`four_eyed_warden`, taille 58) | aberration humanoïde trapue à la peau bleu-gris coriace et plissée. QUATRE yeux jaunes disposés en losange sur un visage sans nez, bouche large et fine. Épaulières de pierre brute sanglées, pagne de cuir. Bâton-totem de bois noueux surmonté d'un fétiche osseux, tenu verticalement dans la main DROITE. Cou inexistant, épaules massives. |
+| **Ermite Corrompu** (`corrupted_hermit`, taille 64) | vieil ermite en haillons de toile grise, longue barbe emmêlée, dos courbé, appuyé sur un bâton de bois noueux tenu dans la main DROITE. La moitié GAUCHE de son corps est envahie par la corruption : cristaux violets translucides poussant hors de l'épaule et du bras, racines noires courant sur la peau, œil de ce côté remplacé par une lueur violette. L'autre moitié reste humaine et misérable. Contraste net entre les deux moitiés. |
+| **Ossements Hurlants** (`howling_bones`, taille 68) | amas de plusieurs squelettes fusionnés en une seule créature humanoïde. Deux cages thoraciques imbriquées formant le tronc, os surnuméraires saillant des épaules, bras composés de plusieurs avant-bras. Plusieurs crânes : un crâne principal bouche grande ouverte en plein hurlement, deux crânes secondaires soudés aux épaules. Flamme verte pâle dans chaque orbite. Os jaunis et fêlés. Les deux jambes restent complètes et séparées. |
+| **Le Roi Fangeux, BOSS** (`the_gravedigger`, taille 82) | BOSS FINAL du jeu. Roi mort-vivant colossal, silhouette écrasante et beaucoup plus large que tous les autres monstres. Couronne de fer tordue et rouillée enfoncée sur un crâne boursouflé, deux yeux verts luisants et haineux. Corps de boue et de chair putréfiée mêlée de racines noires, manteau de fange dégoulinante sur les épaules. Immense pelle-hache de fossoyeur tenue dans la main DROITE. Doit dominer par la présence : le monstre le plus imposant du bestiaire. |
+| **Héros du joueur** (`hero`) | chevalier héroïque, armure de plates d'acier CLAIR et lumineux à liserés dorés : la clarté de l'armure doit le distinguer instantanément des monstres sombres qui l'entourent. Heaume à visière ouverte laissant voir un regard déterminé, plumet ou crête sur le casque. Grand bouclier armorié au bras GAUCHE, blason au griffon. Épée longue à garde dorée dans la main DROITE, pointe vers le bas. Cape bleue. |
+
+---
+
+# 1 bis. Format ABANDONNÉ — la planche 3 × 4 d'un seul bloc
+
+Conservé pour mémoire, et parce qu'il documente ce qui a été essayé. **Ne pas l'utiliser** :
+cinq planches sur cinq ont échoué dans ce format, le générateur décrochant sur le profil et
+le dos. Les blocs ci-dessous sont ceux de cette tentative.
 
 Format retenu pour toute créature posée au sol sur deux jambes (ADR-067).
 La marche vers la GAUCHE n'est pas demandée : c'est le miroir du profil droit,

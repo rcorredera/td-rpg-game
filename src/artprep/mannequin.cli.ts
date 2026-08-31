@@ -47,7 +47,7 @@ console.log([
   `mannequin -> ${dst}`,
   `  planche         ${sheet.width}x${sheet.height}`,
   pieces ? `  grille          pièces détachées, cases de ${CELL_W}x${CELL_H}` : `  grille          ${only ? 1 : VIEWS.length} vue(s) x ${POSES} pose(s), cases de ${CELL_W}x${CELL_H}`,
-  pieces ? `  pièces          tête x3, torse x3, bras, avant-bras, cuisse, jambe` : `  vues            ${only ?? VIEWS.join(", ")}`,
+  pieces ? `  pièces          tête x3, torse x3, bras, avant-bras, main, cuisse, jambe, pied` : `  vues            ${only ?? VIEWS.join(", ")}`,
   "",
   "  À joindre au prompt comme image de référence : il montre les poses",
   "  au lieu de les décrire. Le membre le plus éloigné est assombri.",
