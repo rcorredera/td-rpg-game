@@ -70,7 +70,7 @@ export const HAND: number = 18;
 /** Demi-épaisseur du pied : ce qui sépare la cheville du sol. */
 export const FOOT_R: number = 9;
 /** Longueur du nez, en avant du centre de la tête. */
-export const NOSE: number = 34;
+export const NOSE: number = 30;
 
 /** Nombre de poses du cycle. Quatre clés : contact, passage, contact inverse,
  *  passage inverse. Au-delà, un générateur interpole au lieu de créer. */

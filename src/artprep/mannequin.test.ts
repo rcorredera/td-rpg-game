@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type Rgba } from "./image";
-import { CELL_H, CELL_W, mannequinSheet, piecesSheet } from "./mannequin";
+import { type Bone, capsule, CELL_H, CELL_W, mannequinSheet, paintBones, piecesSheet } from "./mannequin";
 import { POSES, VIEWS } from "./pose";
 
 /** Pixels opaques d'une case de la grille. */
@@ -114,5 +114,60 @@ describe("piecesSheet", () => {
     }
     const mid: number = CELL_W / 2;
     expect(Math.abs((minX + maxX) / 2 - mid)).toBeLessThan(3);
+  });
+});
+
+describe("paintBones — le contour survit au voisin", () => {
+  function blank(w: number, h: number): Rgba {
+    return { width: w, height: h, data: new Uint8Array(w * h * 4).fill(255) };
+  }
+
+  /** Deux os PARALLÈLES qui se chevauchent, l'un derrière l'autre. C'est la
+   *  configuration du bras devant le torse, réduite au strict nécessaire. */
+  function overlapping(): Bone[] {
+    return [
+      { a: { x: 40, y: 10, depth: -1 }, b: { x: 40, y: 90, depth: -1 }, r: 20, depth: -1 },
+      { a: { x: 55, y: 10, depth: 1 }, b: { x: 55, y: 90, depth: 1 }, r: 12, depth: 1 },
+    ];
+  }
+
+  /** Encre dans une bande CHOISIE, loin des bords extérieurs de la silhouette.
+   *  La séparation entre les deux os tombe en x = 39..43 : le contour de l'os
+   *  proche, peint par-dessus le remplissage du lointain. */
+  function inkBetween(img: Rgba, y: number, x0: number, x1: number): number {
+    let ink: number = 0;
+    for (let x: number = x0; x <= x1; x++) {
+      if (img.data[(y * img.width + x) * 4]! < 60) ink++;
+    }
+    return ink;
+  }
+
+  it("laisse une SÉPARATION entre deux os superposés", () => {
+    // Le défaut d'origine : contours d'abord, remplissages ensuite. Le
+    // remplissage de l'os proche effaçait alors le contour qui le détachait de
+    // celui de derrière, et les deux se fondaient en une seule forme.
+    const img: Rgba = blank(120, 100);
+    paintBones(img, overlapping());
+    expect(inkBetween(img, 50, 35, 45)).toBeGreaterThan(0);
+  });
+
+  it("le prouve : en DEUX passes, la séparation disparaît", () => {
+    // Reproduit à la main l'ancien ordre, pour que le test précédent ne puisse
+    // pas passer par accident. Si cette assertion venait à échouer, c'est que
+    // l'invariant ne se mesure plus là où on croit.
+    const img: Rgba = blank(120, 100);
+    const bones: Bone[] = overlapping();
+    for (const b of bones) capsule(img, b.a, b.b, b.r + 4, [24, 24, 28]);
+    for (const b of bones) capsule(img, b.a, b.b, b.r, [214, 214, 220]);
+    expect(inkBetween(img, 50, 35, 45)).toBe(0);
+  });
+
+  it("dessine une rotule là où le membre plie", () => {
+    const plain: Rgba = blank(120, 100);
+    const jointed: Rgba = blank(120, 100);
+    const b: Bone = { a: { x: 60, y: 20, depth: 0 }, b: { x: 60, y: 80, depth: 0 }, r: 14, depth: 0 };
+    paintBones(plain, [b]);
+    paintBones(jointed, [{ ...b, joint: true }]);
+    expect(inkBetween(jointed, 20, 50, 70)).toBeGreaterThan(inkBetween(plain, 20, 50, 70));
   });
 });

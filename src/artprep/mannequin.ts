@@ -22,8 +22,12 @@ export const GROUND_PAD: number = 14;
 
 /** Épaisseur des membres, en pixels de rayon. */
 const LIMB_R: number = 13;
-const TORSO_R: number = 26;
+const TORSO_R: number = 30;
 const OUTLINE: number = 4;
+/** Rayon du nez. Assez fin pour rester un REPÈRE : plus épais, il se lisait de
+ *  face comme un œil unique au milieu du visage, et le générateur pouvait le
+ *  prendre pour un trait du personnage. */
+const NOSE_R: number = 6;
 
 const INK: readonly [number, number, number] = [24, 24, 28];
 /** Membre le plus PROCHE du spectateur. */
@@ -72,22 +76,54 @@ export function capsule(img: Rgba, a: Projected, b: Projected, r: number, c: rea
 }
 
 /** Un segment de membre : ses deux bouts à l'écran et sa profondeur moyenne. */
-interface Bone {
+export interface Bone {
   a: Projected;
   b: Projected;
   r: number;
   depth: number;
+  /** Dessiner une rotule à l extrémité `a` : le point où ce membre plie. */
+  joint?: boolean;
 }
 
-function bone(from: Vec3, to: Vec3, view: View, r: number, ox: number, oy: number): Bone {
+function bone(from: Vec3, to: Vec3, view: View, r: number, ox: number, oy: number, joint: boolean = false): Bone {
   const a: Projected = place(project(from, view), ox, oy);
   const b: Projected = place(project(to, view), ox, oy);
-  return { a, b, r, depth: (a.depth + b.depth) / 2 };
+  return { a, b, r, depth: (a.depth + b.depth) / 2, joint };
 }
 
 /** Passe du repère du squelette (y vers le haut, sol à 0) à celui de l'image. */
 function place(p: Projected, ox: number, oy: number): Projected {
   return { x: ox + p.x, y: oy - p.y, depth: p.depth };
+}
+
+/**
+ * Peint des os déjà triés du plus lointain au plus proche. MUTE `img`.
+ *
+ * Chaque os porte son contour AVEC lui, dans la même itération que son
+ * remplissage. C'est l'invariant de ce module, et il n'est pas cosmétique :
+ * peindre tous les contours d'abord, puis tous les remplissages, faisait
+ * recouvrir le contour des bras par le remplissage du torse. Les membres se
+ * fondaient alors en une masse dont ni un humain ni le générateur ne pouvaient
+ * lire la pose — c'est le PO qui l'a signalé, sur un gabarit censé justement
+ * rendre la pose évidente.
+ *
+ * Fonction à part, et exportée, pour que cet invariant soit testable sur deux os
+ * choisis plutôt que déduit d'un mannequin entier, où les rotules masquaient la
+ * régression.
+ */
+export function paintBones(img: Rgba, bones: readonly Bone[]): void {
+  for (const b of bones) {
+    const fill: readonly [number, number, number] = b.depth < -0.5 ? FAR : NEAR;
+    capsule(img, b.a, b.b, b.r + OUTLINE, INK);
+    capsule(img, b.a, b.b, b.r, fill);
+    // Rotule à l'extrémité proximale : c'est elle qui montre OÙ le membre plie.
+    // Sans elle, une cuisse et son tibia forment un trait continu dont l'angle
+    // se devine plutôt qu'il ne se voit.
+    if (b.joint) {
+      capsule(img, b.a, b.a, b.r * 0.62 + 2, INK);
+      capsule(img, b.a, b.a, b.r * 0.62, fill);
+    }
+  }
 }
 
 /**
@@ -99,31 +135,41 @@ function place(p: Projected, ox: number, oy: number): Projected {
  * fausses une pose sur deux.
  */
 export function drawPose(img: Rgba, j: Joints, view: View, ox: number, oy: number): void {
+  // `joint` sur le segment DISTAL de chaque membre : la rotule se dessine à son
+  // extrémité proximale, c'est-à-dire au genou et au coude. La marquer sur le
+  // segment proximal la placerait à la hanche et à l'épaule, où rien ne plie de
+  // façon lisible.
   const bones: Bone[] = [
     bone(j.hip[0], j.knee[0], view, LIMB_R, ox, oy),
-    bone(j.knee[0], j.foot[0], view, LIMB_R, ox, oy),
-    bone(j.foot[0], j.toe[0], view, FOOT_R, ox, oy),
+    bone(j.knee[0], j.foot[0], view, LIMB_R, ox, oy, true),
+    bone(j.foot[0], j.toe[0], view, FOOT_R, ox, oy, true),
     bone(j.hip[1], j.knee[1], view, LIMB_R, ox, oy),
-    bone(j.knee[1], j.foot[1], view, LIMB_R, ox, oy),
-    bone(j.foot[1], j.toe[1], view, FOOT_R, ox, oy),
+    bone(j.knee[1], j.foot[1], view, LIMB_R, ox, oy, true),
+    bone(j.foot[1], j.toe[1], view, FOOT_R, ox, oy, true),
     bone(j.shoulder[0], j.elbow[0], view, LIMB_R - 2, ox, oy),
-    bone(j.elbow[0], j.hand[0], view, LIMB_R - 3, ox, oy),
+    bone(j.elbow[0], j.hand[0], view, LIMB_R - 3, ox, oy, true),
     bone(j.shoulder[1], j.elbow[1], view, LIMB_R - 2, ox, oy),
-    bone(j.elbow[1], j.hand[1], view, LIMB_R - 3, ox, oy),
+    bone(j.elbow[1], j.hand[1], view, LIMB_R - 3, ox, oy, true),
   ];
+  // Mains : une boule au bout de l'avant-bras. Sans elle, le bras s'arrête net
+  // et le générateur n'a aucune raison d'y dessiner une main — or c'est là que
+  // se tient l'arme, dont la constance a coûté ADR-070.
+  const hands: Bone[] = [0, 1].map(i => {
+    const h: Bone = bone(j.hand[i]!, j.hand[i]!, view, LIMB_R - 2, ox, oy);
+    return h;
+  });
   const torso: Bone = bone(j.pelvis, j.neck, view, TORSO_R, ox, oy);
   const head: Bone = bone(j.head, j.head, view, HEAD_R, ox, oy);
   // Le nez part du centre de la tête : sa moitié arrière est donc toujours
   // enfouie dans le crâne, et seule la pointe dépasse — de face au centre du
   // visage, de profil sur le côté, de dos pas du tout. C'est ce qui distingue
   // la rangée de face de celle de dos, sans rien dessiner de plus.
-  const nose: Bone = bone(j.head, j.nose, view, 9, ox, oy);
+  const nose: Bone = bone(j.head, j.nose, view, NOSE_R, ox, oy);
 
   // Le torse et la tête sont à profondeur nulle : les membres qui passent
   // derrière eux doivent être peints avant, ceux qui passent devant après.
-  const all: Bone[] = [...bones, torso, head].sort((p, q) => p.depth - q.depth);
-  for (const b of all) capsule(img, b.a, b.b, b.r + OUTLINE, INK);
-  for (const b of all) capsule(img, b.a, b.b, b.r, b.depth < -0.5 ? FAR : NEAR);
+  const all: Bone[] = [...bones, ...hands, torso, head].sort((p, q) => p.depth - q.depth);
+  paintBones(img, all);
   // Le nez se peint APRÈS tout le reste et en ENCRE, pas en teinte de membre :
   // vu de face il est entièrement contenu dans la tête, et de la couleur du
   // crâne il y serait invisible — exactement la rangée où le repère manquerait.
@@ -131,7 +177,7 @@ export function drawPose(img: Rgba, j: Joints, view: View, ox: number, oy: numbe
   // En PROFIL le nez est dans le plan médian, donc à profondeur nulle : exiger
   // une profondeur strictement positive le faisait disparaître de la seule vue
   // où il dépasse vraiment.
-  if (nose.depth >= 0) capsule(img, nose.a, nose.b, 9, INK);
+  if (nose.depth >= 0) capsule(img, nose.a, nose.b, NOSE_R, INK);
 }
 
 /**
