@@ -25,6 +25,7 @@ exécution écraserait la correction.
 | la description d'une créature | `data.cjs` |
 | le format de planche, les contraintes, le style | `build.cjs` |
 | la revue, les seuils, la table des drapeaux | `build.cjs` |
+| les images de gabarit affichées dans le document | `docs/gabarits/` — voir son README |
 
 En `.cjs` et non `.js` : le `package.json` déclare `"type": "module"`, et ce
 script utilise `require`. Il vit hors de `src/` parce qu'il ne participe ni au

@@ -63,7 +63,12 @@ dérive pas.
 
 ## Prompt 1 — le PROFIL (à faire en premier)
 
-Joindre le gabarit de profil.
+Joindre cette image au prompt :
+
+![Gabarit de profil](gabarits/gabarit-profil.png)
+
+Fichier : [`docs/gabarits/gabarit-profil.png`](gabarits/gabarit-profil.png).
+Pour le régénérer : `npm run mannequin -- gabarit-profil.png --view side`.
 
 ```
 Tu reçois une IMAGE DE RÉFÉRENCE : un mannequin gris articulé, sans visage ni vêtement, en UNE RANGÉE de QUATRE CASES.
@@ -102,6 +107,14 @@ Sujet : [recopier ici la ligne Sujet de la créature]
 Joindre DEUX images : le gabarit de la direction voulue **et la rangée de profil déjà
 validée**. C'est le chaînage : le générateur a le personnage sous les yeux, pas seulement
 sa description.
+
+| face | dos |
+|---|---|
+| ![Gabarit de face](gabarits/gabarit-face.png) | ![Gabarit de dos](gabarits/gabarit-dos.png) |
+
+Fichiers : [`docs/gabarits/gabarit-face.png`](gabarits/gabarit-face.png) et
+[`docs/gabarits/gabarit-dos.png`](gabarits/gabarit-dos.png).
+Pour les régénérer : `npm run mannequin -- <destination> --view front|back`.
 
 ```
 Tu reçois DEUX images.
