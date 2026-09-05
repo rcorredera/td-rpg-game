@@ -14,80 +14,93 @@ const STYLE = [
  * Prompt d'UNE rangée, adossé au gabarit joint (ADR-073/074).
  *
  * C'est le format en vigueur, et le seul qui ait jamais produit une rangée de
- * face correcte. Il tenait dans la conversation sans être versionné nulle part :
- * l'essai le plus prometteur des six n'était donc pas reproductible.
+ * face correcte.
  *
- * Il ne DÉCRIT plus les poses, il pointe vers elles. Les angles chiffrés, le
- * balancier détaillé et les interdictions de rotation ont disparu — l'image le
- * dit sans ambiguïté, et le prompt fait moins de la moitié de l'ancien.
+ * Réécrit en phrases courtes et règles numérotées après que le PO a jugé les
+ * trois templates peu compréhensibles, y compris pour un humain — et a fait le
+ * lien avec l'échec du générateur : un texte qu'on doit relire deux fois pour
+ * le comprendre ne peut pas être suivi du premier coup par un modèle qui ne le
+ * relit pas. Le prompt pour le DOS était en plus ABSENT : la version publiée
+ * demandait de modifier soi-même le texte du prompt FACE (« remplacer telle
+ * phrase par telle autre »). `ROW_PROMPT` génère maintenant les trois versions
+ * complètes, sans manipulation de texte à la charge du PO.
  */
 const VIEW_TEXT = {
   front: {
-    label: "FACE",
-    gabarit: "gabarit-face",
-    lecture: "Le personnage est vu de FACE, marchant vers le spectateur.",
-    tenue: "Le personnage reste de FACE dans les quatre cases : épaules parallèles au bord de l'image, il ne pivote jamais.",
+    lecture: "Vu de FACE : il marche droit vers toi.",
+    tenue: "Il reste vu de FACE dans les 4 cases (jamais de profil, jamais de trois-quarts).",
   },
   side: {
-    label: "PROFIL",
-    gabarit: "gabarit-profil",
-    lecture: "Le personnage est vu de PROFIL, marchant vers la DROITE de l'image.",
-    tenue: "Le personnage reste de PROFIL STRICT dans les quatre cases : on voit un seul côté du corps, jamais l'autre, et il ne pivote jamais.",
+    lecture: "Vu de PROFIL : il marche vers la droite de l'image.",
+    tenue: "Il reste vu de PROFIL dans les 4 cases (toujours le même côté du corps, jamais l'autre).",
   },
   back: {
-    label: "DOS",
-    gabarit: "gabarit-dos",
-    lecture: "Le personnage est vu de DOS, s'éloignant du spectateur.",
-    tenue: "Le personnage reste de DOS dans les quatre cases : épaules parallèles au bord de l'image, il ne pivote jamais.",
+    lecture: "Vu de DOS : il s'éloigne de toi.",
+    tenue: "Il reste vu de DOS dans les 4 cases (jamais de profil, jamais de trois-quarts).",
   },
 };
 
+/**
+ * Prompt complet pour UNE vue. `chained` = deux images en entrée (le
+ * personnage déjà dessiné + le gabarit de cette vue) plutôt qu'une seule.
+ */
 const ROW_PROMPT = (view, subject, chained) => {
   const v = VIEW_TEXT[view];
   return [
-    chained
-      ? "Tu reçois DEUX images."
-      : "Tu reçois une IMAGE DE RÉFÉRENCE : un mannequin gris articulé, sans visage ni vêtement, en UNE RANGÉE de QUATRE CASES.",
+    chained ? "Tu donnes DEUX images." : "Voici une image de référence : un mannequin gris en 4 cases.",
     "",
     ...(chained ? [
-      "IMAGE 1 — le personnage DÉJÀ dessiné, en quatre poses de marche. C'est LE personnage de référence : ses couleurs, ses proportions, ses détails et son équipement font foi.",
+      "IMAGE 1 : le personnage déjà dessiné, en 4 poses de marche. C'est LUI qu'il faut redessiner —",
+      "mêmes couleurs, mêmes proportions, même équipement, même style de trait.",
       "",
-      "IMAGE 2 — un mannequin gris articulé en une rangée de quatre cases. C'est le GABARIT DE POSES.",
+      "IMAGE 2 : un mannequin gris en 4 cases qui montre les poses à prendre.",
       "",
     ] : []),
-    "Le gabarit ne montre pas le personnage à dessiner, il montre les POSITIONS que son corps doit prendre.",
+    (chained ? "L'image 2 ne" : "Elle ne") + " montre pas à quoi ressemble le personnage. Elle montre juste la",
+    "position de ses bras et de ses jambes, case par case.",
     "",
-    "Comment le lire :",
+    "Comment la lire :",
     "- " + v.lecture,
-    "- Les quatre cases sont quatre instants successifs d'un même pas de marche.",
-    "- Le GRIS FONCÉ marque le bras ou la jambe le plus ÉLOIGNÉ du spectateur. Ce n'est pas une couleur du personnage : c'est une indication de profondeur, à rendre par une ombre légère.",
-    "- Le TRAIT NOIR sur la tête marque le NEZ, donc l'orientation du visage. C'est un repère, pas un trait à recopier.",
-    "- La LIGNE GRISE horizontale est le sol.",
+    "- Le gris plus foncé, c'est le bras ou la jambe le plus loin de toi — une ombre légère suffit à le montrer.",
+    "- Le trait noir sur la tête, c'est le nez : juste un repère pour savoir où regarde le personnage.",
+    "- La ligne grise horizontale, c'est le sol.",
     "",
     chained
-      ? "TA TÂCHE : dessiner LE MÊME personnage que l'image 1, dans les poses de l'image 2."
-      : "TA TÂCHE : redessiner ces quatre cases en habillant le gabarit avec le personnage décrit plus bas.",
+      ? "TA TÂCHE : dessine le personnage de l'image 1, dans les poses de l'image 2."
+      : "TA TÂCHE : dessine le personnage décrit plus bas, dans les 4 poses du mannequin.",
     "",
-    "RÈGLES ABSOLUES :",
-    ...(chained ? [
-      "- Le personnage doit être RECONNAISSABLE comme celui de l'image 1 : couleurs identiques teinte pour teinte, mêmes proportions, mêmes détails, même équipement. C'est la contrainte la plus importante.",
-      "- Sa TAILLE à l'écran doit être exactement la même que dans l'image 1, du sol au sommet de la tête.",
-      "- Même style de trait et même épaisseur de contour que l'image 1.",
-    ] : []),
-    "- Reproduire EXACTEMENT la pose de chaque case : même angle de chaque membre, même jambe devant, même bras en avant, même pied levé.",
-    "- Garder la même grille : une rangée, quatre cases, même position, même échelle.",
-    "- Garder la ligne de sol, fine et grise, traversant toute la largeur sans interruption. Les pieds posés la touchent exactement.",
-    "- Le personnage est strictement IDENTIQUE dans les quatre cases : mêmes couleurs, mêmes proportions, même équipement, même éclairage. Seule la position des membres change.",
-    "- " + v.tenue,
-    "- Aucun aplat de fond blanc enfermé entre un bras et le torse.",
-    "- Fond BLANC UNI. Aucun cadre, aucune grille, aucun numéro, aucun texte, aucune ombre portée.",
-    "- Le personnage peut être plus large ou plus massif que le mannequin. Ce sont les POSES qui comptent, pas les proportions du gabarit.",
+    "Règles, dans l'ordre d'importance :",
+    "",
+    "1. Copie exactement la pose de chaque case : mêmes angles de bras et de jambes, même jambe",
+    "   en avant, même pied levé. Ne change rien à la pose.",
+    "",
+    chained
+      ? [
+        "2. Le personnage doit rester reconnaissable comme celui de l'image 1 : mêmes couleurs, mêmes",
+        "   proportions, même équipement, même style de trait, et la même taille à l'écran (du sol au",
+        "   sommet de la tête).",
+      ].join("\n")
+      : [
+        "2. Le personnage est rigoureusement identique dans les 4 cases : mêmes couleurs, mêmes",
+        "   proportions, même équipement. Seule la position des bras et des jambes change.",
+      ].join("\n"),
+    "",
+    "3. " + v.tenue,
+    "",
+    "4. Une ligne de sol fine et grise, sous les pieds, traverse toute l'image sans interruption.",
+    "",
+    "5. Fond blanc uni. Pas de cadre, pas de grille visible, pas de texte, pas d'ombre portée au sol.",
+    ...(chained ? [] : [
+      "",
+      "6. Le personnage peut être plus grand ou plus large que le mannequin : seule sa pose doit",
+      "   correspondre, pas sa carrure.",
+    ]),
     "",
     STYLE.join("\n"),
     "Chaque case doit rester lisible réduite à 50 px de haut.",
     "",
     ...(chained ? [] : ["Sujet : " + subject]),
-  ].filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
+  ].filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n").trim();
 };
 
 const SHEET = (subject) => [
@@ -257,28 +270,32 @@ p("# Prompts Gemini — un bloc autonome par entité",
   ROW_PROMPT("side", "[recopier ici la ligne Sujet de la créature]", false),
   "\`\`\`",
   "",
-  "## Prompt 2 — la FACE, puis le DOS",
+  "## Prompt 2 — la FACE",
   "",
-  "Joindre DEUX images : le gabarit de la direction voulue **et la rangée de profil déjà",
-  "validée**. C'est le chaînage : le générateur a le personnage sous les yeux, pas seulement",
-  "sa description.",
+  "Une fois le profil validé, joindre DEUX images : lui, et le gabarit de face. Le générateur a",
+  "le personnage sous les yeux, pas seulement sa description — c'est le chaînage.",
   "",
-  "| face | dos |",
-  "|---|---|",
-  "| ![Gabarit de face](gabarits/gabarit-face.png) | ![Gabarit de dos](gabarits/gabarit-dos.png) |",
+  "![Gabarit de face](gabarits/gabarit-face.png)",
   "",
-  "Fichiers : [`docs/gabarits/gabarit-face.png`](gabarits/gabarit-face.png) et",
-  "[`docs/gabarits/gabarit-dos.png`](gabarits/gabarit-dos.png).",
-  "Pour les régénérer : `npm run mannequin -- <destination> --view front|back`.",
+  "Fichier : [`docs/gabarits/gabarit-face.png`](gabarits/gabarit-face.png).",
+  "Pour le régénérer : `npm run mannequin -- gabarit-face.png --view front`.",
   "",
   "\`\`\`",
   ROW_PROMPT("front", "", true),
   "\`\`\`",
   "",
-  "Pour le DOS, remplacer dans le texte ci-dessus les deux mentions de la vue :",
-  "« vu de FACE, marchant vers le spectateur » devient « vu de DOS, s'éloignant du",
-  "spectateur », et « reste de FACE dans les quatre cases » devient « reste de DOS dans les",
-  "quatre cases ».",
+  "## Prompt 3 — le DOS",
+  "",
+  "Même principe, avec le gabarit de dos.",
+  "",
+  "![Gabarit de dos](gabarits/gabarit-dos.png)",
+  "",
+  "Fichier : [`docs/gabarits/gabarit-dos.png`](gabarits/gabarit-dos.png).",
+  "Pour le régénérer : `npm run mannequin -- gabarit-dos.png --view back`.",
+  "",
+  "\`\`\`",
+  ROW_PROMPT("back", "", true),
+  "\`\`\`",
   "",
   "## Les sujets, un par créature",
   "",
