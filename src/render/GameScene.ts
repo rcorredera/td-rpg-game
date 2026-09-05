@@ -10,7 +10,7 @@
 
 import Phaser from "phaser";
 import { CONTENT } from "../content/index";
-import { SANDBOX_CHAPTER } from "../content/sandbox";
+import { sandboxPack } from "../content/sandbox";
 import {
   castAccountSpell, castRally, castWhirlwind, computeResult, createRun, moveHero, spawnOneEnemy, startNextWave, tick,
 } from "../core/sim";
@@ -106,7 +106,7 @@ export class GameScene extends Phaser.Scene {
     // l'écran Histoire, le banc d'équilibrage et leurs tests : un 21e chapitre
     // à 9999 PV de château y fausserait toutes les mesures.
     this.sandbox = data.sandbox === true;
-    this.content = this.sandbox ? { ...CONTENT, chapters: [SANDBOX_CHAPTER] } : CONTENT;
+    this.content = this.sandbox ? sandboxPack(CONTENT) : CONTENT;
     this.chapterIdx = this.sandbox ? 0 : (data.chapterIndex ?? 0);
     const ch: ChapterDef | undefined = this.content.chapters[this.chapterIdx];
     if (!ch?.playable) throw new Error(`chapitre ${this.chapterIdx} injouable`);
@@ -149,7 +149,7 @@ export class GameScene extends Phaser.Scene {
     // sinon le halo du portail passe par-dessus les monstres qui marchent dessus —
     // un effet de sol doit rester sous ce qui marche dessus, pas flotter au-dessus.
     this.groundGfx = this.add.graphics().setDepth(90);
-    this.entities = new BattlefieldEntities();
+    this.entities = new BattlefieldEntities(this.content);
     this.fxPool = new FxLayer(this);
     this.hud = new Hud(this);
     this.hud.build(this.run.hasAccountSpell, this.hudCallbacks());

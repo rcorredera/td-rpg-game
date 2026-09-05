@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { BACKGROUND_MIN, type Rgba } from "./image";
 import {
   type Band, detectGroundLine, detectGroundLines, eraseGroundLine, type FrameBox,
-  frameAnchor, type MirrorPredicate, packFrames, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
+  dropPoses, frameAnchor, type MirrorPredicate, packFrames, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
 } from "./strip";
 
 /** Image opaque entièrement blanche — le fond que livre le générateur. */
@@ -365,5 +365,33 @@ describe("packRows — miroir pose par pose", () => {
     const { img, rows } = asymmetricRow();
     expect(packRows(img, rows, 2).sheet.data)
       .not.toEqual(packRows(img, rows, 2, ROW_0).sheet.data);
+  });
+});
+
+describe("dropPoses", () => {
+  const rows: StripRow[] = [
+    { baseline: 10, frames: [box(0), box(1), box(2), box(3)] },
+    { baseline: 20, frames: [box(4), box(5), box(6), box(7)] },
+  ];
+
+  /** Boîte marquée par son x0, pour suivre quelle pose survit. */
+  function box(x: number): FrameBox {
+    return { x0: x, y0: 0, x1: x, y1: 1, anchorX: x };
+  }
+
+  it("retire la pose de TOUTES les rangées", () => {
+    // Elles doivent porter le même compte : le rangement direction-major se
+    // décalerait sinon, et chaque direction irait puiser dans la suivante.
+    const out: StripRow[] = dropPoses(rows, new Set<number>([2]));
+    expect(out.map(r => r.frames.map(f => f.x0))).toEqual([[0, 1, 3], [4, 5, 7]]);
+  });
+
+  it("garde les rangées et leurs lignes de sol", () => {
+    const out: StripRow[] = dropPoses(rows, new Set<number>([0]));
+    expect(out.map(r => r.baseline)).toEqual([10, 20]);
+  });
+
+  it("ne touche à rien quand rien n'est listé", () => {
+    expect(dropPoses(rows, new Set<number>())).toEqual(rows);
   });
 });

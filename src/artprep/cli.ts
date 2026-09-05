@@ -7,6 +7,10 @@
 //   npm run sprite -- <source> <destination> --strip     (planche de marche)
 //   npm run sprite -- <source> <destination> --strip --poses 4 --profile-left
 //   npm run sprite -- <source> <destination> --strip --mirror 1:2
+//   npm run sprite -- <source> <destination> --strip --drop 2
+//   npm run sprite -- <source> <destination> --strip --fill-holes
+//   npm run sprite -- <face> <profil> <dos> <destination> --strip --views fsb
+//   npm run sprite -- <face> <destination> --strip --views f   (une rangée seule)
 //
 // Les deux chemins désignent des fichiers PNG. Aucun exemple de nom n'est écrit
 // avec son extension dans ce fichier, à dessein : `assets.integrity.test.ts`
@@ -23,13 +27,15 @@
 // ============================================================
 
 import {
-  BACKGROUND_MIN, crop, downscale, dropFragments, feather, floodBackground, lightBorderCount, resample,
+  BACKGROUND_MIN, crop, downscale, dropFragments, feather, fillHoles, findHoles, floodBackground,
+  alignWidths, type Hole, lightBorderCount, resample, stack,
   type FragmentResult, type FringeResult, type Rgba,
   stripFringe,
 } from "./image";
+import { cycleReport, cycleWarnings, type RowView } from "./cycle";
 import { decode, encode } from "./png";
 import {
-  type Band, detectGroundLines, eraseGroundLine,
+  type Band, detectGroundLines, dropPoses, eraseGroundLine,
   type MirrorPredicate, packRows, type PackedStrip, sliceFrames, sliceRowInto, type StripRow,
 } from "./strip";
 
@@ -48,14 +54,40 @@ const DEFAULT_MAX_SIDE: number = 256;
 
 const argv: string[] = process.argv.slice(2);
 const flags: string[] = argv.filter((a) => a.startsWith("--"));
-const positional: string[] = argv.filter((a) => !a.startsWith("--"));
-const src: string | undefined = positional[0];
-const dst: string | undefined = positional[1];
 
-if (src === undefined || dst === undefined) {
-  console.error("usage : npm run sprite -- <source> <destination> [--max 256] [--keep-fragments]");
+/**
+ * Options qui CONSOMMENT l'argument suivant.
+ *
+ * Sans cette liste, `--max 256` déposait « 256 » parmi les chemins. Tant que la
+ * destination était le DEUXIÈME positionnel, le défaut restait invisible ; il
+ * devient bloquant dès qu'on accepte plusieurs sources et que la destination est
+ * le dernier (ADR-074).
+ */
+const VALUED: readonly string[] = ["--max", "--poses", "--mirror", "--drop", "--views"];
+
+const positional: string[] = [];
+for (let i: number = 0; i < argv.length; i++) {
+  const a: string = argv[i]!;
+  if (a.startsWith("--")) {
+    if (VALUED.includes(a)) i++;
+    continue;
+  }
+  positional.push(a);
+}
+// Une source, ou PLUSIEURS à empiler — une par direction. La destination est
+// toujours le dernier chemin, ce qui laisse le nombre de sources libre.
+const sources: string[] = positional.slice(0, -1);
+const dst: string | undefined = positional[positional.length - 1];
+
+if (sources.length === 0 || dst === undefined) {
+  console.error("usage : npm run sprite -- <source...> <destination> [--max 256] [--keep-fragments]");
   process.exit(1);
 }
+if (sources.length > 1 && !flags.includes("--strip")) {
+  console.error("artprep: plusieurs sources n'ont de sens qu'avec --strip, une rangée par image.");
+  process.exit(1);
+}
+const src: string = sources.join(" + ");
 
 const maxIndex: number = argv.indexOf("--max");
 const maxSide: number = maxIndex >= 0 ? Number(argv[maxIndex + 1]) : DEFAULT_MAX_SIDE;
@@ -64,6 +96,14 @@ if (!Number.isFinite(maxSide) || maxSide <= 0) {
   process.exit(1);
 }
 const keepFragments: boolean = flags.includes("--keep-fragments");
+/**
+ * Boucher les poches de fond enfermées dans le dessin (ADR-071).
+ *
+ * Sur demande, jamais d'office : l'algorithme ne distingue pas une aisselle
+ * d'un reflet d'armure ou d'un œil. Le rapport recense les poches dans tous les
+ * cas — regarder la carte, puis décider.
+ */
+const fillHolesFlag: boolean = flags.includes("--fill-holes");
 /** Planche de poses : découpe le cycle de marche en cases régulières (ADR-065). */
 const asStrip: boolean = flags.includes("--strip");
 /** Force le nombre de poses par rangée quand la détection se trompe. */
@@ -76,12 +116,31 @@ if (posesIndex >= 0 && (!Number.isInteger(posesFlag) || posesFlag < 1)) {
 /** La rangée de profil regarde à GAUCHE : la retourner pour tenir la convention. */
 const profileLeft: boolean = flags.includes("--profile-left");
 /**
+ * Poses à RETIRER du cycle, dans toutes les rangées (ADR-070).
+ *
+ * Le remède de premier choix quand le générateur rate une case : la retourner
+ * en échange son équipement de main, et le clignotement se voit. Trois poses
+ * cohérentes valent mieux que quatre dont une saute.
+ */
+const dropIndex: number = argv.indexOf("--drop");
+const dropPosesFlag: Set<number> = new Set<number>();
+if (dropIndex >= 0) {
+  for (const part of (argv[dropIndex + 1] ?? "").split(",")) {
+    const n: number = Number(part.trim());
+    if (!Number.isInteger(n) || n < 0) {
+      console.error(`--drop attend des index de pose séparés par des virgules, reçu « ${part} »`);
+      process.exit(1);
+    }
+    dropPosesFlag.add(n);
+  }
+}
+/**
  * Poses ISOLÉES à retourner, en `rangée:pose` séparées par des virgules.
  *
- * Le générateur ne se trompe pas toujours sur une rangée entière : sur la
- * planche du gobelin, trois poses de profil sur quatre regardaient à droite et
- * la quatrième à gauche. `--profile-left` aurait retourné les trois saines avec
- * elle ; il faut donc pouvoir désigner la seule fautive.
+ * Le générateur ne se trompe pas toujours sur une rangée entière : `--mirror`
+ * désigne la seule case fautive là où `--profile-left` retournerait aussi les
+ * poses saines. À ne garder QUE si la pose porte un équipement symétrique —
+ * sinon `--drop` (ADR-070).
  */
 const mirrorIndex: number = argv.indexOf("--mirror");
 const mirrorArg: string = mirrorIndex >= 0 ? (argv[mirrorIndex + 1] ?? "") : "";
@@ -97,10 +156,33 @@ if (mirrorIndex >= 0) {
   }
 }
 
+/**
+ * Ce que montre chaque rangée, une lettre par rangée : `f` face, `s` profil,
+ * `b` dos. Exemple : `--views fsb`, ou `--views f` pour une face livrée seule.
+ *
+ * Indispensable dès qu'on génère les directions séparément (ADR-074) : le juge
+ * de cycle applique au profil un seuil deux fois plus exigeant qu'aux vues
+ * frontales, et sans cette déclaration il traite toute planche d'une seule
+ * rangée comme un profil. Le gabarit de face, correct par construction, s'y
+ * faisait refuser à 28 %.
+ */
+const viewsIndex: number = argv.indexOf("--views");
+const viewsArg: string = viewsIndex >= 0 ? (argv[viewsIndex + 1] ?? "") : "";
+if (viewsIndex >= 0 && !/^[fsb]+$/.test(viewsArg)) {
+  console.error(`--views attend une suite de f (face), s (profil) ou b (dos), reçu « ${viewsArg} »`);
+  process.exit(1);
+}
+const declaredViews: RowView[] | undefined = viewsIndex >= 0
+  ? [...viewsArg].map(c => (c === "s" ? "profile" : "frontal"))
+  : undefined;
+
+/** Rangées dont le cycle ne bouge pas assez (ADR-072). */
+let cycleAlerts: string[] = [];
+
 /** Pixels de bord adoucis — 0 sur une planche, dont les cases ne sont pas rognées. */
 let featheredPx: number = 0;
 
-let img: Rgba = decode(readFileSync(src));
+let img: Rgba = stack(alignWidths(sources.map(f => decode(readFileSync(f)))));
 const sourceSize: string = `${img.width}x${img.height}`;
 
 // La ligne de sol se cherche AVANT tout : elle ne touche pas les bords de
@@ -116,6 +198,16 @@ for (const b of bands) groundErased += eraseGroundLine(img, b, BACKGROUND_MIN);
 // Détourage : Gemini livre sur fond blanc opaque. Sur une image déjà détourée,
 // l'étape ne trouve rien et ne fait rien.
 const background: number = floodBackground(img);
+// Poches de fond ENFERMÉES : le creux entre un bras et le torse quand la
+// créature tient son arme devant elle, l'échancrure d'un croissant de hache.
+// Le remplissage part des bords et ne les atteint jamais (ADR-071).
+// Toujours RECENSÉES, bouchées seulement sur demande : les mêmes composantes
+// portent aussi les reflets et les yeux, et les boucher d'office est le piège
+// déjà payé en ADR-050.
+const holes: Hole[] = findHoles(img);
+const holesPx: number = fillHolesFlag ? fillHoles(img, holes) : 0;
+// Le décapage vient APRÈS : ouvrir une poche découvre le dégradé JPEG qui la
+// bordait, et sans cette passe il resterait un liseré clair dans chaque aisselle.
 const fringe: FringeResult = stripFringe(img);
 // Sur une PLANCHE, les poses sont par nature des composantes séparées : la
 // détection de fragments y verrait N-1 « membres détachés » et noierait une
@@ -148,14 +240,21 @@ if (asStrip) {
     console.error("artprep: --strip n'a isolé aucune pose — lignes de sol mal détectées ?");
     process.exit(1);
   }
-  const rows: StripRow[] = bands.map((b, i) => ({
+  const cut: StripRow[] = bands.map((b, i) => ({
     baseline: b.bottom,
     frames: sliceRowInto(img, poses, ...rowRange(i)),
   }));
-  if (rows.some(r => r.frames.length !== poses)) {
-    console.error(`artprep: découpage incomplet (${rows.map(r => r.frames.length).join(", ")} contre ${poses} attendues).`);
+  if (cut.some(r => r.frames.length !== poses)) {
+    console.error(`artprep: découpage incomplet (${cut.map(r => r.frames.length).join(", ")} contre ${poses} attendues).`);
     process.exit(1);
   }
+  // Le retrait vient APRÈS le contrôle de complétude : il doit porter sur un
+  // découpage sain, sinon `--drop 2` masquerait une rangée mal coupée.
+  if (dropPosesFlag.size >= poses) {
+    console.error(`artprep: --drop retirerait les ${poses} poses de chaque rangée.`);
+    process.exit(1);
+  }
+  const rows: StripRow[] = dropPoses(cut, dropPosesFlag);
   // La convention du registre veut un profil tourné vers la DROITE (ADR-067) :
   // la marche vers la gauche en est le miroir. Un générateur qui dessine le
   // profil à gauche se corrige ici, pose par pose — retourner la bande entière
@@ -172,6 +271,10 @@ if (asStrip) {
     (profileLeft && row === profileRow) || mirrorCells.has(`${row}:${pose}`);
   const sheet: PackedStrip = packRows(img, rows, 2, mirror);
   packed = sheet;
+  // Le cycle BOUGE-t-il ? Mesuré sur la planche empaquetée, avant réduction :
+  // une planche peut être parfaitement découpée et ne contenir aucune marche
+  // (ADR-072). Ce contrôle-là, l'œil l'a raté deux fois.
+  cycleAlerts = cycleWarnings(cycleReport(sheet.sheet, sheet.cellW, sheet.rows, sheet.poses), declaredViews);
   cropped = `${sheet.sheet.width}x${sheet.sheet.height}`;
   // Chaque case est rééchantillonnée aux MÊMES dimensions exactes : un facteur
   // d'échelle appliqué case par case dériverait par arrondi, et Phaser
@@ -208,9 +311,18 @@ const lines: string[] = [
   `  source          ${sourceSize}`,
   ...(asStrip ? [`  lignes de sol   ${bands.length} (${bands.map(b => b.bottom).join(", ")}), ${groundErased} px effacés`] : []),
   `  fond retiré     ${background} px`,
+  `  poches fermées  ${holes.length} recensée(s)${fillHolesFlag ? `, ${holesPx} px bouchés` : " (--fill-holes pour les boucher)"}`,
   `  frange claire   ${fringe.removed} px en ${fringe.passes} passe(s)`,
   `  fragments       ${fragments.dropped} détaché(s) supprimé(s), ${fragments.droppedPx} px`,
   asStrip ? `  planche         ${cropped}, ${packed?.rows} direction(s) x ${packed?.poses} pose(s) = ${packed?.count} cases de ${packed?.cellW}x${packed?.cellH}` : `  rognage         ${cropped}`,
+  // Dispersion des pieds autour de leur ligne de sol. Calculée depuis toujours
+  // par `packRows`, elle n'était jamais montrée : une pose 3 px plus basse fait
+  // tressauter la créature à chaque cycle, et rien ne le disait avant le jeu.
+  ...(asStrip ? [`  écart au sol    ${packed?.baselineSpread} px entre la pose la plus haute et la plus basse`] : []),
+  // Écart de TAILLE entre les poses. Sur une planche d'un bloc il est faible par
+  // construction ; sur trois images générées séparément, c'est le premier signe
+  // que le personnage a changé d'échelle d'une direction à l'autre (ADR-074).
+  ...(asStrip ? [`  écart de taille ${packed?.heightSpread} px entre la pose la plus grande et la plus petite`] : []),
   `  anticrénelage   ${featheredPx} px de bord`,
   `  sortie          ${img.width}x${img.height}`,
   `  bord clair      ${remaining} px restant(s)`,
@@ -223,6 +335,35 @@ if (fringe.saturated) {
 }
 for (const k of fragments.kept) {
   console.warn(`  ⚠ fragment détaché de ${k.size} px CONSERVÉ (au-dessus du seuil de miette) — membre légitime ou doublon ?`);
+}
+// La plus grosse poche mérite un œil : sur les planches vues jusqu'ici, une
+// aisselle plafonne à ~400 px pour une image de 1024. Bien au-delà, c'est
+// probablement une surface claire DESSINÉE — un crâne, une aile pâle — et la
+// boucher ferait un trou.
+const biggest: number = holes.reduce((m, h) => Math.max(m, h.size), 0);
+if (fillHolesFlag && biggest > 2000) {
+  console.warn(`  ⚠ poche de ${biggest} px bouchée : anormalement grande, vérifier qu'il n'y a pas de trou dans le dessin.`);
+}
+if (!fillHolesFlag && holes.length > 0) {
+  console.warn(`  ⚠ ${holes.length} poche(s) de fond enfermée(s) — creux entre un bras et le torse, échancrure d'arme.`);
+  console.warn("    Elles restent BLANCHES en jeu. Les regarder, puis relancer avec --fill-holes si c'est bien du fond.");
+}
+// L'écart de taille est RAPPORTÉ mais n'alerte PAS.
+//
+// Un seuil avait été posé à un douzième de la case. Le gabarit de référence, dont
+// les trois vues ont pourtant des hauteurs identiques au pixel près en amont
+// (mesuré : 238, 245, 238, 245 dans chacune), le déclenchait avec 57 px. L'écart
+// naît donc quelque part dans le découpage ou l'empaquetage, et la cause n'est
+// pas établie.
+//
+// Un détecteur dont on ne sait pas expliquer les déclenchements est pire
+// qu'absent : il apprend à ignorer les avertissements. La mesure reste au
+// rapport, où elle sert à comparer deux tirages ; l'alerte reviendra quand on
+// saura ce qu'elle mesure vraiment.
+// Le défaut le plus coûteux : une planche impeccable où la créature ne marche
+// pas. Il survit à toutes les autres vérifications, et se voit seulement en jeu.
+for (const w of cycleAlerts) {
+  console.warn(`  ⚠ ${w}`);
 }
 if (remaining > 0) {
   console.warn(`  ⚠ ${remaining} px de bord encore clairs : le contour du sprite n'est pas noir partout.`);

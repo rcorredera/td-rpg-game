@@ -6,7 +6,10 @@
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist/**", "node_modules/**", "public/**"] },
+  // `tools/` n'est ni du jeu ni du TypeScript : des scripts CommonJS d'atelier,
+  // hors du bundle et hors du typage. Les régler ici reviendrait à leur imposer
+  // les conventions d'un code qu'ils ne sont pas.
+  { ignores: ["dist/**", "node_modules/**", "public/**", "tools/**"] },
   ...tseslint.configs.recommended,
   {
     files: ["src/**/*.ts"],

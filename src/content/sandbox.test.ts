@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { MapDef, PlayableChapter, Vec2 } from "../core/types";
+import type { ContentPack, MapDef, PlayableChapter, Vec2 } from "../core/types";
 import { ENEMIES } from "./enemies";
 import { CONTENT } from "./index";
-import { SANDBOX_CHAPTER, SANDBOX_ID } from "./sandbox";
+import { MANNEQUIN, SANDBOX_CHAPTER, SANDBOX_ID, sandboxPack } from "./sandbox";
 
 const sandbox: PlayableChapter = SANDBOX_CHAPTER as PlayableChapter;
 const map: MapDef = sandbox.map;
@@ -103,5 +103,41 @@ describe("bac à sable — défilé des créatures", () => {
         expect(s.count).toBeLessThanOrEqual(3);
       }
     }
+  });
+});
+
+describe("sandboxPack — le gabarit de poses", () => {
+  const pack: ContentPack = sandboxPack(CONTENT);
+
+  it("ajoute le gabarit aux créatures invocables", () => {
+    expect(pack.enemies[MANNEQUIN.id]).toBe(MANNEQUIN);
+  });
+
+  it("NE le met PAS dans le contenu du jeu", () => {
+    // Un mannequin gris n'a rien à faire dans le Bestiaire ni dans le compte des
+    // créatures à découvrir. Le test de non-régression de cette frontière.
+    expect(CONTENT.enemies[MANNEQUIN.id]).toBeUndefined();
+  });
+
+  it("ne le fait apparaître dans AUCUNE vague", () => {
+    // Il ne s'invoque qu'à la demande : le voir surgir au milieu d'une vague de
+    // bac à sable brouillerait justement l'observation qu'on venait faire.
+    for (const ch of pack.chapters) {
+      if (!ch.playable) continue;
+      for (const w of ch.waves) {
+        for (const g of w.spawns) expect(g.enemyId).not.toBe(MANNEQUIN.id);
+        expect(w.miniBoss?.enemyId).not.toBe(MANNEQUIN.id);
+      }
+    }
+  });
+
+  it("garde tout le reste du pack intact", () => {
+    expect(Object.keys(pack.enemies).length).toBe(Object.keys(CONTENT.enemies).length + 1);
+    expect(pack.towers).toBe(CONTENT.towers);
+    expect(pack.scaling).toBe(CONTENT.scaling);
+  });
+
+  it("ne joue QUE le chapitre bac à sable", () => {
+    expect(pack.chapters).toEqual([SANDBOX_CHAPTER]);
   });
 });

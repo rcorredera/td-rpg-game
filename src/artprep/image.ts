@@ -166,6 +166,161 @@ export function floodBackground(img: Rgba, threshold: number = BACKGROUND_MIN): 
   return removed;
 }
 
+/**
+ * Ramène toutes les images à la largeur de la plus large, à ratio constant.
+ *
+ * À faire AVANT `stack`, sans exception. Le complément blanc de `stack` ne
+ * prolonge pas la ligne de sol : une source plus étroite voit donc sa ligne
+ * couvrir moins de 85 % de la largeur empilée, et `detectGroundLines` cesse de
+ * la reconnaître. Mesuré sur trois gabarits dont un ramené de 1024 à 820 px de
+ * large : deux lignes détectées au lieu de trois, deux rangées fusionnées en
+ * une case de 520 px de haut, et AUCUNE erreur — la planche sortait fausse en
+ * silence. C'est le mode d'échec le plus dangereux du lot.
+ *
+ * Le redimensionnement porte sur l'image entière, donc il préserve la place du
+ * personnage dans son cadre. Il ne corrige pas un cadrage différent d'une source
+ * à l'autre : ça, seul le rapport peut le signaler.
+ */
+export function alignWidths(parts: readonly Rgba[]): Rgba[] {
+  const width: number = Math.max(...parts.map(p => p.width));
+  return parts.map(p => p.width === width
+    ? p
+    : resample(p, width, Math.max(1, Math.round(p.height * width / p.width))));
+}
+
+/**
+ * Empile plusieurs images en une seule, alignées à gauche, fond blanc.
+ *
+ * Le générateur tient les quatre poses d'une rangée mais décroche sur douze
+ * cases (ADR-074) : on lui en demande une direction à la fois, et c'est ici que
+ * les morceaux se recollent. Chaque source portant sa propre ligne de sol, la
+ * pile en compte une par rangée — exactement ce qu'attend la suite de la chaîne,
+ * qui ne fait donc aucune différence avec une planche générée d'un bloc.
+ *
+ * Les largeurs sont complétées en BLANC et non en transparent : le détourage
+ * part des bords et prendrait un remplissage transparent pour du dessin déjà
+ * découpé, laissant une frange le long du raccord.
+ */
+export function stack(parts: readonly Rgba[]): Rgba {
+  const width: number = Math.max(...parts.map(p => p.width));
+  const height: number = parts.reduce((h, p) => h + p.height, 0);
+  const out: Rgba = { width, height, data: new Uint8Array(width * height * 4).fill(255) };
+  let y0: number = 0;
+  for (const p of parts) {
+    for (let y: number = 0; y < p.height; y++) {
+      const src: number = y * p.width * 4;
+      out.data.set(p.data.subarray(src, src + p.width * 4), ((y0 + y) * width) * 4);
+    }
+    y0 += p.height;
+  }
+  return out;
+}
+
+/** Une poche de fond ENFERMÉE dans le dessin : sa taille, sa boîte, sa graine. */
+export interface Hole {
+  size: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  /**
+   * Index d'un pixel de la poche, d'où la reparcourir pour la boucher.
+   *
+   * Une graine plutôt que la boîte englobante : deux poches voisines — les deux
+   * échancrures d'un même fer de hache — se chevauchent en boîte, et boucher par
+   * boîte effacerait la seconde sans qu'elle ait été recensée ni décidée.
+   */
+  seed: number;
+}
+
+/**
+ * Recense les zones claires que `floodBackground` n'a pas pu atteindre.
+ *
+ * Ne MUTE RIEN, à dessein. Une aisselle — le creux entre un bras et le torse,
+ * fermé par l'arme que la créature tient — est du fond, et le PO l'a signalée
+ * sur les deux planches. Un reflet d'armure, un œil, une dent, l'échancrure
+ * blanche d'un croissant de hache : ce sont les mêmes composantes pour
+ * l'algorithme. Boucher automatiquement, c'est le piège d'ADR-050, où la passe
+ * des poches enfermées mangeait les reflets.
+ *
+ * Le recensement sert donc deux usages : avertir l'opérateur qu'il y a quelque
+ * chose à regarder, et alimenter `fillHoles` quand il a regardé et tranché.
+ */
+export function findHoles(img: Rgba, threshold: number = BACKGROUND_MIN): Hole[] {
+  const { width: w, height: h, data } = img;
+  const seen: Uint8Array = new Uint8Array(w * h);
+  const holes: Hole[] = [];
+
+  const isLight = (p: number): boolean => {
+    const i: number = p * 4;
+    if (data[i + 3] === 0) return false;   // déjà retiré : c'est le fond extérieur
+    return data[i]! >= threshold && data[i + 1]! >= threshold && data[i + 2]! >= threshold;
+  };
+
+  for (let start: number = 0; start < w * h; start++) {
+    if (seen[start] === 1 || !isLight(start)) continue;
+    const stack: number[] = [start];
+    seen[start] = 1;
+    const hole: Hole = { size: 0, x0: w, y0: h, x1: 0, y1: 0, seed: start };
+    while (stack.length > 0) {
+      const p: number = stack.pop()!;
+      const px: number = p % w;
+      const py: number = (p - px) / w;
+      hole.size++;
+      if (px < hole.x0) hole.x0 = px;
+      if (px > hole.x1) hole.x1 = px;
+      if (py < hole.y0) hole.y0 = py;
+      if (py > hole.y1) hole.y1 = py;
+      const push = (q: number): void => {
+        if (seen[q] === 1 || !isLight(q)) return;
+        seen[q] = 1;
+        stack.push(q);
+      };
+      if (px > 0) push(p - 1);
+      if (px < w - 1) push(p + 1);
+      if (py > 0) push(p - w);
+      if (py < h - 1) push(p + w);
+    }
+    holes.push(hole);
+  }
+  return holes;
+}
+
+/**
+ * Rend transparentes les poches recensées. MUTE `img`.
+ *
+ * À appeler AVANT `stripFringe` : ouvrir une poche découvre le dégradé JPEG qui
+ * la bordait, et c'est au décapage de frange de l'ôter. Dans l'autre ordre, il
+ * resterait un liseré clair au creux de chaque aisselle — le défaut d'origine
+ * déplacé de quelques pixels.
+ */
+export function fillHoles(img: Rgba, holes: readonly Hole[], threshold: number = BACKGROUND_MIN): number {
+  const { width: w, height: h, data } = img;
+  const isLight = (p: number): boolean => {
+    const i: number = p * 4;
+    if (data[i + 3] === 0) return false;
+    return data[i]! >= threshold && data[i + 1]! >= threshold && data[i + 2]! >= threshold;
+  };
+  let removed: number = 0;
+  for (const hole of holes) {
+    if (!isLight(hole.seed)) continue;
+    const stack: number[] = [hole.seed];
+    while (stack.length > 0) {
+      const p: number = stack.pop()!;
+      if (!isLight(p)) continue;
+      data[p * 4 + 3] = 0;                 // efface AVANT d'empiler : sert de marquage
+      removed++;
+      const px: number = p % w;
+      const py: number = (p - px) / w;
+      if (px > 0) stack.push(p - 1);
+      if (px < w - 1) stack.push(p + 1);
+      if (py > 0) stack.push(p - w);
+      if (py < h - 1) stack.push(p + w);
+    }
+  }
+  return removed;
+}
+
 /** Résultat d'un décapage de frange. `saturated` = le plafond de passes a été
  *  atteint, donc l'érosion mordait peut-être encore le dessin : à inspecter. */
 export interface FringeResult {
