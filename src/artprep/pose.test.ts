@@ -47,6 +47,20 @@ describe("walkPose — le balancier des bras", () => {
       expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(20);
     }
   });
+
+  it("écarte CHAQUE main du centre, à CHAQUE pose — jamais les deux ensemble à la verticale", () => {
+    // Le défaut réel, repéré par le PO sur le gabarit rendu : cette même mesure,
+    // avant correction, valait 21,7 aux poses de « passage » mais seulement 3 à
+    // 6 aux poses 1 et 3 — l'avant-bras (angle − coude) s'y annulait presque, et
+    // les deux bras retombaient à la verticale, confondus avec le torse. Un test
+    // sur l'ÉTENDUE du cycle (ci-dessus) ne le voyait pas : elle reste large
+    // grâce aux seules poses de contact.
+    for (const p of CYCLE) {
+      for (const side of [0, 1] as const) {
+        expect(Math.abs(p.hand[side]!.z)).toBeGreaterThan(15);
+      }
+    }
+  });
 });
 
 describe("walkPose — l'appui au sol", () => {

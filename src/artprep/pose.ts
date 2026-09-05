@@ -71,6 +71,15 @@ export const HAND: number = 18;
 export const FOOT_R: number = 9;
 /** Longueur du nez, en avant du centre de la tête. */
 export const NOSE: number = 30;
+/**
+ * Espace visible entre le sommet du torse et le bas de la tête.
+ *
+ * Sans lui, la tête touchait quasiment l'épaule — mesuré, 1 px d'écart entre
+ * le bas de la tête et le pivot du bras. Le bras semblait alors partir du
+ * menton, et le capuchon du torse s'enfonçait visiblement dans la tête,
+ * lisible comme une seconde forme accolée à la première.
+ */
+export const NECK_GAP: number = 16;
 
 /** Nombre de poses du cycle. Quatre clés : contact, passage, contact inverse,
  *  passage inverse. Au-delà, un générateur interpole au lieu de créer. */
@@ -101,12 +110,20 @@ interface Side {
  * jambe du MÊME côté. Les avoir mis en phase aux poses de passage donnait un
  * balancier juste aux contacts et faux entre les deux — un défaut que l'œil ne
  * relève pas sur une image fixe.
+ *
+ * Aux poses 1 et 3, `elbow` reste PETIT : l'avant-bras vaut `arm - elbow`, et
+ * avec le réglage précédent (angle proche de zéro, coude comparable en
+ * grandeur), les deux se soustrayaient presque entièrement. Le bras retombait
+ * alors à la verticale, confondu avec le torse — invisible dans la moitié du
+ * cycle, ce que le PO a lu comme « les bras ne bougent pas bien ». Un coude
+ * franc n'a de sens qu'aux poses de contact, où le bras est déjà loin de la
+ * verticale et où le plier ne peut plus l'y ramener.
  */
 const LEFT: readonly Side[] = [
   { thigh: 30, knee: 4, arm: -34, elbow: 14, lift: false },   // contact, jambe gauche devant
-  { thigh: -10, knee: 14, arm: 6, elbow: 16, lift: false },   // appui, la gauche pousse
+  { thigh: -10, knee: 14, arm: 20, elbow: 4, lift: false },   // appui, la gauche pousse
   { thigh: -25, knee: 10, arm: 34, elbow: 14, lift: false },  // contact inverse, gauche derrière
-  { thigh: 6, knee: 60, arm: -6, elbow: 16, lift: true },     // passage, la gauche remonte
+  { thigh: 6, knee: 60, arm: -20, elbow: 4, lift: true },     // passage, la gauche remonte
 ];
 
 /** Un demi-corps construit : les articulations d'un seul côté. */
@@ -185,8 +202,8 @@ export function walkPose(pose: number): Joints {
   const lowest: number = Math.min(l.foot.y, r.foot.y) - FOOT_R;
   const drop = (p: Vec3): Vec3 => ({ x: p.x, y: p.y - lowest, z: p.z });
   return {
-    head: drop({ x: 0, y: NECK_Y + HEAD_R * 0.9, z: 0 }),
-    nose: drop({ x: 0, y: NECK_Y + HEAD_R * 0.75, z: NOSE }),
+    head: drop({ x: 0, y: NECK_Y + NECK_GAP + HEAD_R, z: 0 }),
+    nose: drop({ x: 0, y: NECK_Y + NECK_GAP + HEAD_R * 0.85, z: NOSE }),
     neck: drop({ x: 0, y: NECK_Y, z: 0 }),
     pelvis: drop(pelvis),
     shoulder: [drop(l.shoulder), drop(r.shoulder)],
